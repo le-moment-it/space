@@ -56,13 +56,19 @@ export function initCombat(opts: {
   enemy: EnemyDefinition;
   rng: Rng;
   config?: CombatConfig;
+  /** Hull to start this fight with (e.g. carried over from earlier in a run). Defaults to full. */
+  startingHull?: number;
 }): CombatState {
   const config = opts.config ?? DEFAULT_COMBAT_CONFIG;
   const drawPile = shuffle(buildDeckInstances(opts.startingDeckCardIds), opts.rng);
+  const startingHull =
+    opts.startingHull !== undefined
+      ? Math.max(0, Math.min(opts.startingHull, config.playerMaxHull))
+      : config.playerMaxHull;
 
   const initial: CombatState = {
     player: {
-      hull: config.playerMaxHull,
+      hull: startingHull,
       maxHull: config.playerMaxHull,
       shield: 0,
       power: config.playerMaxPower,

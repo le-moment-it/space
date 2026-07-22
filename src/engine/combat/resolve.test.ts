@@ -91,6 +91,41 @@ describe('initCombat', () => {
     expect(state.drawPile.length + state.hand.length).toBe(6);
     expect(state.phase).toBe('playerTurn');
   });
+
+  it('carries over a reduced starting hull (e.g. from earlier in a run)', () => {
+    const rng = createRng(11);
+    const state = initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf('strike', 'strike', 'shield', 'shield', 'heal', 'heal'),
+      enemy: passiveEnemy,
+      rng,
+      startingHull: 20,
+    });
+
+    expect(state.player.hull).toBe(20);
+    expect(state.player.maxHull).toBe(DEFAULT_COMBAT_CONFIG.playerMaxHull);
+  });
+
+  it('clamps an out-of-range startingHull to [0, maxHull]', () => {
+    const rng = createRng(12);
+    const over = initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf('strike'),
+      enemy: passiveEnemy,
+      rng,
+      startingHull: 9999,
+    });
+    expect(over.player.hull).toBe(DEFAULT_COMBAT_CONFIG.playerMaxHull);
+
+    const under = initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf('strike'),
+      enemy: passiveEnemy,
+      rng,
+      startingHull: -5,
+    });
+    expect(under.player.hull).toBe(0);
+  });
 });
 
 describe('playCard', () => {

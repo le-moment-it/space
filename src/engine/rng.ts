@@ -45,3 +45,17 @@ export function shuffle<T>(items: readonly T[], rng: Rng): T[] {
   }
   return result;
 }
+
+/** Picks one value from a weighted list (e.g. map node types, loot tables). */
+export function weightedPick<T>(entries: readonly { value: T; weight: number }[], rng: Rng): T {
+  const total = entries.reduce((sum, entry) => sum + entry.weight, 0);
+  if (total <= 0) {
+    throw new Error('weightedPick requires at least one entry with positive weight');
+  }
+  let roll = rng.next() * total;
+  for (const entry of entries) {
+    if (roll < entry.weight) return entry.value;
+    roll -= entry.weight;
+  }
+  return entries[entries.length - 1].value;
+}

@@ -1,17 +1,19 @@
 import { cardDefinitions } from '../../data/cards';
-import { useCombatStore } from '../../state/combatStore';
+import type { CombatState } from '../../engine/combat/types';
 
 function intentLabel(intent: { kind: string; amount: number }): string {
   if (intent.kind === 'attack') return `Attack for ${intent.amount}`;
   return `Defend (+${intent.amount} shield)`;
 }
 
-export function BattleScreen() {
-  const combat = useCombatStore((s) => s.combat);
-  const playCard = useCombatStore((s) => s.playCard);
-  const endTurn = useCombatStore((s) => s.endTurn);
-  const restart = useCombatStore((s) => s.restart);
+interface BattleScreenProps {
+  combat: CombatState;
+  onPlayCard: (instanceId: string) => void;
+  onEndTurn: () => void;
+  onContinue: () => void;
+}
 
+export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: BattleScreenProps) {
   const isPlayerTurn = combat.phase === 'playerTurn';
 
   return (
@@ -53,7 +55,7 @@ export function BattleScreen() {
           <p>
             <strong>Victory!</strong> {combat.enemy.name} destroyed.
           </p>
-          <button onClick={restart}>Play again</button>
+          <button onClick={onContinue}>Continue</button>
         </div>
       )}
 
@@ -62,7 +64,7 @@ export function BattleScreen() {
           <p>
             <strong>Your ship was destroyed.</strong>
           </p>
-          <button onClick={restart}>Try again</button>
+          <button onClick={onContinue}>Continue</button>
         </div>
       )}
 
@@ -75,7 +77,7 @@ export function BattleScreen() {
             <button
               key={card.instanceId}
               disabled={!isPlayerTurn || !affordable}
-              onClick={() => playCard(card.instanceId)}
+              onClick={() => onPlayCard(card.instanceId)}
               title={def.description}
             >
               {def.name} ({def.cost})
@@ -85,7 +87,7 @@ export function BattleScreen() {
       </div>
 
       <p>
-        <button disabled={!isPlayerTurn} onClick={endTurn}>
+        <button disabled={!isPlayerTurn} onClick={onEndTurn}>
           End turn
         </button>
       </p>

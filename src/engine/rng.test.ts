@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRng, shuffle } from './rng';
+import { createRng, shuffle, weightedPick } from './rng';
 
 describe('createRng', () => {
   it('produces the same sequence for the same seed', () => {
@@ -73,5 +73,37 @@ describe('shuffle', () => {
     const a = shuffle(items, createRng(99));
     const b = shuffle(items, createRng(99));
     expect(a).toEqual(b);
+  });
+});
+
+describe('weightedPick', () => {
+  it('only ever returns a zero-weight-excluded value when weight is 0', () => {
+    const rng = createRng(11);
+    const entries = [
+      { value: 'never', weight: 0 },
+      { value: 'always', weight: 1 },
+    ];
+    for (let i = 0; i < 50; i++) {
+      expect(weightedPick(entries, rng)).toBe('always');
+    }
+  });
+
+  it('respects relative weights over many samples', () => {
+    const rng = createRng(12);
+    const entries = [
+      { value: 'common', weight: 9 },
+      { value: 'rare', weight: 1 },
+    ];
+    const counts = { common: 0, rare: 0 };
+    for (let i = 0; i < 2000; i++) {
+      counts[weightedPick(entries, rng) as 'common' | 'rare']++;
+    }
+    // Roughly 90/10 split; loose bounds to avoid a flaky test.
+    expect(counts.common).toBeGreaterThan(counts.rare * 4);
+  });
+
+  it('throws when all weights are zero', () => {
+    const rng = createRng(1);
+    expect(() => weightedPick([{ value: 'x', weight: 0 }], rng)).toThrow();
   });
 });

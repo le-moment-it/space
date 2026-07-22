@@ -73,6 +73,54 @@ const cardList: CardDefinition[] = [
     description: 'Gain 2 power this turn.',
     effect: { kind: 'power', amount: 2 },
   },
+  {
+    id: 'auto-turret',
+    name: 'Auto Turret',
+    type: 'weapon',
+    cost: 1,
+    description: 'Deal 5 damage.',
+    effect: { kind: 'damage', amount: 5 },
+  },
+  {
+    id: 'ion-torpedo',
+    name: 'Ion Torpedo',
+    type: 'weapon',
+    cost: 2,
+    description: 'Deal 9 damage.',
+    effect: { kind: 'damage', amount: 9 },
+  },
+  {
+    id: 'brace-for-impact',
+    name: 'Brace for Impact',
+    type: 'maneuver',
+    cost: 0,
+    description: 'Gain 4 shields.',
+    effect: { kind: 'shield', amount: 4 },
+  },
+  {
+    id: 'nanite-repair',
+    name: 'Nanite Repair',
+    type: 'maneuver',
+    cost: 2,
+    description: 'Repair 10 hull.',
+    effect: { kind: 'heal', amount: 10 },
+  },
+  {
+    id: 'sensor-jam',
+    name: 'Sensor Jam',
+    type: 'maneuver',
+    cost: 1,
+    description: 'Weaken the enemy: -4 damage on their attacks for 3 turns.',
+    effect: { kind: 'weaken', amount: 4, duration: 3 },
+  },
+  {
+    id: 'reactor-surge',
+    name: 'Reactor Surge',
+    type: 'shipSystem',
+    cost: 0,
+    description: 'Gain 1 power this turn.',
+    effect: { kind: 'power', amount: 1 },
+  },
 ];
 
 export const cardDefinitions: Record<string, CardDefinition> = Object.fromEntries(
@@ -92,4 +140,16 @@ export const startingDeckCardIds: string[] = [
   'overcharge-reactor',
   'heavy-railgun',
   'plasma-lance',
+];
+
+/** Card ids purchasable at Salvage Trader nodes / offerable at Derelict Cache nodes. */
+export const runCardPool: string[] = Object.keys(cardDefinitions);
+
+/** Stronger cards awarded for clearing an Elite Hostile encounter. */
+export const eliteRewardCardIds: string[] = [
+  'heavy-railgun',
+  'plasma-lance',
+  'emergency-shield-boost',
+  'nanite-repair',
+  'ion-torpedo',
 ];
