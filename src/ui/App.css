@@ -1,0 +1,21 @@
+.app-shell {
+  max-width: 40rem;
+  margin: 4rem auto;
+  padding: 0 1.5rem;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: #e6e6e6;
+}
+
+.app-shell h1 {
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.app-shell code {
+  background: #1a1a1a;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+}
