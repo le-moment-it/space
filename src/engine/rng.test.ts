@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createRng } from './rng';
+import { createRng, shuffle } from './rng';
 
 describe('createRng', () => {
   it('produces the same sequence for the same seed', () => {
@@ -48,5 +48,30 @@ describe('createRng', () => {
   it('pick() throws on an empty array', () => {
     const rng = createRng(1);
     expect(() => rng.pick([])).toThrow();
+  });
+});
+
+describe('shuffle', () => {
+  it('returns an array with the same elements', () => {
+    const rng = createRng(5);
+    const items = [1, 2, 3, 4, 5];
+    const shuffled = shuffle(items, rng);
+    expect(shuffled).toHaveLength(items.length);
+    expect([...shuffled].sort()).toEqual([...items].sort());
+  });
+
+  it('does not mutate the input array', () => {
+    const rng = createRng(5);
+    const items = [1, 2, 3, 4, 5];
+    const original = [...items];
+    shuffle(items, rng);
+    expect(items).toEqual(original);
+  });
+
+  it('is deterministic for a given seed', () => {
+    const items = [1, 2, 3, 4, 5, 6, 7, 8];
+    const a = shuffle(items, createRng(99));
+    const b = shuffle(items, createRng(99));
+    expect(a).toEqual(b);
   });
 });

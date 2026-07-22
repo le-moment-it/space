@@ -1,12 +1,18 @@
 .app-shell {
-  max-width: 40rem;
+  max-width: 60rem;
   margin: 4rem auto;
   padding: 0 1.5rem;
   font-family:
     system-ui,
     -apple-system,
     sans-serif;
-  color: #e6e6e6;
+  color: var(--text);
+}
+
+.app-shell h1,
+.app-shell h2,
+.app-shell h3 {
+  color: var(--text-h);
 }
 
 .app-shell h1 {
@@ -15,7 +21,8 @@
 }
 
 .app-shell code {
-  background: #1a1a1a;
+  background: var(--code-bg);
+  color: var(--text-h);
   padding: 0.1rem 0.4rem;
   border-radius: 0.25rem;
 }
