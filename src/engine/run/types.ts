@@ -3,9 +3,10 @@ import type { CombatConfig, CombatState, EnemyDefinition } from '../combat/types
 import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
 import type { EventDefinition } from '../events/types';
 import type { MapGraph } from '../map/types';
+import type { ShipSystemDefinition } from '../shipSystems/types';
 
 export type RunPhase =
-  'map' | 'combat' | 'event' | 'rest' | 'shop' | 'treasure' | 'runWon' | 'runLost';
+  'map' | 'combat' | 'event' | 'rest' | 'shop' | 'treasure' | 'reward' | 'runWon' | 'runLost';
 
 export interface ShopOfferItem {
   cardId: string;
@@ -20,18 +21,21 @@ export interface PendingReward {
 
 export interface RunState {
   map: MapGraph;
-  /** Node the player is currently at or just resolved. Null before the first pick. */
   currentNodeId: string | null;
   visitedNodeIds: string[];
   hull: number;
   maxHull: number;
   deckCardIds: string[];
   salvage: number;
+  /** Ship systems installed this run — reset every run; see docs/GAME_DESIGN.md §5. */
+  shipSystemIds: string[];
   phase: RunPhase;
   activeCombat: CombatState | null;
   activeEventId: string | null;
   shopOffer: ShopOfferItem[] | null;
   pendingReward: PendingReward | null;
+  /** The 3 ship systems offered while phase is 'reward'. */
+  rewardOptions: string[] | null;
   log: string[];
 }
 
@@ -53,8 +57,11 @@ export interface RunContent {
   eliteEnemies: EnemyDefinition[];
   bossEnemy: EnemyDefinition;
   events: EventDefinition[];
+  /** These pools/ids are expected to already be filtered to the caller's unlocked set. */
   eliteRewardCardIds: string[];
   shopCardPool: string[];
   treasureCardPool: string[];
+  shipSystemDefinitions: Record<string, ShipSystemDefinition>;
+  availableShipSystemIds: string[];
   combatConfig?: CombatConfig;
 }

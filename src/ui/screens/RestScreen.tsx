@@ -1,8 +1,8 @@
-import { useRunStore } from '../../state/runStore';
+import type { RunState } from '../../engine/run/types';
+import { useGameStore } from '../../state/gameStore';
 
-export function RestScreen() {
-  const run = useRunStore((s) => s.run);
-  const leaveNode = useRunStore((s) => s.leaveNode);
+export function RestScreen({ run }: { run: RunState }) {
+  const leaveNode = useGameStore((s) => s.leaveNode);
 
   return (
     <section>

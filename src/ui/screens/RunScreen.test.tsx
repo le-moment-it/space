@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useGameStore } from '../../state/gameStore';
 import { RunScreen } from './RunScreen';
 
 describe('RunScreen', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.getState().startNewRun();
+  });
+
   it('renders the star chart at the start of a run', () => {
     render(<RunScreen />);
     expect(screen.getByRole('heading', { name: /star chart/i })).toBeInTheDocument();

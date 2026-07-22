@@ -1,9 +1,9 @@
 import { eventDefinitions } from '../../data/events';
-import { useRunStore } from '../../state/runStore';
+import type { RunState } from '../../engine/run/types';
+import { useGameStore } from '../../state/gameStore';
 
-export function EventScreen() {
-  const run = useRunStore((s) => s.run);
-  const resolveEvent = useRunStore((s) => s.resolveEvent);
+export function EventScreen({ run }: { run: RunState }) {
+  const resolveEvent = useGameStore((s) => s.resolveEvent);
   const def = eventDefinitions.find((e) => e.id === run.activeEventId);
   if (!def) return null;
 

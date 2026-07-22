@@ -248,6 +248,21 @@ describe('endPlayerTurn', () => {
     expect(state.turn).toBe(2);
   });
 
+  it('resets shield to config.baselineShield instead of 0 when set (a ship system effect)', () => {
+    const rng = createRng(20);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      enemy: passiveEnemy,
+      rng,
+      config: { ...DEFAULT_COMBAT_CONFIG, baselineShield: 5 },
+    });
+    expect(state.player.shield).toBe(5);
+
+    state = endPlayerTurn(state, rng, { ...DEFAULT_COMBAT_CONFIG, baselineShield: 5 });
+    expect(state.player.shield).toBe(5);
+  });
+
   it('sets phase to lost when player hull reaches 0', () => {
     const rng = createRng(8);
     const bigAttacker: EnemyDefinition = {

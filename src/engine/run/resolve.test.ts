@@ -4,9 +4,11 @@ import { createRng } from '../rng';
 import type { EnemyDefinition } from '../combat/types';
 import type { EventDefinition } from '../events/types';
 import type { MapGraph } from '../map/types';
+import type { ShipSystemDefinition } from '../shipSystems/types';
 import {
   acknowledgeCombat,
   buyShopItem,
+  chooseShipSystemReward,
   endRunCombatTurn,
   enterNode,
   getAvailableNodeIds,
@@ -89,6 +91,27 @@ const events: EventDefinition[] = [
   },
 ];
 
+const shipSystemDefinitions: Record<string, ShipSystemDefinition> = {
+  hullPlating: {
+    id: 'hullPlating',
+    name: 'Hull Plating',
+    description: '+15 max hull',
+    effect: { kind: 'maxHull', amount: 15 },
+  },
+  powerCore: {
+    id: 'powerCore',
+    name: 'Power Core',
+    description: '+1 max power',
+    effect: { kind: 'maxPower', amount: 1 },
+  },
+  deflector: {
+    id: 'deflector',
+    name: 'Deflector',
+    description: 'baseline shield',
+    effect: { kind: 'baselineShield', amount: 5 },
+  },
+};
+
 function makeContent(overrides: Partial<RunContent> = {}): RunContent {
   return {
     cardDefinitions,
@@ -99,6 +122,8 @@ function makeContent(overrides: Partial<RunContent> = {}): RunContent {
     eliteRewardCardIds: ['eliteReward'],
     shopCardPool: ['strike', 'shieldCard'],
     treasureCardPool: ['strike'],
+    shipSystemDefinitions,
+    availableShipSystemIds: ['hullPlating', 'powerCore', 'deflector'],
     ...overrides,
   };
 }
@@ -156,7 +181,7 @@ describe('combat within a run', () => {
     expect(run.phase).toBe('combat'); // still showing the battle screen until acknowledged
     expect(run.salvage).toBe(12);
 
-    run = acknowledgeCombat(run);
+    run = acknowledgeCombat(run, content, rng);
     expect(run.phase).toBe('map');
     expect(run.activeCombat).toBeNull();
     expect(getAvailableNodeIds(run)).toEqual(['midEvent']);
@@ -187,12 +212,12 @@ describe('combat within a run', () => {
 
     expect(run.activeCombat?.phase).toBe('lost');
     expect(run.phase).toBe('combat');
-    run = acknowledgeCombat(run);
+    run = acknowledgeCombat(run, content, rng);
     expect(run.phase).toBe('runLost');
     expect(run.activeCombat).toBeNull();
   });
 
-  it('goes to runWon (after acknowledge) when the boss is defeated', () => {
+  it('offers a 3-way ship system choice after the boss is defeated', () => {
     const rng = createRng(6);
     let run = initRun(testMap, startingDeck);
     run = { ...run, currentNodeId: 'midElite', visitedNodeIds: ['midElite'] };
@@ -203,8 +228,58 @@ describe('combat within a run', () => {
     run = playRunCombatCard(run, card.instanceId, content, rng);
     expect(run.activeCombat?.phase).toBe('won');
 
-    run = acknowledgeCombat(run);
+    run = acknowledgeCombat(run, content, rng);
+    expect(run.phase).toBe('reward');
+    expect(run.activeCombat).toBeNull();
+    expect(run.rewardOptions).toHaveLength(3);
+    for (const id of run.rewardOptions ?? []) {
+      expect(content.availableShipSystemIds).toContain(id);
+    }
+  });
+
+  it('installing a maxHull ship system increases both maxHull and current hull, then ends the run', () => {
+    const rng = createRng(6);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'midElite', visitedNodeIds: ['midElite'] };
+    const content = makeContent();
+    run = enterNode(run, 'boss', content, rng);
+    const card = run.activeCombat!.hand[0];
+    run = playRunCombatCard(run, card.instanceId, content, rng);
+    run = acknowledgeCombat(run, content, rng);
+
+    const beforeMaxHull = run.maxHull;
+    const beforeHull = run.hull;
+    run = chooseShipSystemReward(run, 'hullPlating', content);
+
+    expect(run.maxHull).toBe(beforeMaxHull + 15);
+    expect(run.hull).toBe(beforeHull + 15);
+    expect(run.shipSystemIds).toEqual(['hullPlating']);
     expect(run.phase).toBe('runWon');
+    expect(run.rewardOptions).toBeNull();
+  });
+
+  it('rejects choosing a ship system that was not offered', () => {
+    const rng = createRng(6);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'midElite', visitedNodeIds: ['midElite'] };
+    const content = makeContent();
+    run = enterNode(run, 'boss', content, rng);
+    const card = run.activeCombat!.hand[0];
+    run = playRunCombatCard(run, card.instanceId, content, rng);
+    run = acknowledgeCombat(run, content, rng);
+
+    const before = run;
+    run = chooseShipSystemReward(run, 'not-offered', content);
+    expect(run).toBe(before);
+  });
+
+  it('applies owned ship systems to subsequent combats (baseline shield)', () => {
+    const rng = createRng(21);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, shipSystemIds: ['deflector'] };
+    const content = makeContent();
+    run = enterNode(run, 'entryCombat', content, rng);
+    expect(run.activeCombat?.player.shield).toBe(5);
   });
 });
 

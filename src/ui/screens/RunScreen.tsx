@@ -1,17 +1,20 @@
-import { useRunStore } from '../../state/runStore';
+import { useGameStore } from '../../state/gameStore';
 import { BattleScreen } from './BattleScreen';
 import { EventScreen } from './EventScreen';
 import { MapScreen } from './MapScreen';
 import { RestScreen } from './RestScreen';
+import { RewardScreen } from './RewardScreen';
 import { ShopScreen } from './ShopScreen';
 import { TreasureScreen } from './TreasureScreen';
 
 export function RunScreen() {
-  const run = useRunStore((s) => s.run);
-  const playCard = useRunStore((s) => s.playCard);
-  const endTurn = useRunStore((s) => s.endTurn);
-  const acknowledgeCombat = useRunStore((s) => s.acknowledgeCombat);
-  const restart = useRunStore((s) => s.restart);
+  const run = useGameStore((s) => s.run);
+  const playCard = useGameStore((s) => s.playCard);
+  const endTurn = useGameStore((s) => s.endTurn);
+  const acknowledgeCombat = useGameStore((s) => s.acknowledgeCombat);
+  const returnToHub = useGameStore((s) => s.returnToHub);
+
+  if (!run) return null;
 
   return (
     <div>
@@ -21,9 +24,10 @@ export function RunScreen() {
         </span>
         <span>Salvage: {run.salvage}</span>
         <span>Deck: {run.deckCardIds.length} cards</span>
+        <span>Ship systems: {run.shipSystemIds.length}</span>
       </div>
 
-      {run.phase === 'map' && <MapScreen />}
+      {run.phase === 'map' && <MapScreen run={run} />}
 
       {run.phase === 'combat' && run.activeCombat && (
         <BattleScreen
@@ -34,23 +38,24 @@ export function RunScreen() {
         />
       )}
 
-      {run.phase === 'event' && <EventScreen />}
-      {run.phase === 'rest' && <RestScreen />}
-      {run.phase === 'shop' && <ShopScreen />}
-      {run.phase === 'treasure' && <TreasureScreen />}
+      {run.phase === 'event' && <EventScreen run={run} />}
+      {run.phase === 'rest' && <RestScreen run={run} />}
+      {run.phase === 'shop' && <ShopScreen run={run} />}
+      {run.phase === 'treasure' && <TreasureScreen run={run} />}
+      {run.phase === 'reward' && <RewardScreen run={run} />}
 
       {run.phase === 'runWon' && (
         <section>
           <h2>Sector cleared!</h2>
           <p>You defeated the boss and completed the run.</p>
-          <button onClick={restart}>Start a new run</button>
+          <button onClick={returnToHub}>Continue to Hub</button>
         </section>
       )}
 
       {run.phase === 'runLost' && (
         <section>
           <h2>Your ship was destroyed.</h2>
-          <button onClick={restart}>Start a new run</button>
+          <button onClick={returnToHub}>Continue to Hub</button>
         </section>
       )}
     </div>

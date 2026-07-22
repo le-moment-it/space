@@ -1,5 +1,7 @@
 import type { CardDefinition } from '../cards/types';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
+import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
+import { applyShipSystems } from '../shipSystems/apply';
 import { shuffle, type Rng } from '../rng';
 import type { MapGraph } from '../map/types';
 import type { RunConfig, RunContent, RunState, ShopOfferItem } from './types';
@@ -18,11 +20,13 @@ export function initRun(
     maxHull: config.maxHull,
     deckCardIds: [...startingDeckCardIds],
     salvage: config.startingSalvage,
+    shipSystemIds: [],
     phase: 'map',
     activeCombat: null,
     activeEventId: null,
     shopOffer: null,
     pendingReward: null,
+    rewardOptions: null,
     log: ['Departing on a new run.'],
   };
 }
@@ -70,12 +74,21 @@ export function enterNode(
           : node.type === 'elite'
             ? rng.pick(content.eliteEnemies)
             : content.bossEnemy;
+      const baseConfig = {
+        ...(content.combatConfig ?? DEFAULT_COMBAT_CONFIG),
+        playerMaxHull: runState.maxHull,
+      };
+      const effectiveConfig = applyShipSystems(
+        baseConfig,
+        runState.shipSystemIds,
+        content.shipSystemDefinitions,
+      );
       const combat = initCombat({
         cardDefinitions: content.cardDefinitions,
         startingDeckCardIds: runState.deckCardIds,
         enemy,
         rng,
-        config: content.combatConfig,
+        config: effectiveConfig,
         startingHull: runState.hull,
       });
       return {
@@ -189,17 +202,60 @@ export function endRunCombatTurn(runState: RunState, content: RunContent, rng: R
   return resolveCombatOutcome({ ...runState, activeCombat: combat }, content, rng);
 }
 
-/** Called when the player dismisses a finished (won/lost) battle, moving on from the map/run. */
-export function acknowledgeCombat(runState: RunState): RunState {
+/**
+ * Called when the player dismisses a finished (won/lost) battle. A boss win goes to
+ * a ship-system reward choice (3 options drawn from the unlocked pool) rather than
+ * straight to runWon — see chooseShipSystemReward for the follow-up transition.
+ */
+export function acknowledgeCombat(runState: RunState, content: RunContent, rng: Rng): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
+
   if (runState.activeCombat.phase === 'lost') {
     return { ...runState, phase: 'runLost', activeCombat: null };
   }
+
   if (runState.activeCombat.phase === 'won') {
     const node = runState.map.nodes[runState.currentNodeId ?? ''];
-    return { ...runState, phase: node?.type === 'boss' ? 'runWon' : 'map', activeCombat: null };
+    if (node?.type === 'boss') {
+      const notOwned = content.availableShipSystemIds.filter(
+        (id) => !runState.shipSystemIds.includes(id),
+      );
+      const pool = notOwned.length > 0 ? notOwned : content.availableShipSystemIds;
+      const rewardOptions = shuffle(pool, rng).slice(0, 3);
+      return { ...runState, phase: 'reward', activeCombat: null, rewardOptions };
+    }
+    return { ...runState, phase: 'map', activeCombat: null };
   }
+
   return runState;
+}
+
+export function chooseShipSystemReward(
+  runState: RunState,
+  shipSystemId: string,
+  content: RunContent,
+): RunState {
+  if (runState.phase !== 'reward' || !runState.rewardOptions?.includes(shipSystemId))
+    return runState;
+  const def = content.shipSystemDefinitions[shipSystemId];
+  if (!def) return runState;
+
+  let hull = runState.hull;
+  let maxHull = runState.maxHull;
+  if (def.effect.kind === 'maxHull') {
+    maxHull += def.effect.amount;
+    hull += def.effect.amount;
+  }
+
+  return {
+    ...runState,
+    hull,
+    maxHull,
+    shipSystemIds: [...runState.shipSystemIds, shipSystemId],
+    rewardOptions: null,
+    phase: 'runWon',
+    log: [...runState.log, `Installed ship system: ${def.name}.`],
+  };
 }
 
 export function resolveEventChoice(

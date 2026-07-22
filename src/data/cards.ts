@@ -153,3 +153,18 @@ export const eliteRewardCardIds: string[] = [
   'nanite-repair',
   'ion-torpedo',
 ];
+
+/**
+ * Unlocked from the very first run (the 8 unique cards in the starting deck already
+ * unlocked trivially). The remaining cards unlock via milestones — see data/milestones.ts.
+ */
+export const defaultUnlockedCardIds: string[] = [
+  'kinetic-cannon',
+  'flak-burst',
+  'raise-shields',
+  'hull-patch',
+  'target-scanners',
+  'overcharge-reactor',
+  'heavy-railgun',
+  'plasma-lance',
+];

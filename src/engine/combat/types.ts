@@ -48,6 +48,8 @@ export interface CombatConfig {
   playerMaxHull: number;
   playerMaxPower: number;
   drawAmount: number;
+  /** Shield the player resets to at the start of each turn, instead of 0 (a ship system effect). */
+  baselineShield?: number;
 }
 
 export const DEFAULT_COMBAT_CONFIG: CombatConfig = {

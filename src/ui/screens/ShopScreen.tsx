@@ -1,10 +1,10 @@
 import { cardDefinitions } from '../../data/cards';
-import { useRunStore } from '../../state/runStore';
+import type { RunState } from '../../engine/run/types';
+import { useGameStore } from '../../state/gameStore';
 
-export function ShopScreen() {
-  const run = useRunStore((s) => s.run);
-  const buyItem = useRunStore((s) => s.buyItem);
-  const leaveNode = useRunStore((s) => s.leaveNode);
+export function ShopScreen({ run }: { run: RunState }) {
+  const buyItem = useGameStore((s) => s.buyItem);
+  const leaveNode = useGameStore((s) => s.leaveNode);
   if (!run.shopOffer) return null;
 
   return (

@@ -38,7 +38,11 @@ function drawCards(
 }
 
 function startPlayerTurn(state: CombatState, rng: Rng, config: CombatConfig): CombatState {
-  const player = { ...state.player, shield: 0, power: config.playerMaxPower };
+  const player = {
+    ...state.player,
+    shield: config.baselineShield ?? 0,
+    power: config.playerMaxPower,
+  };
   const { hand, drawPile, discardPile, log } = drawCards(
     state.hand,
     state.drawPile,

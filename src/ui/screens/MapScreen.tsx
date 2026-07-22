@@ -1,6 +1,7 @@
-import { getAvailableNodeIds } from '../../engine/run/resolve';
 import type { NodeType } from '../../engine/map/types';
-import { useRunStore } from '../../state/runStore';
+import { getAvailableNodeIds } from '../../engine/run/resolve';
+import type { RunState } from '../../engine/run/types';
+import { useGameStore } from '../../state/gameStore';
 
 const TYPE_ICON: Record<NodeType, string> = {
   combat: '⚔️',
@@ -12,9 +13,8 @@ const TYPE_ICON: Record<NodeType, string> = {
   boss: '☠️',
 };
 
-export function MapScreen() {
-  const run = useRunStore((s) => s.run);
-  const enterNode = useRunStore((s) => s.enterNode);
+export function MapScreen({ run }: { run: RunState }) {
+  const enterNode = useGameStore((s) => s.enterNode);
   const available = getAvailableNodeIds(run);
   const columns = [...run.map.layers, [run.map.bossNodeId]];
 
