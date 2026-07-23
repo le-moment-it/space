@@ -18,6 +18,7 @@ import {
   resolveEventChoice,
 } from './resolve';
 import type { RunContent } from './types';
+import { TOTAL_ACTS } from './types';
 
 // A small hand-built linear map exercising every node type once, so tests can target
 // a specific node type deterministically instead of relying on random generation.
@@ -115,9 +116,9 @@ const shipSystemDefinitions: Record<string, ShipSystemDefinition> = {
 function makeContent(overrides: Partial<RunContent> = {}): RunContent {
   return {
     cardDefinitions,
-    combatEnemies: [weakEnemy],
-    eliteEnemies: [weakEnemy],
-    bossEnemy: weakEnemy,
+    combatEnemiesByAct: { 1: [weakEnemy], 2: [weakEnemy], 3: [weakEnemy] },
+    eliteEnemiesByAct: { 1: [weakEnemy], 2: [weakEnemy], 3: [weakEnemy] },
+    bossEnemyByAct: { 1: weakEnemy, 2: weakEnemy, 3: weakEnemy },
     events,
     eliteRewardCardIds: ['eliteReward'],
     shopCardPool: ['strike', 'shieldCard'],
@@ -205,7 +206,9 @@ describe('combat within a run', () => {
   it('goes to runLost (after acknowledge) when hull reaches 0', () => {
     const rng = createRng(5);
     let run = initRun(testMap, startingDeck);
-    const content = makeContent({ combatEnemies: [lethalEnemy] });
+    const content = makeContent({
+      combatEnemiesByAct: { 1: [lethalEnemy], 2: [lethalEnemy], 3: [lethalEnemy] },
+    });
     run = enterNode(run, 'entryCombat', content, rng);
 
     run = endRunCombatTurn(run, content, rng);
@@ -237,7 +240,7 @@ describe('combat within a run', () => {
     }
   });
 
-  it('installing a maxHull ship system increases both maxHull and current hull, then ends the run', () => {
+  it('installing a maxHull ship system after Act 1 boss increases hull and advances to Act 2', () => {
     const rng = createRng(6);
     let run = initRun(testMap, startingDeck);
     run = { ...run, currentNodeId: 'midElite', visitedNodeIds: ['midElite'] };
@@ -247,15 +250,41 @@ describe('combat within a run', () => {
     run = playRunCombatCard(run, card.instanceId, content, rng);
     run = acknowledgeCombat(run, content, rng);
 
+    expect(run.act).toBe(1);
     const beforeMaxHull = run.maxHull;
     const beforeHull = run.hull;
-    run = chooseShipSystemReward(run, 'hullPlating', content);
+    const beforeDeck = run.deckCardIds;
+    const beforeSalvage = run.salvage;
+    run = chooseShipSystemReward(run, 'hullPlating', content, rng);
 
     expect(run.maxHull).toBe(beforeMaxHull + 15);
     expect(run.hull).toBe(beforeHull + 15);
     expect(run.shipSystemIds).toEqual(['hullPlating']);
-    expect(run.phase).toBe('runWon');
     expect(run.rewardOptions).toBeNull();
+    // Advancing to the next act, not ending the run (TOTAL_ACTS is 3).
+    expect(run.act).toBe(2);
+    expect(run.phase).toBe('map');
+    expect(run.currentNodeId).toBeNull();
+    expect(run.visitedNodeIds).toEqual([]);
+    // Everything else carries over between acts.
+    expect(run.deckCardIds).toEqual(beforeDeck);
+    expect(run.salvage).toBe(beforeSalvage);
+  });
+
+  it('ends the run in victory after the final act boss', () => {
+    const rng = createRng(6);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, act: TOTAL_ACTS, currentNodeId: 'midElite', visitedNodeIds: ['midElite'] };
+    const content = makeContent();
+    run = enterNode(run, 'boss', content, rng);
+    const card = run.activeCombat!.hand[0];
+    run = playRunCombatCard(run, card.instanceId, content, rng);
+    run = acknowledgeCombat(run, content, rng);
+
+    run = chooseShipSystemReward(run, run.rewardOptions![0], content, rng);
+
+    expect(run.phase).toBe('runWon');
+    expect(run.act).toBe(TOTAL_ACTS);
   });
 
   it('rejects choosing a ship system that was not offered', () => {
@@ -269,7 +298,7 @@ describe('combat within a run', () => {
     run = acknowledgeCombat(run, content, rng);
 
     const before = run;
-    run = chooseShipSystemReward(run, 'not-offered', content);
+    run = chooseShipSystemReward(run, 'not-offered', content, rng);
     expect(run).toBe(before);
   });
 

@@ -5,7 +5,8 @@ export type CardEffect =
   | { kind: 'shield'; amount: number }
   | { kind: 'heal'; amount: number }
   | { kind: 'power'; amount: number }
-  | { kind: 'weaken'; amount: number; duration: number };
+  | { kind: 'weaken'; amount: number; duration: number }
+  | { kind: 'draw'; amount: number };
 
 export interface CardDefinition {
   id: string;

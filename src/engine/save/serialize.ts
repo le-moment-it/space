@@ -1,10 +1,10 @@
 import { createEmptySave, type SaveDefaults } from './schema';
 import { migrateSave } from './migrate';
-import type { SaveDataV1 } from './types';
+import type { SaveDataV2 } from './types';
 
 const STORAGE_KEY = 'space-roguelike:save';
 
-export function loadSave(defaults: SaveDefaults): SaveDataV1 {
+export function loadSave(defaults: SaveDefaults): SaveDataV2 {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return createEmptySave(defaults);
@@ -14,7 +14,7 @@ export function loadSave(defaults: SaveDefaults): SaveDataV1 {
   }
 }
 
-export function persistSave(save: SaveDataV1): void {
+export function persistSave(save: SaveDataV2): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
   } catch {

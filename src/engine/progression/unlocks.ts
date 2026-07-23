@@ -1,4 +1,4 @@
-import type { SaveMetaV1 } from '../save/types';
+import type { SaveMetaV2 } from '../save/types';
 import type { MilestoneDefinition } from './types';
 
 function mergeUnique(existing: readonly string[], additions: readonly string[]): string[] {
@@ -13,9 +13,9 @@ function mergeUnique(existing: readonly string[], additions: readonly string[]):
  * safe to call after every stats change; already-completed milestones are skipped.
  */
 export function evaluateMilestones(
-  meta: SaveMetaV1,
+  meta: SaveMetaV2,
   milestones: readonly MilestoneDefinition[],
-): SaveMetaV1 {
+): SaveMetaV2 {
   let unlockedCardIds = meta.unlockedCardIds;
   let unlockedShipSystemIds = meta.unlockedShipSystemIds;
   let milestoneFlags = meta.milestones;

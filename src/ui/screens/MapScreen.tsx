@@ -20,7 +20,7 @@ export function MapScreen({ run }: { run: RunState }) {
 
   return (
     <section>
-      <h2>Star chart</h2>
+      <h2>Star chart — Act {run.act}</h2>
       <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }}>
         {columns.map((columnNodeIds, columnIndex) => (
           <div

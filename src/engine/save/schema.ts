@@ -1,13 +1,13 @@
-import { EMPTY_STATS, type SaveDataV1 } from './types';
+import { EMPTY_STATS, type SaveDataV2 } from './types';
 
 export interface SaveDefaults {
   unlockedCardIds: string[];
   unlockedShipSystemIds: string[];
 }
 
-export function createEmptySave(defaults: SaveDefaults): SaveDataV1 {
+export function createEmptySave(defaults: SaveDefaults): SaveDataV2 {
   return {
-    version: 1,
+    version: 2,
     meta: {
       unlockedCardIds: [...defaults.unlockedCardIds],
       unlockedShipSystemIds: [...defaults.unlockedShipSystemIds],

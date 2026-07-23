@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_STATS, type SaveMetaV1 } from '../save/types';
+import { EMPTY_STATS, type SaveMetaV2 } from '../save/types';
 import { evaluateMilestones } from './unlocks';
 import type { MilestoneDefinition } from './types';
 
@@ -20,7 +20,7 @@ const milestones: MilestoneDefinition[] = [
   },
 ];
 
-function baseMeta(overrides: Partial<SaveMetaV1> = {}): SaveMetaV1 {
+function baseMeta(overrides: Partial<SaveMetaV2> = {}): SaveMetaV2 {
   return {
     unlockedCardIds: ['starter'],
     unlockedShipSystemIds: ['starter-system'],

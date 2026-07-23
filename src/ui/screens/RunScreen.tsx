@@ -1,4 +1,5 @@
 import { useGameStore } from '../../state/gameStore';
+import { TOTAL_ACTS } from '../../engine/run/types';
 import { BattleScreen } from './BattleScreen';
 import { EventScreen } from './EventScreen';
 import { MapScreen } from './MapScreen';
@@ -19,6 +20,9 @@ export function RunScreen() {
   return (
     <div>
       <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
+        <span>
+          Act {run.act}/{TOTAL_ACTS}
+        </span>
         <span>
           Hull: {run.hull}/{run.maxHull}
         </span>

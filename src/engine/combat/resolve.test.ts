@@ -54,6 +54,14 @@ const cardDefinitions: Record<string, CardDefinition> = {
     description: '',
     effect: { kind: 'weaken', amount: 3, duration: 2 },
   },
+  scan: {
+    id: 'scan',
+    name: 'Scan',
+    type: 'maneuver',
+    cost: 0,
+    description: '',
+    effect: { kind: 'draw', amount: 2 },
+  },
 };
 
 const passiveEnemy: EnemyDefinition = {
@@ -139,7 +147,7 @@ describe('playCard', () => {
     });
     const card = state.hand[0];
 
-    state = playCard(state, card.instanceId, cardDefinitions);
+    state = playCard(state, card.instanceId, cardDefinitions, rng);
 
     expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 6);
     expect(state.player.power).toBe(DEFAULT_COMBAT_CONFIG.playerMaxPower - 1);
@@ -166,7 +174,7 @@ describe('playCard', () => {
     state = { ...state, player: { ...state.player, power: 1 } };
     const card = state.hand[0];
 
-    const next = playCard(state, card.instanceId, cardDefinitions);
+    const next = playCard(state, card.instanceId, cardDefinitions, rng);
 
     expect(next.enemy.hull).toBe(passiveEnemy.maxHull);
     expect(next.hand).toHaveLength(state.hand.length);
@@ -188,7 +196,7 @@ describe('playCard', () => {
     state = { ...state, enemy: { ...state.enemy, shield: 5 } };
     const card = state.hand[0];
 
-    state = playCard(state, card.instanceId, cardDefinitions);
+    state = playCard(state, card.instanceId, cardDefinitions, rng);
 
     expect(state.enemy.shield).toBe(0);
     expect(state.enemy.hull).toBe(shieldedEnemy.maxHull - 1); // 6 damage - 5 absorbed
@@ -205,7 +213,7 @@ describe('playCard', () => {
     });
     const card = state.hand[0];
 
-    state = playCard(state, card.instanceId, cardDefinitions);
+    state = playCard(state, card.instanceId, cardDefinitions, rng);
 
     expect(state.enemy.hull).toBe(0);
     expect(state.phase).toBe('won');
@@ -220,10 +228,61 @@ describe('playCard', () => {
       rng,
     });
     const card = state.hand[0];
-    state = playCard(state, card.instanceId, cardDefinitions);
+    state = playCard(state, card.instanceId, cardDefinitions, rng);
     state = endPlayerTurn(state, rng);
 
     expect(state.player.hull).toBe(DEFAULT_COMBAT_CONFIG.playerMaxHull - (10 - 3));
+  });
+
+  it('draw effect adds cards to hand without spending the played card as a normal action', () => {
+    const rng = createRng(15);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf(
+        'scan',
+        'strike',
+        'strike',
+        'strike',
+        'strike',
+        'strike',
+        'strike',
+      ),
+      enemy: passiveEnemy,
+      rng,
+    });
+    const card = state.hand.find((c) => c.cardId === 'scan');
+    if (!card) throw new Error('scan not in opening hand for this seed');
+    const handSizeBefore = state.hand.length;
+    const drawPileBefore = state.drawPile.length;
+
+    state = playCard(state, card.instanceId, cardDefinitions, rng);
+
+    // -1 for the played scan card, +2 for its draw effect.
+    expect(state.hand.length).toBe(handSizeBefore - 1 + 2);
+    expect(state.drawPile.length).toBe(drawPileBefore - 2);
+    expect(state.discardPile.some((c) => c.instanceId === card.instanceId)).toBe(true);
+  });
+
+  it('draw effect reshuffles the discard pile in when the draw pile runs out', () => {
+    const rng = createRng(16);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf('scan', 'strike', 'strike'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    // Force an empty draw pile with cards sitting in discard. The deck (3 cards) is
+    // smaller than the draw amount (5), so all of it — including "scan" — is always
+    // in the opening hand already.
+    state = {
+      ...state,
+      drawPile: [],
+      discardPile: [{ instanceId: 'strike#99', cardId: 'strike' }],
+    };
+    const scanInHand = state.hand.find((c) => c.cardId === 'scan');
+    if (!scanInHand) throw new Error('scan not in opening hand for this seed');
+    state = playCard(state, scanInHand.instanceId, cardDefinitions, rng);
+    expect(state.log.some((line) => line.includes('reshuffled'))).toBe(true);
   });
 });
 
@@ -237,7 +296,7 @@ describe('endPlayerTurn', () => {
       rng,
     });
     const card = state.hand[0]; // shield: +10
-    state = playCard(state, card.instanceId, cardDefinitions);
+    state = playCard(state, card.instanceId, cardDefinitions, rng);
 
     state = endPlayerTurn(state, rng);
 
@@ -294,7 +353,7 @@ describe('endPlayerTurn', () => {
     // draw 5/turn, so by turn 3 the draw pile must reshuffle from discard.
     for (let round = 0; round < 3; round++) {
       for (const card of [...state.hand]) {
-        state = playCard(state, card.instanceId, cardDefinitions);
+        state = playCard(state, card.instanceId, cardDefinitions, rng);
       }
       state = endPlayerTurn(state, rng);
     }
@@ -326,7 +385,7 @@ describe('endPlayerTurn', () => {
     while (state.phase === 'playerTurn' && turns < 20) {
       for (const card of [...state.hand]) {
         if (state.phase !== 'playerTurn') break;
-        state = playCard(state, card.instanceId, cardDefinitions);
+        state = playCard(state, card.instanceId, cardDefinitions, rng);
       }
       if (state.phase === 'playerTurn') {
         state = endPlayerTurn(state, rng);

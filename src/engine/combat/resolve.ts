@@ -104,6 +104,7 @@ export function playCard(
   state: CombatState,
   instanceId: string,
   cardDefinitions: Record<string, CardDefinition>,
+  rng: Rng,
 ): CombatState {
   if (state.phase !== 'playerTurn') return state;
 
@@ -122,7 +123,10 @@ export function playCard(
 
   const player = { ...state.player, power: state.player.power - def.cost };
   const enemy = { ...state.enemy };
-  const log = [...state.log, `Played ${def.name}.`];
+  let hand = [...state.hand.slice(0, cardIndex), ...state.hand.slice(cardIndex + 1)];
+  let drawPile = state.drawPile;
+  let discardPile = [...state.discardPile, instance];
+  let log = [...state.log, `Played ${def.name}.`];
 
   switch (def.effect.kind) {
     case 'damage': {
@@ -155,18 +159,25 @@ export function playCard(
         `${enemy.name} is weakened (-${def.effect.amount} damage for ${def.effect.duration} turns).`,
       );
       break;
+    case 'draw': {
+      const result = drawCards(hand, drawPile, discardPile, def.effect.amount, rng, log);
+      hand = result.hand;
+      drawPile = result.drawPile;
+      discardPile = result.discardPile;
+      log = result.log;
+      log.push(`Drew ${def.effect.amount} card(s).`);
+      break;
+    }
     default: {
       const exhaustive: never = def.effect;
       throw new Error(`Unhandled card effect: ${JSON.stringify(exhaustive)}`);
     }
   }
 
-  const hand = [...state.hand.slice(0, cardIndex), ...state.hand.slice(cardIndex + 1)];
-  const discardPile = [...state.discardPile, instance];
   const phase = enemy.hull <= 0 ? 'won' : state.phase;
   if (phase === 'won') log.push(`${enemy.name} destroyed!`);
 
-  return { ...state, player, enemy, hand, discardPile, log, phase };
+  return { ...state, player, enemy, hand, drawPile, discardPile, log, phase };
 }
 
 export function endPlayerTurn(

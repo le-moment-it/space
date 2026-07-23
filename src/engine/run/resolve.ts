@@ -1,11 +1,20 @@
 import type { CardDefinition } from '../cards/types';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
 import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
+import { generateMap } from '../map/generate';
+import { DEFAULT_MAP_CONFIG } from '../map/types';
 import { applyShipSystems } from '../shipSystems/apply';
 import { shuffle, type Rng } from '../rng';
 import type { MapGraph } from '../map/types';
 import type { RunConfig, RunContent, RunState, ShopOfferItem } from './types';
-import { DEFAULT_RUN_CONFIG } from './types';
+import { DEFAULT_RUN_CONFIG, TOTAL_ACTS } from './types';
+
+/** Later acts pay out (and reward) more salvage, to match the higher stakes. */
+const ACT_REWARD_MULTIPLIER: Record<number, number> = { 1: 1, 2: 1.3, 3: 1.6 };
+
+function rewardMultiplierForAct(act: number): number {
+  return ACT_REWARD_MULTIPLIER[act] ?? 1;
+}
 
 export function initRun(
   map: MapGraph,
@@ -13,6 +22,7 @@ export function initRun(
   config: RunConfig = DEFAULT_RUN_CONFIG,
 ): RunState {
   return {
+    act: 1,
     map,
     currentNodeId: null,
     visitedNodeIds: [],
@@ -27,7 +37,7 @@ export function initRun(
     shopOffer: null,
     pendingReward: null,
     rewardOptions: null,
-    log: ['Departing on a new run.'],
+    log: ['Departing on a new run. Act 1.'],
   };
 }
 
@@ -70,10 +80,10 @@ export function enterNode(
     case 'boss': {
       const enemy =
         node.type === 'combat'
-          ? rng.pick(content.combatEnemies)
+          ? rng.pick(content.combatEnemiesByAct[runState.act] ?? [])
           : node.type === 'elite'
-            ? rng.pick(content.eliteEnemies)
-            : content.bossEnemy;
+            ? rng.pick(content.eliteEnemiesByAct[runState.act] ?? [])
+            : content.bossEnemyByAct[runState.act];
       const baseConfig = {
         ...(content.combatConfig ?? DEFAULT_COMBAT_CONFIG),
         playerMaxHull: runState.maxHull,
@@ -108,7 +118,7 @@ export function enterNode(
       };
     }
     case 'rest': {
-      const healAmount = Math.round(runState.maxHull * 0.3);
+      const healAmount = Math.round(runState.maxHull * 0.35);
       const hull = Math.min(runState.maxHull, runState.hull + healAmount);
       return {
         ...base,
@@ -128,7 +138,7 @@ export function enterNode(
     }
     case 'treasure': {
       const cardId = rng.pick(content.treasureCardPool);
-      const salvageGain = 15;
+      const salvageGain = Math.round(15 * rewardMultiplierForAct(runState.act));
       return {
         ...base,
         phase: 'treasure',
@@ -168,7 +178,8 @@ function resolveCombatOutcome(runState: RunState, content: RunContent, rng: Rng)
       };
     }
     const isElite = node.type === 'elite';
-    const salvageGain = isElite ? 25 : 12;
+    const baseSalvage = isElite ? 25 : 12;
+    const salvageGain = Math.round(baseSalvage * rewardMultiplierForAct(runState.act));
     const cardId = isElite ? rng.pick(content.eliteRewardCardIds) : undefined;
     return {
       ...runState,
@@ -192,7 +203,7 @@ export function playRunCombatCard(
   rng: Rng,
 ): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
-  const combat = playCard(runState.activeCombat, instanceId, content.cardDefinitions);
+  const combat = playCard(runState.activeCombat, instanceId, content.cardDefinitions, rng);
   return resolveCombatOutcome({ ...runState, activeCombat: combat }, content, rng);
 }
 
@@ -205,7 +216,7 @@ export function endRunCombatTurn(runState: RunState, content: RunContent, rng: R
 /**
  * Called when the player dismisses a finished (won/lost) battle. A boss win goes to
  * a ship-system reward choice (3 options drawn from the unlocked pool) rather than
- * straight to runWon — see chooseShipSystemReward for the follow-up transition.
+ * straight to runWon/next-act — see chooseShipSystemReward for that follow-up.
  */
 export function acknowledgeCombat(runState: RunState, content: RunContent, rng: Rng): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
@@ -230,10 +241,16 @@ export function acknowledgeCombat(runState: RunState, content: RunContent, rng: 
   return runState;
 }
 
+/**
+ * Installs the chosen ship system, then either advances to the next act's freshly
+ * generated map (hull/deck/salvage/ship systems all carry over) or, after the final
+ * act's boss, ends the run in victory.
+ */
 export function chooseShipSystemReward(
   runState: RunState,
   shipSystemId: string,
   content: RunContent,
+  rng: Rng,
 ): RunState {
   if (runState.phase !== 'reward' || !runState.rewardOptions?.includes(shipSystemId))
     return runState;
@@ -247,14 +264,27 @@ export function chooseShipSystemReward(
     hull += def.effect.amount;
   }
 
+  const shipSystemIds = [...runState.shipSystemIds, shipSystemId];
+  const log = [...runState.log, `Installed ship system: ${def.name}.`];
+
+  if (runState.act >= TOTAL_ACTS) {
+    return { ...runState, hull, maxHull, shipSystemIds, rewardOptions: null, phase: 'runWon', log };
+  }
+
+  const nextAct = runState.act + 1;
+  const map = generateMap(rng, DEFAULT_MAP_CONFIG);
   return {
     ...runState,
     hull,
     maxHull,
-    shipSystemIds: [...runState.shipSystemIds, shipSystemId],
+    shipSystemIds,
     rewardOptions: null,
-    phase: 'runWon',
-    log: [...runState.log, `Installed ship system: ${def.name}.`],
+    act: nextAct,
+    map,
+    currentNodeId: null,
+    visitedNodeIds: [],
+    phase: 'map',
+    log: [...log, `Entering Act ${nextAct}.`],
   };
 }
 
