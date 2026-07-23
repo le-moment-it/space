@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { migrateSave } from './migrate';
 import { createEmptySave } from './schema';
-import type { SaveDataV1, SaveDataV2, SaveDataV3, SaveDataV4 } from './types';
+import type { SaveDataV1, SaveDataV2, SaveDataV4, SaveDataV5 } from './types';
 
-const defaults = { unlockedCardIds: ['a', 'b'], unlockedShipSystemIds: ['x'] };
+const defaults = {
+  unlockedCardIds: ['a', 'b'],
+  unlockedShipSystemIds: ['x'],
+  loadoutCardIds: ['a', 'a', 'b'],
+};
 
 const fullStats = {
   runsStarted: 5,
@@ -15,9 +19,9 @@ const fullStats = {
 };
 
 describe('migrateSave', () => {
-  it('passes through a valid current-version (v4) save unchanged', () => {
-    const valid: SaveDataV4 = {
-      version: 4,
+  it('passes through a valid current-version (v5) save unchanged', () => {
+    const valid: SaveDataV5 = {
+      version: 5,
       meta: {
         unlockedCardIds: ['a', 'b', 'c'],
         unlockedShipSystemIds: ['x', 'y'],
@@ -25,6 +29,7 @@ describe('migrateSave', () => {
         stats: fullStats,
         crew: { medic: { timesRecruited: 2 } },
         endingsUnlocked: ['first-contact'],
+        loadoutCardIds: ['a', 'b', 'c'],
       },
       currentRun: null,
     };
@@ -48,42 +53,43 @@ describe('migrateSave', () => {
     expect(migrateSave(fromTheFuture, defaults)).toEqual(createEmptySave(defaults));
   });
 
-  it('falls back to a fresh save when a v4 shape is missing required meta fields', () => {
-    const incomplete = { version: 4, meta: { unlockedCardIds: ['a'] }, currentRun: null };
+  it('falls back to a fresh save when a v5 shape is missing required meta fields', () => {
+    const incomplete = { version: 5, meta: { unlockedCardIds: ['a'] }, currentRun: null };
     expect(migrateSave(incomplete, defaults)).toEqual(createEmptySave(defaults));
   });
 
-  describe('v3 -> v4 migration', () => {
-    const validV3: SaveDataV3 = {
-      version: 3,
+  describe('v4 -> v5 migration', () => {
+    const validV4: SaveDataV4 = {
+      version: 4,
       meta: {
         unlockedCardIds: ['a', 'b', 'c'],
         unlockedShipSystemIds: ['x', 'y'],
         milestones: { 'defeat-a-boss': true },
         stats: fullStats,
         crew: { medic: { timesRecruited: 2 } },
+        endingsUnlocked: ['first-contact'],
       },
       currentRun: null,
     };
 
-    it('carries everything over and adds an empty endings list', () => {
-      const result = migrateSave(validV3, defaults);
-      expect(result.version).toBe(4);
-      expect(result.meta.unlockedCardIds).toEqual(validV3.meta.unlockedCardIds);
-      expect(result.meta.crew).toEqual(validV3.meta.crew);
-      expect(result.meta.stats).toEqual(validV3.meta.stats);
-      expect(result.meta.endingsUnlocked).toEqual([]);
+    it('carries everything over and adopts the default loadout', () => {
+      const result = migrateSave(validV4, defaults);
+      expect(result.version).toBe(5);
+      expect(result.meta.unlockedCardIds).toEqual(validV4.meta.unlockedCardIds);
+      expect(result.meta.endingsUnlocked).toEqual(validV4.meta.endingsUnlocked);
+      expect(result.meta.stats).toEqual(validV4.meta.stats);
+      expect(result.meta.loadoutCardIds).toEqual(defaults.loadoutCardIds);
     });
 
-    it('leaves an in-progress currentRun untouched (no RunState shape change in v4)', () => {
-      const withRun: SaveDataV3 = {
-        ...validV3,
+    it('leaves an in-progress currentRun untouched (no RunState shape change in v5)', () => {
+      const withRun: SaveDataV4 = {
+        ...validV4,
         currentRun: {
           act: 2,
           phase: 'map',
           hull: 30,
           crewIds: ['medic'],
-        } as unknown as SaveDataV3['currentRun'],
+        } as unknown as SaveDataV4['currentRun'],
       };
       const result = migrateSave(withRun, defaults);
       expect(result.currentRun).toMatchObject({
@@ -95,7 +101,7 @@ describe('migrateSave', () => {
     });
   });
 
-  describe('full v1 -> v4 migration chain', () => {
+  describe('full v1 -> v5 migration chain', () => {
     const validV1: SaveDataV1 = {
       version: 1,
       meta: {
@@ -107,9 +113,9 @@ describe('migrateSave', () => {
       currentRun: null,
     };
 
-    it('walks a v1 save through every migration to a valid v4 shape', () => {
+    it('walks a v1 save through every migration to a valid v5 shape', () => {
       const result = migrateSave(validV1, defaults);
-      expect(result.version).toBe(4);
+      expect(result.version).toBe(5);
       expect(result.meta.unlockedCardIds).toEqual(['a', 'b', 'c']);
       expect(result.meta.milestones).toEqual({ 'win-a-run': true });
       expect(result.meta.stats).toEqual({
@@ -122,6 +128,7 @@ describe('migrateSave', () => {
       });
       expect(result.meta.crew).toEqual({});
       expect(result.meta.endingsUnlocked).toEqual([]);
+      expect(result.meta.loadoutCardIds).toEqual(defaults.loadoutCardIds);
     });
 
     it('patches an in-progress v1 currentRun with act and crew fields across the chain', () => {
@@ -159,8 +166,9 @@ describe('migrateSave', () => {
       currentRun: null,
     };
     const result = migrateSave(validV2, defaults);
-    expect(result.version).toBe(4);
+    expect(result.version).toBe(5);
     expect(result.meta.crew).toEqual({});
     expect(result.meta.endingsUnlocked).toEqual([]);
+    expect(result.meta.loadoutCardIds).toEqual(defaults.loadoutCardIds);
   });
 });

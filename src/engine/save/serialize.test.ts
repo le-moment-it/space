@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { loadSave, persistSave } from './serialize';
 import { createEmptySave } from './schema';
 
-const defaults = { unlockedCardIds: ['a'], unlockedShipSystemIds: ['x'] };
+const defaults = {
+  unlockedCardIds: ['a'],
+  unlockedShipSystemIds: ['x'],
+  loadoutCardIds: ['a'],
+};
 
 describe('loadSave / persistSave', () => {
   beforeEach(() => {
@@ -43,9 +47,10 @@ describe('loadSave / persistSave', () => {
 
     const loaded = loadSave(defaults);
 
-    expect(loaded.version).toBe(4);
+    expect(loaded.version).toBe(5);
     expect(loaded.meta.crew).toEqual({});
     expect(loaded.meta.endingsUnlocked).toEqual([]);
+    expect(loaded.meta.loadoutCardIds).toEqual(defaults.loadoutCardIds);
     expect(loaded.meta.stats).toEqual({
       runsStarted: 2,
       runsWon: 0,

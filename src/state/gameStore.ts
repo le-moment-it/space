@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import {
   cardDefinitions,
+  defaultLoadoutCardIds,
   defaultUnlockedCardIds,
   eliteRewardCardIds,
   runCardPool,
-  startingDeckCardIds,
 } from '../data/cards';
 import { CREW_OFFER_CHANCE, crewDefinitions, recruitableCrewIds } from '../data/crew';
 import { endingDefinitions } from '../data/endings';
@@ -33,14 +33,26 @@ import {
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
 import { createRng, type Rng } from '../engine/rng';
 import { loadSave, persistSave } from '../engine/save/serialize';
-import type { SaveDataV4, SaveMetaV4 } from '../engine/save/types';
+import { LOADOUT_SIZE, type SaveDataV5, type SaveMetaV5 } from '../engine/save/types';
 
 const SAVE_DEFAULTS = {
   unlockedCardIds: defaultUnlockedCardIds,
   unlockedShipSystemIds: defaultUnlockedShipSystemIds,
+  loadoutCardIds: defaultLoadoutCardIds,
 };
 
-function buildRunContent(meta: SaveMetaV4): RunContent {
+/**
+ * The deck a run actually starts with: the player's saved loadout if it's a valid
+ * full deck of unlocked cards, otherwise the default (guards against a loadout left
+ * incomplete, or referencing a card that no longer exists / isn't unlocked).
+ */
+function resolveLoadout(meta: SaveMetaV5): string[] {
+  const unlocked = new Set(meta.unlockedCardIds);
+  const valid = meta.loadoutCardIds.filter((id) => cardDefinitions[id] && unlocked.has(id));
+  return valid.length === LOADOUT_SIZE ? valid : [...defaultLoadoutCardIds];
+}
+
+function buildRunContent(meta: SaveMetaV5): RunContent {
   const unlockedCards = new Set(meta.unlockedCardIds);
   const unlockedShopPool = runCardPool.filter((id) => unlockedCards.has(id));
   const unlockedEliteRewards = eliteRewardCardIds.filter((id) => unlockedCards.has(id));
@@ -68,7 +80,7 @@ function buildRunContent(meta: SaveMetaV4): RunContent {
  * and updates lifetime stats + re-evaluates milestones accordingly. Works regardless
  * of which action caused the transition (combat, an event's hull effect, etc.).
  */
-function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV4): SaveMetaV4 {
+function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV5): SaveMetaV5 {
   let stats = meta.stats;
   let crew = meta.crew;
   let changed = false;
@@ -113,7 +125,7 @@ function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV4
 }
 
 interface GameStore {
-  meta: SaveMetaV4;
+  meta: SaveMetaV5;
   run: RunState | null;
   appPhase: 'hub' | 'run';
   /** Endings unlocked this session but not yet shown — queues the ending scene(s). */
@@ -132,15 +144,21 @@ interface GameStore {
   returnToHub: () => void;
   dismissEnding: () => void;
   viewEnding: (endingId: string) => void;
+  /** Add one copy of an unlocked card to the loadout, if there's room. */
+  addLoadoutCard: (cardId: string) => void;
+  /** Remove the loadout card at the given index. */
+  removeLoadoutCard: (index: number) => void;
+  /** Reset the loadout to the default starting deck. */
+  resetLoadout: () => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
-  const initialSave: SaveDataV4 = loadSave(SAVE_DEFAULTS);
+  const initialSave: SaveDataV5 = loadSave(SAVE_DEFAULTS);
 
-  function persist(meta: SaveMetaV4, run: RunState | null): void {
-    persistSave({ version: 4, meta, currentRun: run });
+  function persist(meta: SaveMetaV5, run: RunState | null): void {
+    persistSave({ version: 5, meta, currentRun: run });
   }
 
   // Commit any migration immediately, so a session that never mutates state (loads
@@ -171,8 +189,8 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     startNewRun: () => {
       const map = generateMap(rng, DEFAULT_MAP_CONFIG);
-      const newRun = initRun(map, startingDeckCardIds, DEFAULT_RUN_CONFIG);
-      const meta: SaveMetaV4 = {
+      const newRun = initRun(map, resolveLoadout(get().meta), DEFAULT_RUN_CONFIG);
+      const meta: SaveMetaV5 = {
         ...get().meta,
         stats: { ...get().meta.stats, runsStarted: get().meta.stats.runsStarted + 1 },
       };
@@ -202,6 +220,32 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     dismissEnding: () => set((s) => ({ pendingEndingIds: s.pendingEndingIds.slice(1) })),
     viewEnding: (endingId) => set((s) => ({ pendingEndingIds: [...s.pendingEndingIds, endingId] })),
+
+    addLoadoutCard: (cardId) => {
+      const { meta, run } = get();
+      if (meta.loadoutCardIds.length >= LOADOUT_SIZE) return;
+      if (!cardDefinitions[cardId] || !meta.unlockedCardIds.includes(cardId)) return;
+      const nextMeta = { ...meta, loadoutCardIds: [...meta.loadoutCardIds, cardId] };
+      persist(nextMeta, run);
+      set({ meta: nextMeta });
+    },
+
+    removeLoadoutCard: (index) => {
+      const { meta, run } = get();
+      const nextMeta = {
+        ...meta,
+        loadoutCardIds: meta.loadoutCardIds.filter((_, i) => i !== index),
+      };
+      persist(nextMeta, run);
+      set({ meta: nextMeta });
+    },
+
+    resetLoadout: () => {
+      const { meta, run } = get();
+      const nextMeta = { ...meta, loadoutCardIds: [...defaultLoadoutCardIds] };
+      persist(nextMeta, run);
+      set({ meta: nextMeta });
+    },
   };
 });
 

@@ -1,13 +1,14 @@
-import { EMPTY_STATS, type SaveDataV4 } from './types';
+import { EMPTY_STATS, type SaveDataV5 } from './types';
 
 export interface SaveDefaults {
   unlockedCardIds: string[];
   unlockedShipSystemIds: string[];
+  loadoutCardIds: string[];
 }
 
-export function createEmptySave(defaults: SaveDefaults): SaveDataV4 {
+export function createEmptySave(defaults: SaveDefaults): SaveDataV5 {
   return {
-    version: 4,
+    version: 5,
     meta: {
       unlockedCardIds: [...defaults.unlockedCardIds],
       unlockedShipSystemIds: [...defaults.unlockedShipSystemIds],
@@ -15,6 +16,7 @@ export function createEmptySave(defaults: SaveDefaults): SaveDataV4 {
       stats: { ...EMPTY_STATS },
       crew: {},
       endingsUnlocked: [],
+      loadoutCardIds: [...defaults.loadoutCardIds],
     },
     currentRun: null,
   };

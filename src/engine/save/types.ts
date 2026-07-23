@@ -56,7 +56,7 @@ export interface SaveDataV3 {
   currentRun: RunState | null;
 }
 
-// --- v4 (current) ---
+// --- v4 (historical — frozen shape, used only as the v4->v5 migration input) ---
 
 export interface SaveMetaV4 extends SaveMetaV3 {
   /** Ids of narrative endings the player has unlocked (see engine/progression/endings). */
@@ -69,7 +69,23 @@ export interface SaveDataV4 {
   currentRun: RunState | null;
 }
 
-export const CURRENT_SAVE_VERSION = 4;
+// --- v5 (current) ---
+
+export interface SaveMetaV5 extends SaveMetaV4 {
+  /** The player's chosen starting deck for the next run (exactly LOADOUT_SIZE card ids). */
+  loadoutCardIds: string[];
+}
+
+export interface SaveDataV5 {
+  version: 5;
+  meta: SaveMetaV5;
+  currentRun: RunState | null;
+}
+
+export const CURRENT_SAVE_VERSION = 5;
+
+/** Number of cards in a starting loadout. */
+export const LOADOUT_SIZE = 10;
 
 export const EMPTY_STATS: RunStats = {
   runsStarted: 0,

@@ -471,8 +471,12 @@ export const cardDefinitions: Record<string, CardDefinition> = Object.fromEntrie
   cardList.map((card) => [card.id, card]),
 );
 
-/** The fixed v1.0 starting deck — basic and weak on purpose (see docs/GAME_DESIGN.md §4). */
-export const startingDeckCardIds: string[] = [
+/**
+ * The default 10-card starting loadout — basic and weak on purpose
+ * (docs/GAME_DESIGN.md §4). Players can customise this in the Deck screen;
+ * every card here is in the default-unlocked set so a fresh save is valid.
+ */
+export const defaultLoadoutCardIds: string[] = [
   'kinetic-cannon',
   'kinetic-cannon',
   'flak-burst',
@@ -483,7 +487,6 @@ export const startingDeckCardIds: string[] = [
   'target-scanners',
   'overcharge-reactor',
   'heavy-railgun',
-  'plasma-lance',
 ];
 
 /** Card ids purchasable at Salvage Trader nodes / offerable at Derelict Cache nodes. */

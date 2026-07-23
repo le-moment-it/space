@@ -1,18 +1,11 @@
-import { runCardPool } from '../../data/cards';
 import { crewDefinitions } from '../../data/crew';
 import { endingDefinitions } from '../../data/endings';
 import { milestoneDefinitions } from '../../data/milestones';
-import { shipSystemDefinitions } from '../../data/shipSystems';
 import { useGameStore } from '../../state/gameStore';
-import './HubScreen.css';
+import './AchievementsScreen.css';
 
-// Crew cards are excluded: they join via recruitment, not the unlock pool.
-const TOTAL_UNLOCKABLE_CARDS = runCardPool.length;
-const TOTAL_SHIP_SYSTEMS = Object.keys(shipSystemDefinitions).length;
-
-export function HubScreen() {
+export function AchievementsScreen() {
   const meta = useGameStore((s) => s.meta);
-  const startNewRun = useGameStore((s) => s.startNewRun);
   const viewEnding = useGameStore((s) => s.viewEnding);
 
   const completedMilestones = milestoneDefinitions.filter((m) => meta.milestones[m.id]).length;
@@ -21,16 +14,14 @@ export function HubScreen() {
   ).length;
 
   return (
-    <section className="screen hub">
-      <header className="hub__head">
-        <div>
-          <p className="eyebrow">Command bridge</p>
-          <h2>Hub</h2>
-          <p className="screen__sub">Between runs. The pool grows; the Reach waits.</p>
-        </div>
-        <button className="btn-primary" onClick={startNewRun}>
-          Launch new run
-        </button>
+    <section className="screen">
+      <header className="screen__head">
+        <p className="eyebrow">Log</p>
+        <h2>Achievements</h2>
+        <p className="screen__sub">
+          The crew you&rsquo;ve met, the milestones you&rsquo;ve hit, the endings you&rsquo;ve
+          reached.
+        </p>
       </header>
 
       <div className="statgrid">
@@ -39,21 +30,13 @@ export function HubScreen() {
         <Stat label="Runs lost" value={meta.stats.runsLost} />
         <Stat label="Elites downed" value={meta.stats.elitesDefeated} />
         <Stat label="Bosses downed" value={meta.stats.bossesDefeated} />
-        <Stat
-          label="Cards unlocked"
-          value={`${meta.unlockedCardIds.length}/${TOTAL_UNLOCKABLE_CARDS}`}
-        />
-        <Stat
-          label="Systems unlocked"
-          value={`${meta.unlockedShipSystemIds.length}/${TOTAL_SHIP_SYSTEMS}`}
-        />
       </div>
 
-      <div className="hub__cols">
-        <div className="panel hub__milestones">
-          <div className="hub__section-head">
+      <div className="ach__cols">
+        <div className="panel">
+          <div className="ach__section-head">
             <p className="eyebrow">Milestones</p>
-            <span className="mono hub__count">
+            <span className="mono ach__count">
               {completedMilestones}/{milestoneDefinitions.length}
             </span>
           </div>
@@ -70,7 +53,7 @@ export function HubScreen() {
           </ul>
         </div>
 
-        <div className="panel hub__codex">
+        <div className="panel">
           <p className="eyebrow">Crew codex</p>
           <div className="codex-grid">
             {Object.values(crewDefinitions).map((crew) => {
@@ -116,10 +99,10 @@ export function HubScreen() {
         </div>
       </div>
 
-      <div className="panel hub__endings">
-        <div className="hub__section-head">
+      <div className="panel">
+        <div className="ach__section-head">
           <p className="eyebrow">Endings</p>
-          <span className="mono hub__count">
+          <span className="mono ach__count">
             {unlockedEndings}/{endingDefinitions.length}
           </span>
         </div>

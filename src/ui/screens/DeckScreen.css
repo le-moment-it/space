@@ -1,0 +1,43 @@
+.deck {
+  gap: 1.5rem;
+}
+.deck__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.deck__ship {
+  width: min(260px, 40vw);
+  flex: 0 0 auto;
+}
+
+.deck__section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.deck__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.deck__meter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.deck__count {
+  font-size: 1rem;
+  color: var(--ink-dim);
+}
+.deck__count--full {
+  color: var(--signal);
+}
+
+.deck__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}

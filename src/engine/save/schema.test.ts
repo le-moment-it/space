@@ -3,10 +3,15 @@ import { createEmptySave } from './schema';
 
 describe('createEmptySave', () => {
   it('seeds meta with the given defaults and zeroed stats', () => {
-    const save = createEmptySave({ unlockedCardIds: ['a', 'b'], unlockedShipSystemIds: ['x'] });
-    expect(save.version).toBe(4);
+    const save = createEmptySave({
+      unlockedCardIds: ['a', 'b'],
+      unlockedShipSystemIds: ['x'],
+      loadoutCardIds: ['a', 'b'],
+    });
+    expect(save.version).toBe(5);
     expect(save.meta.unlockedCardIds).toEqual(['a', 'b']);
     expect(save.meta.unlockedShipSystemIds).toEqual(['x']);
+    expect(save.meta.loadoutCardIds).toEqual(['a', 'b']);
     expect(save.meta.milestones).toEqual({});
     expect(save.meta.crew).toEqual({});
     expect(save.meta.endingsUnlocked).toEqual([]);
@@ -22,7 +27,7 @@ describe('createEmptySave', () => {
   });
 
   it('does not share array references with the defaults passed in', () => {
-    const defaults = { unlockedCardIds: ['a'], unlockedShipSystemIds: [] };
+    const defaults = { unlockedCardIds: ['a'], unlockedShipSystemIds: [], loadoutCardIds: ['a'] };
     const save = createEmptySave(defaults);
     save.meta.unlockedCardIds.push('b');
     expect(defaults.unlockedCardIds).toEqual(['a']);

@@ -1,0 +1,36 @@
+.heroship {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.heroship__body {
+  transform-origin: center;
+}
+.heroship--animated .heroship__body {
+  animation: heroship-drift 7s ease-in-out infinite;
+}
+.heroship--animated .heroship__thrust {
+  animation: heroship-thrust 2.4s ease-in-out infinite;
+}
+
+@keyframes heroship-drift {
+  0%,
+  100% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+@keyframes heroship-thrust {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  40% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 1;
+  }
+}

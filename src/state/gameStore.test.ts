@@ -3,7 +3,8 @@ import { createEmptySave } from '../engine/save/schema';
 import { TOTAL_ACTS } from '../engine/run/types';
 import { useGameStore } from './gameStore';
 
-const emptyMeta = () => createEmptySave({ unlockedCardIds: [], unlockedShipSystemIds: [] }).meta;
+const emptyMeta = () =>
+  createEmptySave({ unlockedCardIds: [], unlockedShipSystemIds: [], loadoutCardIds: [] }).meta;
 
 describe('gameStore — endings', () => {
   beforeEach(() => {
@@ -69,5 +70,52 @@ describe('gameStore — endings', () => {
 
     useGameStore.getState().viewEnding('first-contact');
     expect(useGameStore.getState().pendingEndingIds).toEqual(['into-the-silence', 'first-contact']);
+  });
+});
+
+describe('gameStore — loadout', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({
+      meta: {
+        ...emptyMeta(),
+        unlockedCardIds: ['kinetic-cannon', 'flak-burst'],
+        loadoutCardIds: [],
+      },
+      run: null,
+      appPhase: 'hub',
+    });
+  });
+
+  it('adds an unlocked card and refuses an unlocked-but-unknown or locked one', () => {
+    const store = () => useGameStore.getState();
+    store().addLoadoutCard('kinetic-cannon');
+    expect(store().meta.loadoutCardIds).toEqual(['kinetic-cannon']);
+
+    store().addLoadoutCard('does-not-exist');
+    store().addLoadoutCard('plasma-lance'); // real card, but not unlocked here
+    expect(store().meta.loadoutCardIds).toEqual(['kinetic-cannon']);
+  });
+
+  it('does not add past the loadout size cap', () => {
+    useGameStore.setState((s) => ({
+      meta: { ...s.meta, loadoutCardIds: Array(10).fill('kinetic-cannon') },
+    }));
+    useGameStore.getState().addLoadoutCard('flak-burst');
+    expect(useGameStore.getState().meta.loadoutCardIds).toHaveLength(10);
+  });
+
+  it('removes a card by index and can reset to the default loadout', () => {
+    useGameStore.setState((s) => ({
+      meta: { ...s.meta, loadoutCardIds: ['kinetic-cannon', 'flak-burst', 'kinetic-cannon'] },
+    }));
+    useGameStore.getState().removeLoadoutCard(1);
+    expect(useGameStore.getState().meta.loadoutCardIds).toEqual([
+      'kinetic-cannon',
+      'kinetic-cannon',
+    ]);
+
+    useGameStore.getState().resetLoadout();
+    expect(useGameStore.getState().meta.loadoutCardIds).toHaveLength(10);
   });
 });

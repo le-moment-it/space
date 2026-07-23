@@ -1,0 +1,55 @@
+.start {
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  max-width: 720px;
+  margin: 1rem auto;
+}
+.start__hero {
+  width: min(420px, 80vw);
+  margin-bottom: 0.5rem;
+}
+
+.start__manifest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+.manifest-chip {
+  --accent: var(--signal);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.82rem;
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--hull-2);
+}
+.manifest-chip[data-type='weapon'] {
+  --accent: var(--card-weapon);
+}
+.manifest-chip[data-type='maneuver'] {
+  --accent: var(--card-maneuver);
+}
+.manifest-chip[data-type='shipSystem'] {
+  --accent: var(--card-shipsystem);
+}
+.manifest-chip__n {
+  color: var(--ink-dim);
+  font-size: 0.75rem;
+}
+
+.start__actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+}
+.start__warn {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--threat);
+}

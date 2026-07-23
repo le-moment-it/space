@@ -16,6 +16,12 @@
   top: 0;
   z-index: 10;
 }
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
 .topbar__brand {
   font-family: var(--mono);
   font-size: 0.8rem;
@@ -24,12 +30,47 @@
   text-transform: uppercase;
   color: var(--ink);
 }
-.topbar__loc {
+
+.topnav {
+  display: flex;
+  gap: 0.25rem;
+}
+.topnav__tab {
+  position: relative;
   font-family: var(--mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  padding: 0.35rem 0.8rem;
+  color: var(--ink-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+}
+.topnav__tab:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--hull-2);
+  border-color: transparent;
+  box-shadow: none;
+}
+.topnav__tab--active {
   color: var(--signal);
+  background: var(--signal-soft);
+  border-color: color-mix(in srgb, var(--signal) 35%, transparent);
+}
+.topnav__tab--active:hover:not(:disabled) {
+  color: var(--signal);
+  background: var(--signal-soft);
+}
+.topnav__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 0.4rem;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 6px var(--signal-glow);
+  vertical-align: middle;
 }
 .topbar__right {
   display: flex;

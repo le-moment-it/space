@@ -13,18 +13,6 @@
   width: min(460px, 82vw);
   margin-bottom: 0.5rem;
 }
-.title__ship {
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-.title__ship-body {
-  animation: ship-drift 7s ease-in-out infinite;
-  transform-origin: center;
-}
-.title__thrust {
-  animation: thrust-flicker 2.4s ease-in-out infinite;
-}
 
 .title__eyebrow {
   font-family: var(--mono);
@@ -67,26 +55,4 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-faint);
-}
-
-@keyframes ship-drift {
-  0%,
-  100% {
-    transform: translateY(-4px);
-  }
-  50% {
-    transform: translateY(4px);
-  }
-}
-@keyframes thrust-flicker {
-  0%,
-  100% {
-    opacity: 0.85;
-  }
-  40% {
-    opacity: 0.55;
-  }
-  70% {
-    opacity: 1;
-  }
 }

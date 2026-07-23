@@ -1,7 +1,7 @@
 import { createEmptySave, type SaveDefaults } from './schema';
-import { CURRENT_SAVE_VERSION, type SaveDataV4 } from './types';
+import { CURRENT_SAVE_VERSION, type SaveDataV5 } from './types';
 
-type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
+type Migration = (data: Record<string, unknown>, defaults: SaveDefaults) => Record<string, unknown>;
 type Validator = (data: Record<string, unknown>) => boolean;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -43,11 +43,22 @@ function isValidSaveDataV3(data: Record<string, unknown>): boolean {
   return isPlainObject(meta.crew);
 }
 
-function isValidSaveDataV4(data: unknown): data is SaveDataV4 {
-  if (!isPlainObject(data) || data.version !== 4) return false;
+function isValidSaveDataV4(data: Record<string, unknown>): boolean {
+  if (data.version !== 4) return false;
   if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
   const meta = data.meta as Record<string, unknown>;
   return isPlainObject(meta.crew) && Array.isArray(meta.endingsUnlocked);
+}
+
+function isValidSaveDataV5(data: unknown): data is SaveDataV5 {
+  if (!isPlainObject(data) || data.version !== 5) return false;
+  if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
+  const meta = data.meta as Record<string, unknown>;
+  return (
+    isPlainObject(meta.crew) &&
+    Array.isArray(meta.endingsUnlocked) &&
+    Array.isArray(meta.loadoutCardIds)
+  );
 }
 
 /**
@@ -103,16 +114,34 @@ function migrateV3ToV4(data: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+/**
+ * v5 adds a customizable starting loadout in meta. Existing saves adopt the
+ * default loadout (they were playing the fixed starting deck until now).
+ */
+function migrateV4ToV5(
+  data: Record<string, unknown>,
+  defaults: SaveDefaults,
+): Record<string, unknown> {
+  const meta = data.meta as Record<string, unknown>;
+  return {
+    version: 5,
+    meta: { ...meta, loadoutCardIds: [...defaults.loadoutCardIds] },
+    currentRun: data.currentRun ?? null,
+  };
+}
+
 // All keyed by the version being migrated FROM.
 const VALIDATORS: Record<number, Validator> = {
   1: isValidSaveDataV1,
   2: isValidSaveDataV2,
   3: isValidSaveDataV3,
+  4: isValidSaveDataV4,
 };
 const MIGRATIONS: Record<number, Migration> = {
   1: migrateV1ToV2,
   2: migrateV2ToV3,
   3: migrateV3ToV4,
+  4: migrateV4ToV5,
 };
 
 /**
@@ -122,7 +151,7 @@ const MIGRATIONS: Record<number, Migration> = {
  * or an old version with no migration path — rather than crashing the app. Losing
  * progress is far better than a broken game.
  */
-export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV4 {
+export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV5 {
   if (!isPlainObject(raw) || typeof raw.version !== 'number') {
     return createEmptySave(defaults);
   }
@@ -133,11 +162,11 @@ export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV4 {
     const validate = VALIDATORS[version];
     const migrate = MIGRATIONS[version];
     if (!validate || !migrate || !validate(data)) return createEmptySave(defaults);
-    data = migrate(data);
+    data = migrate(data, defaults);
     version = (data.version as number | undefined) ?? version + 1;
   }
 
-  if (!isValidSaveDataV4(data)) {
+  if (!isValidSaveDataV5(data)) {
     return createEmptySave(defaults);
   }
   return data;
