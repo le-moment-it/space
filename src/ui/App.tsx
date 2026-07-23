@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import './ui.css';
+import { endingDefinitions } from '../data/endings';
 import { useGameStore } from '../state/gameStore';
+import { EndingScene } from './screens/EndingScene';
 import { HubScreen } from './screens/HubScreen';
 import { RunScreen } from './screens/RunScreen';
 import { TitleScreen } from './screens/TitleScreen';
@@ -12,6 +14,11 @@ export function App() {
   const appPhase = useGameStore((s) => s.appPhase);
   const runPhase = useGameStore((s) => s.run?.phase);
   const returnToHub = useGameStore((s) => s.returnToHub);
+  const pendingEndingId = useGameStore((s) => s.pendingEndingIds[0]);
+  const dismissEnding = useGameStore((s) => s.dismissEnding);
+  const pendingEnding = pendingEndingId
+    ? endingDefinitions.find((e) => e.id === pendingEndingId)
+    : undefined;
 
   // Only offer "abandon" during active play, not on the win/loss end screens.
   const inActiveRun = appPhase === 'run' && runPhase !== 'runWon' && runPhase !== 'runLost';
@@ -55,6 +62,9 @@ export function App() {
         </div>
       </header>
       <main className="app-main">{appPhase === 'hub' ? <HubScreen /> : <RunScreen />}</main>
+      {pendingEnding && (
+        <EndingScene key={pendingEnding.id} ending={pendingEnding} onDismiss={dismissEnding} />
+      )}
     </div>
   );
 }

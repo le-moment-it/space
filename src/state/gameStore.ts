@@ -7,12 +7,14 @@ import {
   startingDeckCardIds,
 } from '../data/cards';
 import { CREW_OFFER_CHANCE, crewDefinitions, recruitableCrewIds } from '../data/crew';
+import { endingDefinitions } from '../data/endings';
 import { bossEnemyByAct, combatEnemiesByAct, eliteEnemiesByAct } from '../data/enemies';
 import { eventDefinitions } from '../data/events';
 import { milestoneDefinitions } from '../data/milestones';
 import { defaultUnlockedShipSystemIds, shipSystemDefinitions } from '../data/shipSystems';
 import { generateMap } from '../engine/map/generate';
 import { DEFAULT_MAP_CONFIG } from '../engine/map/types';
+import { evaluateEndings } from '../engine/progression/endings';
 import { evaluateMilestones } from '../engine/progression/unlocks';
 import {
   acknowledgeCombat,
@@ -31,14 +33,14 @@ import {
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
 import { createRng, type Rng } from '../engine/rng';
 import { loadSave, persistSave } from '../engine/save/serialize';
-import type { SaveDataV3, SaveMetaV3 } from '../engine/save/types';
+import type { SaveDataV4, SaveMetaV4 } from '../engine/save/types';
 
 const SAVE_DEFAULTS = {
   unlockedCardIds: defaultUnlockedCardIds,
   unlockedShipSystemIds: defaultUnlockedShipSystemIds,
 };
 
-function buildRunContent(meta: SaveMetaV3): RunContent {
+function buildRunContent(meta: SaveMetaV4): RunContent {
   const unlockedCards = new Set(meta.unlockedCardIds);
   const unlockedShopPool = runCardPool.filter((id) => unlockedCards.has(id));
   const unlockedEliteRewards = eliteRewardCardIds.filter((id) => unlockedCards.has(id));
@@ -66,7 +68,7 @@ function buildRunContent(meta: SaveMetaV3): RunContent {
  * and updates lifetime stats + re-evaluates milestones accordingly. Works regardless
  * of which action caused the transition (combat, an event's hull effect, etc.).
  */
-function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV3): SaveMetaV3 {
+function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV4): SaveMetaV4 {
   let stats = meta.stats;
   let crew = meta.crew;
   let changed = false;
@@ -106,13 +108,16 @@ function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV3
   }
 
   if (!changed) return meta;
-  return evaluateMilestones({ ...meta, stats, crew }, milestoneDefinitions);
+  const withMilestones = evaluateMilestones({ ...meta, stats, crew }, milestoneDefinitions);
+  return evaluateEndings(withMilestones, endingDefinitions);
 }
 
 interface GameStore {
-  meta: SaveMetaV3;
+  meta: SaveMetaV4;
   run: RunState | null;
   appPhase: 'hub' | 'run';
+  /** Endings unlocked this session but not yet shown — queues the ending scene(s). */
+  pendingEndingIds: string[];
   startNewRun: () => void;
   enterNode: (nodeId: string) => void;
   playCard: (instanceId: string) => void;
@@ -125,15 +130,17 @@ interface GameStore {
   buyItem: (index: number) => void;
   leaveNode: () => void;
   returnToHub: () => void;
+  dismissEnding: () => void;
+  viewEnding: (endingId: string) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
-  const initialSave: SaveDataV3 = loadSave(SAVE_DEFAULTS);
+  const initialSave: SaveDataV4 = loadSave(SAVE_DEFAULTS);
 
-  function persist(meta: SaveMetaV3, run: RunState | null): void {
-    persistSave({ version: 3, meta, currentRun: run });
+  function persist(meta: SaveMetaV4, run: RunState | null): void {
+    persistSave({ version: 4, meta, currentRun: run });
   }
 
   // Commit any migration immediately, so a session that never mutates state (loads
@@ -146,19 +153,26 @@ export const useGameStore = create<GameStore>((set, get) => {
     const content = buildRunContent(meta);
     const nextRun = mutate(run, content);
     const nextMeta = applyBookkeeping(run, nextRun, meta);
+    const newEndings = nextMeta.endingsUnlocked.filter((id) => !meta.endingsUnlocked.includes(id));
     persist(nextMeta, nextRun);
-    set({ run: nextRun, meta: nextMeta });
+    set((s) => ({
+      run: nextRun,
+      meta: nextMeta,
+      pendingEndingIds:
+        newEndings.length > 0 ? [...s.pendingEndingIds, ...newEndings] : s.pendingEndingIds,
+    }));
   }
 
   return {
     meta: initialSave.meta,
     run: initialSave.currentRun,
     appPhase: initialSave.currentRun ? 'run' : 'hub',
+    pendingEndingIds: [],
 
     startNewRun: () => {
       const map = generateMap(rng, DEFAULT_MAP_CONFIG);
       const newRun = initRun(map, startingDeckCardIds, DEFAULT_RUN_CONFIG);
-      const meta: SaveMetaV3 = {
+      const meta: SaveMetaV4 = {
         ...get().meta,
         stats: { ...get().meta.stats, runsStarted: get().meta.stats.runsStarted + 1 },
       };
@@ -185,6 +199,9 @@ export const useGameStore = create<GameStore>((set, get) => {
       persist(meta, null);
       set({ run: null, appPhase: 'hub' });
     },
+
+    dismissEnding: () => set((s) => ({ pendingEndingIds: s.pendingEndingIds.slice(1) })),
+    viewEnding: (endingId) => set((s) => ({ pendingEndingIds: [...s.pendingEndingIds, endingId] })),
   };
 });
 

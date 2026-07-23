@@ -1,5 +1,5 @@
 import { createEmptySave, type SaveDefaults } from './schema';
-import { CURRENT_SAVE_VERSION, type SaveDataV3 } from './types';
+import { CURRENT_SAVE_VERSION, type SaveDataV4 } from './types';
 
 type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 type Validator = (data: Record<string, unknown>) => boolean;
@@ -36,11 +36,18 @@ function isValidSaveDataV2(data: Record<string, unknown>): boolean {
   return data.version === 2 && hasBaseMetaShape(data) && statsHave(data, V2_STAT_FIELDS);
 }
 
-function isValidSaveDataV3(data: unknown): data is SaveDataV3 {
-  if (!isPlainObject(data) || data.version !== 3) return false;
+function isValidSaveDataV3(data: Record<string, unknown>): boolean {
+  if (data.version !== 3) return false;
   if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
   const meta = data.meta as Record<string, unknown>;
   return isPlainObject(meta.crew);
+}
+
+function isValidSaveDataV4(data: unknown): data is SaveDataV4 {
+  if (!isPlainObject(data) || data.version !== 4) return false;
+  if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
+  const meta = data.meta as Record<string, unknown>;
+  return isPlainObject(meta.crew) && Array.isArray(meta.endingsUnlocked);
 }
 
 /**
@@ -83,9 +90,30 @@ function migrateV2ToV3(data: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-// Both keyed by the version being migrated FROM.
-const VALIDATORS: Record<number, Validator> = { 1: isValidSaveDataV1, 2: isValidSaveDataV2 };
-const MIGRATIONS: Record<number, Migration> = { 1: migrateV1ToV2, 2: migrateV2ToV3 };
+/**
+ * v4 adds narrative endings: a list of unlocked ending ids in meta. Nothing on
+ * RunState changes, so an in-progress run carries over untouched.
+ */
+function migrateV3ToV4(data: Record<string, unknown>): Record<string, unknown> {
+  const meta = data.meta as Record<string, unknown>;
+  return {
+    version: 4,
+    meta: { ...meta, endingsUnlocked: [] },
+    currentRun: data.currentRun ?? null,
+  };
+}
+
+// All keyed by the version being migrated FROM.
+const VALIDATORS: Record<number, Validator> = {
+  1: isValidSaveDataV1,
+  2: isValidSaveDataV2,
+  3: isValidSaveDataV3,
+};
+const MIGRATIONS: Record<number, Migration> = {
+  1: migrateV1ToV2,
+  2: migrateV2ToV3,
+  3: migrateV3ToV4,
+};
 
 /**
  * Validates and migrates arbitrary persisted JSON into the current SaveData shape.
@@ -94,7 +122,7 @@ const MIGRATIONS: Record<number, Migration> = { 1: migrateV1ToV2, 2: migrateV2To
  * or an old version with no migration path — rather than crashing the app. Losing
  * progress is far better than a broken game.
  */
-export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV3 {
+export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV4 {
   if (!isPlainObject(raw) || typeof raw.version !== 'number') {
     return createEmptySave(defaults);
   }
@@ -109,7 +137,7 @@ export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV3 {
     version = (data.version as number | undefined) ?? version + 1;
   }
 
-  if (!isValidSaveDataV3(data)) {
+  if (!isValidSaveDataV4(data)) {
     return createEmptySave(defaults);
   }
   return data;

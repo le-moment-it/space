@@ -43,7 +43,7 @@ export interface SaveDataV2 {
   currentRun: RunState | null;
 }
 
-// --- v3 (current) ---
+// --- v3 (historical — frozen shape, used only as the v3->v4 migration input) ---
 
 export interface SaveMetaV3 extends SaveMetaV2 {
   /** Lifetime per-crew progress (recruit counts drive dialogue/codex progression). */
@@ -56,7 +56,20 @@ export interface SaveDataV3 {
   currentRun: RunState | null;
 }
 
-export const CURRENT_SAVE_VERSION = 3;
+// --- v4 (current) ---
+
+export interface SaveMetaV4 extends SaveMetaV3 {
+  /** Ids of narrative endings the player has unlocked (see engine/progression/endings). */
+  endingsUnlocked: string[];
+}
+
+export interface SaveDataV4 {
+  version: 4;
+  meta: SaveMetaV4;
+  currentRun: RunState | null;
+}
+
+export const CURRENT_SAVE_VERSION = 4;
 
 export const EMPTY_STATS: RunStats = {
   runsStarted: 0,

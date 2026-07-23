@@ -136,3 +136,50 @@
   text-transform: uppercase;
   color: var(--ink-faint);
 }
+
+/* Endings */
+.endings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.ending-entry {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+  text-align: left;
+  padding: 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--hull-2);
+}
+.ending-entry__mark {
+  font-size: 1rem;
+  line-height: 1.4;
+}
+.ending-entry__title {
+  font-size: 0.95rem;
+}
+.ending-entry__hint {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+.ending-entry--locked {
+  opacity: 0.6;
+  border-style: dashed;
+}
+.ending-entry--locked .ending-entry__mark {
+  color: var(--ink-faint);
+}
+.ending-entry--unlocked {
+  cursor: pointer;
+}
+.ending-entry--unlocked .ending-entry__mark {
+  color: var(--signal);
+  text-shadow: 0 0 8px var(--signal-glow);
+}
+.ending-entry--unlocked:hover {
+  border-color: var(--signal);
+  box-shadow: 0 0 0 1px var(--signal-soft);
+}

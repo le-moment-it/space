@@ -4,11 +4,12 @@ import { createEmptySave } from './schema';
 describe('createEmptySave', () => {
   it('seeds meta with the given defaults and zeroed stats', () => {
     const save = createEmptySave({ unlockedCardIds: ['a', 'b'], unlockedShipSystemIds: ['x'] });
-    expect(save.version).toBe(3);
+    expect(save.version).toBe(4);
     expect(save.meta.unlockedCardIds).toEqual(['a', 'b']);
     expect(save.meta.unlockedShipSystemIds).toEqual(['x']);
     expect(save.meta.milestones).toEqual({});
     expect(save.meta.crew).toEqual({});
+    expect(save.meta.endingsUnlocked).toEqual([]);
     expect(save.meta.stats).toEqual({
       runsStarted: 0,
       runsWon: 0,

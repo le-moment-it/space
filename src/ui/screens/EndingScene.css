@@ -1,0 +1,63 @@
+.ending-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1.5rem;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(53, 224, 214, 0.08), transparent 65%),
+    rgba(3, 5, 10, 0.94);
+  backdrop-filter: blur(8px);
+  animation: ending-fade 0.6s ease;
+}
+
+.ending {
+  max-width: 620px;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ending__eyebrow {
+  color: var(--signal);
+}
+.ending__title {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 0 26px var(--signal-glow);
+  margin-bottom: 1rem;
+}
+.ending__scene {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  min-height: 8rem;
+  justify-content: center;
+}
+.ending__para {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--ink);
+  animation: ending-line 0.7s ease;
+}
+.ending__advance {
+  min-width: 160px;
+}
+
+@keyframes ending-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ending-line {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

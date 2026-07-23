@@ -1,5 +1,6 @@
 import { runCardPool } from '../../data/cards';
 import { crewDefinitions } from '../../data/crew';
+import { endingDefinitions } from '../../data/endings';
 import { milestoneDefinitions } from '../../data/milestones';
 import { shipSystemDefinitions } from '../../data/shipSystems';
 import { useGameStore } from '../../state/gameStore';
@@ -12,8 +13,12 @@ const TOTAL_SHIP_SYSTEMS = Object.keys(shipSystemDefinitions).length;
 export function HubScreen() {
   const meta = useGameStore((s) => s.meta);
   const startNewRun = useGameStore((s) => s.startNewRun);
+  const viewEnding = useGameStore((s) => s.viewEnding);
 
   const completedMilestones = milestoneDefinitions.filter((m) => meta.milestones[m.id]).length;
+  const unlockedEndings = endingDefinitions.filter((e) =>
+    meta.endingsUnlocked.includes(e.id),
+  ).length;
 
   return (
     <section className="screen hub">
@@ -108,6 +113,44 @@ export function HubScreen() {
               );
             })}
           </div>
+        </div>
+      </div>
+
+      <div className="panel hub__endings">
+        <div className="hub__section-head">
+          <p className="eyebrow">Endings</p>
+          <span className="mono hub__count">
+            {unlockedEndings}/{endingDefinitions.length}
+          </span>
+        </div>
+        <div className="endings-grid">
+          {endingDefinitions.map((ending) => {
+            const unlocked = meta.endingsUnlocked.includes(ending.id);
+            if (!unlocked) {
+              return (
+                <div key={ending.id} className="ending-entry ending-entry--locked">
+                  <span className="ending-entry__mark">◇</span>
+                  <div>
+                    <h3 className="ending-entry__title">Locked ending</h3>
+                    <p className="ending-entry__hint">{ending.subtitle}</p>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <button
+                key={ending.id}
+                className="ending-entry ending-entry--unlocked"
+                onClick={() => viewEnding(ending.id)}
+              >
+                <span className="ending-entry__mark">◆</span>
+                <div>
+                  <h3 className="ending-entry__title">{ending.title}</h3>
+                  <p className="ending-entry__hint">{ending.subtitle} · replay</p>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
     </section>
