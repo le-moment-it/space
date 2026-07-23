@@ -43,7 +43,8 @@ describe('loadSave / persistSave', () => {
 
     const loaded = loadSave(defaults);
 
-    expect(loaded.version).toBe(2);
+    expect(loaded.version).toBe(3);
+    expect(loaded.meta.crew).toEqual({});
     expect(loaded.meta.stats).toEqual({
       runsStarted: 2,
       runsWon: 0,

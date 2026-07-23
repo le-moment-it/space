@@ -6,6 +6,7 @@ import {
   runCardPool,
   startingDeckCardIds,
 } from '../data/cards';
+import { CREW_OFFER_CHANCE, crewDefinitions, recruitableCrewIds } from '../data/crew';
 import { bossEnemyByAct, combatEnemiesByAct, eliteEnemiesByAct } from '../data/enemies';
 import { eventDefinitions } from '../data/events';
 import { milestoneDefinitions } from '../data/milestones';
@@ -17,25 +18,27 @@ import {
   acknowledgeCombat,
   buyShopItem,
   chooseShipSystemReward,
+  dismissDialogue,
   endRunCombatTurn,
   enterNode,
   getAvailableNodeIds,
   initRun,
   leaveNode,
   playRunCombatCard,
+  resolveCrewOffer,
   resolveEventChoice,
 } from '../engine/run/resolve';
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
 import { createRng, type Rng } from '../engine/rng';
 import { loadSave, persistSave } from '../engine/save/serialize';
-import type { SaveDataV2, SaveMetaV2 } from '../engine/save/types';
+import type { SaveDataV3, SaveMetaV3 } from '../engine/save/types';
 
 const SAVE_DEFAULTS = {
   unlockedCardIds: defaultUnlockedCardIds,
   unlockedShipSystemIds: defaultUnlockedShipSystemIds,
 };
 
-function buildRunContent(meta: SaveMetaV2): RunContent {
+function buildRunContent(meta: SaveMetaV3): RunContent {
   const unlockedCards = new Set(meta.unlockedCardIds);
   const unlockedShopPool = runCardPool.filter((id) => unlockedCards.has(id));
   const unlockedEliteRewards = eliteRewardCardIds.filter((id) => unlockedCards.has(id));
@@ -52,6 +55,9 @@ function buildRunContent(meta: SaveMetaV2): RunContent {
     treasureCardPool: unlockedShopPool,
     shipSystemDefinitions,
     availableShipSystemIds: meta.unlockedShipSystemIds,
+    crewDefinitions,
+    recruitableCrewIds,
+    crewOfferChance: CREW_OFFER_CHANCE,
   };
 }
 
@@ -60,8 +66,9 @@ function buildRunContent(meta: SaveMetaV2): RunContent {
  * and updates lifetime stats + re-evaluates milestones accordingly. Works regardless
  * of which action caused the transition (combat, an event's hull effect, etc.).
  */
-function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV2): SaveMetaV2 {
+function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV3): SaveMetaV3 {
   let stats = meta.stats;
+  let crew = meta.crew;
   let changed = false;
 
   const currentNode = prevRun.currentNodeId ? prevRun.map.nodes[prevRun.currentNodeId] : undefined;
@@ -80,6 +87,15 @@ function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV2
     changed = true;
   }
 
+  // Newly recruited crew: bump their lifetime meet counter (drives dialogue/codex).
+  for (const crewId of nextRun.crewIds) {
+    if (!prevRun.crewIds.includes(crewId)) {
+      const current = crew[crewId]?.timesRecruited ?? 0;
+      crew = { ...crew, [crewId]: { timesRecruited: current + 1 } };
+      changed = true;
+    }
+  }
+
   if (prevRun.phase !== 'runLost' && nextRun.phase === 'runLost') {
     stats = { ...stats, runsLost: stats.runsLost + 1 };
     changed = true;
@@ -90,11 +106,11 @@ function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV2
   }
 
   if (!changed) return meta;
-  return evaluateMilestones({ ...meta, stats }, milestoneDefinitions);
+  return evaluateMilestones({ ...meta, stats, crew }, milestoneDefinitions);
 }
 
 interface GameStore {
-  meta: SaveMetaV2;
+  meta: SaveMetaV3;
   run: RunState | null;
   appPhase: 'hub' | 'run';
   startNewRun: () => void;
@@ -104,6 +120,8 @@ interface GameStore {
   acknowledgeCombat: () => void;
   chooseShipSystem: (shipSystemId: string) => void;
   resolveEvent: (choiceIndex: number) => void;
+  resolveCrewOffer: (accept: boolean) => void;
+  dismissDialogue: () => void;
   buyItem: (index: number) => void;
   leaveNode: () => void;
   returnToHub: () => void;
@@ -112,10 +130,10 @@ interface GameStore {
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
-  const initialSave: SaveDataV2 = loadSave(SAVE_DEFAULTS);
+  const initialSave: SaveDataV3 = loadSave(SAVE_DEFAULTS);
 
-  function persist(meta: SaveMetaV2, run: RunState | null): void {
-    persistSave({ version: 2, meta, currentRun: run });
+  function persist(meta: SaveMetaV3, run: RunState | null): void {
+    persistSave({ version: 3, meta, currentRun: run });
   }
 
   // Commit any migration immediately, so a session that never mutates state (loads
@@ -140,7 +158,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     startNewRun: () => {
       const map = generateMap(rng, DEFAULT_MAP_CONFIG);
       const newRun = initRun(map, startingDeckCardIds, DEFAULT_RUN_CONFIG);
-      const meta: SaveMetaV2 = {
+      const meta: SaveMetaV3 = {
         ...get().meta,
         stats: { ...get().meta.stats, runsStarted: get().meta.stats.runsStarted + 1 },
       };
@@ -157,6 +175,8 @@ export const useGameStore = create<GameStore>((set, get) => {
       withRun((run, content) => chooseShipSystemReward(run, shipSystemId, content, rng)),
     resolveEvent: (choiceIndex) =>
       withRun((run, content) => resolveEventChoice(run, choiceIndex, content)),
+    resolveCrewOffer: (accept) => withRun((run, content) => resolveCrewOffer(run, accept, content)),
+    dismissDialogue: () => withRun((run) => dismissDialogue(run)),
     buyItem: (index) => withRun((run, content) => buyShopItem(run, index, content)),
     leaveNode: () => withRun((run) => leaveNode(run)),
 

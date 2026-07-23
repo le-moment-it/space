@@ -4,6 +4,7 @@ import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
 import { generateMap } from '../map/generate';
 import { DEFAULT_MAP_CONFIG } from '../map/types';
 import { applyShipSystems } from '../shipSystems/apply';
+import type { ShipSystemDefinition } from '../shipSystems/types';
 import { shuffle, type Rng } from '../rng';
 import type { MapGraph } from '../map/types';
 import type { RunConfig, RunContent, RunState, ShopOfferItem } from './types';
@@ -31,14 +32,35 @@ export function initRun(
     deckCardIds: [...startingDeckCardIds],
     salvage: config.startingSalvage,
     shipSystemIds: [],
+    crewIds: [],
     phase: 'map',
     activeCombat: null,
     activeEventId: null,
+    activeCrewId: null,
     shopOffer: null,
     pendingReward: null,
     rewardOptions: null,
     log: ['Departing on a new run. Act 1.'],
   };
+}
+
+/**
+ * Crew passives share the ship-system effect shape, so combats apply them through
+ * the same applyShipSystems pipeline by treating each crew member with a passive
+ * as a synthetic ship system.
+ */
+function crewPassiveDefinitions(
+  crewIds: readonly string[],
+  content: RunContent,
+): Record<string, ShipSystemDefinition> {
+  const definitions: Record<string, ShipSystemDefinition> = {};
+  for (const id of crewIds) {
+    const crew = content.crewDefinitions[id];
+    if (crew?.passive) {
+      definitions[id] = { id, name: crew.name, description: '', effect: crew.passive };
+    }
+  }
+  return definitions;
 }
 
 /** Node ids the player may currently pick on the star chart. */
@@ -90,8 +112,8 @@ export function enterNode(
       };
       const effectiveConfig = applyShipSystems(
         baseConfig,
-        runState.shipSystemIds,
-        content.shipSystemDefinitions,
+        [...runState.shipSystemIds, ...runState.crewIds],
+        { ...content.shipSystemDefinitions, ...crewPassiveDefinitions(runState.crewIds, content) },
       );
       const combat = initCombat({
         cardDefinitions: content.cardDefinitions,
@@ -109,6 +131,21 @@ export function enterNode(
       };
     }
     case 'event': {
+      // Event nodes are where crew are found: if any recruitable crew member isn't
+      // aboard yet, there's a chance this event is a recruitment offer instead.
+      const unrecruited = content.recruitableCrewIds.filter(
+        (id) => !runState.crewIds.includes(id) && content.crewDefinitions[id],
+      );
+      if (unrecruited.length > 0 && rng.next() < content.crewOfferChance) {
+        const crewId = rng.pick(unrecruited);
+        const crew = content.crewDefinitions[crewId];
+        return {
+          ...base,
+          phase: 'crewOffer',
+          activeCrewId: crewId,
+          log: [...base.log, `Encountered a drifting escape pod: ${crew.name}.`],
+        };
+      }
       const def = rng.pick(content.events);
       return {
         ...base,
@@ -365,4 +402,45 @@ export function leaveNode(runState: RunState): RunState {
   if (runState.phase !== 'shop' && runState.phase !== 'treasure' && runState.phase !== 'rest')
     return runState;
   return { ...runState, phase: 'map', shopOffer: null, pendingReward: null };
+}
+
+/**
+ * Accept or decline a crew recruitment offer. Accepting adds the crew member and
+ * their cards, then moves to the 'dialogue' phase (their lore line for this meeting —
+ * which line is the UI's concern, since lifetime meet counts live in the save, not here).
+ */
+export function resolveCrewOffer(
+  runState: RunState,
+  accept: boolean,
+  content: RunContent,
+): RunState {
+  if (runState.phase !== 'crewOffer' || !runState.activeCrewId) return runState;
+  const crew = content.crewDefinitions[runState.activeCrewId];
+  if (!crew) return runState;
+
+  if (!accept) {
+    return {
+      ...runState,
+      phase: 'map',
+      activeCrewId: null,
+      log: [...runState.log, `Left ${crew.name} behind.`],
+    };
+  }
+
+  return {
+    ...runState,
+    crewIds: [...runState.crewIds, crew.id],
+    deckCardIds: [...runState.deckCardIds, ...crew.cardIds],
+    phase: 'dialogue',
+    log: [
+      ...runState.log,
+      `${crew.name} joined the crew.${crew.cardIds.length > 0 ? ` Added ${crew.cardIds.length} card(s) to the deck.` : ''}`,
+    ],
+  };
+}
+
+/** Closes the post-recruitment dialogue, returning to the map. */
+export function dismissDialogue(runState: RunState): RunState {
+  if (runState.phase !== 'dialogue') return runState;
+  return { ...runState, phase: 'map', activeCrewId: null };
 }

@@ -1,12 +1,23 @@
 import type { CardDefinition } from '../cards/types';
 import type { CombatConfig, CombatState, EnemyDefinition } from '../combat/types';
 import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
+import type { CrewDefinition } from '../crew/types';
 import type { EventDefinition } from '../events/types';
 import type { MapGraph } from '../map/types';
 import type { ShipSystemDefinition } from '../shipSystems/types';
 
 export type RunPhase =
-  'map' | 'combat' | 'event' | 'rest' | 'shop' | 'treasure' | 'reward' | 'runWon' | 'runLost';
+  | 'map'
+  | 'combat'
+  | 'event'
+  | 'crewOffer'
+  | 'dialogue'
+  | 'rest'
+  | 'shop'
+  | 'treasure'
+  | 'reward'
+  | 'runWon'
+  | 'runLost';
 
 /** v1.0 targets a fixed 3-act structure (see docs/GAME_DESIGN.md). */
 export const TOTAL_ACTS = 3;
@@ -33,9 +44,13 @@ export interface RunState {
   salvage: number;
   /** Ship systems installed this run — accumulate across all acts of a run; reset every new run. */
   shipSystemIds: string[];
+  /** Crew recruited this run. Their cards are already merged into deckCardIds. */
+  crewIds: string[];
   phase: RunPhase;
   activeCombat: CombatState | null;
   activeEventId: string | null;
+  /** Crew member being offered (phase 'crewOffer') or speaking (phase 'dialogue'). */
+  activeCrewId: string | null;
   shopOffer: ShopOfferItem[] | null;
   pendingReward: PendingReward | null;
   /** The 3 ship systems offered while phase is 'reward'. */
@@ -68,5 +83,9 @@ export interface RunContent {
   treasureCardPool: string[];
   shipSystemDefinitions: Record<string, ShipSystemDefinition>;
   availableShipSystemIds: string[];
+  crewDefinitions: Record<string, CrewDefinition>;
+  recruitableCrewIds: string[];
+  /** Probability an event node offers an unrecruited crew member instead of a regular event. */
+  crewOfferChance: number;
   combatConfig?: CombatConfig;
 }

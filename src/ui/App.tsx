@@ -9,7 +9,7 @@ export function App() {
   return (
     <main className="app-shell">
       <h1>Space Roguelike</h1>
-      <p>Pre-alpha — M3: save system + meta-progression.</p>
+      <p>Pre-alpha — M5: crew &amp; lore.</p>
       {appPhase === 'hub' ? <HubScreen /> : <RunScreen />}
     </main>
   );

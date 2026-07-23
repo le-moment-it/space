@@ -1,5 +1,5 @@
 import { createEmptySave, type SaveDefaults } from './schema';
-import { CURRENT_SAVE_VERSION, type SaveDataV2 } from './types';
+import { CURRENT_SAVE_VERSION, type SaveDataV3 } from './types';
 
 type Migration = (data: Record<string, unknown>) => Record<string, unknown>;
 type Validator = (data: Record<string, unknown>) => boolean;
@@ -8,48 +8,39 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isValidSaveDataV1(data: Record<string, unknown>): boolean {
-  if (data.version !== 1) return false;
+function hasBaseMetaShape(data: Record<string, unknown>): boolean {
   const meta = data.meta;
   if (!isPlainObject(meta)) return false;
-  if (
-    !Array.isArray(meta.unlockedCardIds) ||
-    !Array.isArray(meta.unlockedShipSystemIds) ||
-    !isPlainObject(meta.milestones) ||
-    !isPlainObject(meta.stats)
-  ) {
-    return false;
-  }
-  const stats = meta.stats;
   return (
-    typeof stats.runsStarted === 'number' &&
-    typeof stats.runsWon === 'number' &&
-    typeof stats.runsLost === 'number' &&
-    typeof stats.elitesDefeated === 'number'
+    Array.isArray(meta.unlockedCardIds) &&
+    Array.isArray(meta.unlockedShipSystemIds) &&
+    isPlainObject(meta.milestones) &&
+    isPlainObject(meta.stats)
   );
 }
 
-function isValidSaveDataV2(data: unknown): data is SaveDataV2 {
-  if (!isPlainObject(data) || data.version !== 2) return false;
-  const meta = data.meta;
-  if (!isPlainObject(meta)) return false;
-  if (
-    !Array.isArray(meta.unlockedCardIds) ||
-    !Array.isArray(meta.unlockedShipSystemIds) ||
-    !isPlainObject(meta.milestones) ||
-    !isPlainObject(meta.stats)
-  ) {
-    return false;
-  }
-  const stats = meta.stats;
-  return (
-    typeof stats.runsStarted === 'number' &&
-    typeof stats.runsWon === 'number' &&
-    typeof stats.runsLost === 'number' &&
-    typeof stats.elitesDefeated === 'number' &&
-    typeof stats.bossesDefeated === 'number' &&
-    typeof stats.highestActReached === 'number'
-  );
+function statsHave(data: Record<string, unknown>, fields: string[]): boolean {
+  const meta = data.meta as Record<string, unknown>;
+  const stats = meta.stats as Record<string, unknown>;
+  return fields.every((field) => typeof stats[field] === 'number');
+}
+
+const V1_STAT_FIELDS = ['runsStarted', 'runsWon', 'runsLost', 'elitesDefeated'];
+const V2_STAT_FIELDS = [...V1_STAT_FIELDS, 'bossesDefeated', 'highestActReached'];
+
+function isValidSaveDataV1(data: Record<string, unknown>): boolean {
+  return data.version === 1 && hasBaseMetaShape(data) && statsHave(data, V1_STAT_FIELDS);
+}
+
+function isValidSaveDataV2(data: Record<string, unknown>): boolean {
+  return data.version === 2 && hasBaseMetaShape(data) && statsHave(data, V2_STAT_FIELDS);
+}
+
+function isValidSaveDataV3(data: unknown): data is SaveDataV3 {
+  if (!isPlainObject(data) || data.version !== 3) return false;
+  if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
+  const meta = data.meta as Record<string, unknown>;
+  return isPlainObject(meta.crew);
 }
 
 /**
@@ -77,9 +68,24 @@ function migrateV1ToV2(data: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
+/**
+ * v3 adds crew: lifetime per-crew recruit counts in meta, and crewIds/activeCrewId
+ * on RunState. An in-progress v2 run predates crew, so it simply has none aboard.
+ */
+function migrateV2ToV3(data: Record<string, unknown>): Record<string, unknown> {
+  const meta = data.meta as Record<string, unknown>;
+  const currentRun = data.currentRun as Record<string, unknown> | null;
+
+  return {
+    version: 3,
+    meta: { ...meta, crew: {} },
+    currentRun: currentRun ? { ...currentRun, crewIds: [], activeCrewId: null } : null,
+  };
+}
+
 // Both keyed by the version being migrated FROM.
-const VALIDATORS: Record<number, Validator> = { 1: isValidSaveDataV1 };
-const MIGRATIONS: Record<number, Migration> = { 1: migrateV1ToV2 };
+const VALIDATORS: Record<number, Validator> = { 1: isValidSaveDataV1, 2: isValidSaveDataV2 };
+const MIGRATIONS: Record<number, Migration> = { 1: migrateV1ToV2, 2: migrateV2ToV3 };
 
 /**
  * Validates and migrates arbitrary persisted JSON into the current SaveData shape.
@@ -88,7 +94,7 @@ const MIGRATIONS: Record<number, Migration> = { 1: migrateV1ToV2 };
  * or an old version with no migration path — rather than crashing the app. Losing
  * progress is far better than a broken game.
  */
-export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV2 {
+export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV3 {
   if (!isPlainObject(raw) || typeof raw.version !== 'number') {
     return createEmptySave(defaults);
   }
@@ -103,7 +109,7 @@ export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV2 {
     version = (data.version as number | undefined) ?? version + 1;
   }
 
-  if (!isValidSaveDataV2(data)) {
+  if (!isValidSaveDataV3(data)) {
     return createEmptySave(defaults);
   }
   return data;

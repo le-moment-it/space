@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CardDefinition } from '../cards/types';
 import { createRng } from '../rng';
 import type { EnemyDefinition } from '../combat/types';
+import type { CrewDefinition } from '../crew/types';
 import type { EventDefinition } from '../events/types';
 import type { MapGraph } from '../map/types';
 import type { ShipSystemDefinition } from '../shipSystems/types';
@@ -9,12 +10,14 @@ import {
   acknowledgeCombat,
   buyShopItem,
   chooseShipSystemReward,
+  dismissDialogue,
   endRunCombatTurn,
   enterNode,
   getAvailableNodeIds,
   initRun,
   leaveNode,
   playRunCombatCard,
+  resolveCrewOffer,
   resolveEventChoice,
 } from './resolve';
 import type { RunContent } from './types';
@@ -61,6 +64,14 @@ const cardDefinitions: Record<string, CardDefinition> = {
     cost: 2,
     description: '',
     effect: { kind: 'damage', amount: 15 },
+  },
+  crewHeal: {
+    id: 'crewHeal',
+    name: 'Crew Heal',
+    type: 'crew',
+    cost: 1,
+    description: '',
+    effect: { kind: 'heal', amount: 6 },
   },
 };
 
@@ -113,6 +124,31 @@ const shipSystemDefinitions: Record<string, ShipSystemDefinition> = {
   },
 };
 
+const crewDefinitions: Record<string, CrewDefinition> = {
+  medic: {
+    id: 'medic',
+    name: 'Test Medic',
+    role: 'Medic',
+    portrait: '🧑‍⚕️',
+    bio: 'A medic.',
+    recruitPrompt: 'A medic drifts by.',
+    cardIds: ['crewHeal', 'crewHeal'],
+    passive: { kind: 'maxHull', amount: 10 },
+    dialogues: ['First meeting.', 'Second meeting.', 'Third meeting.'],
+  },
+  gunner: {
+    id: 'gunner',
+    name: 'Test Gunner',
+    role: 'Gunner',
+    portrait: '🔫',
+    bio: 'A gunner.',
+    recruitPrompt: 'A gunner drifts by.',
+    cardIds: ['strike'],
+    passive: null,
+    dialogues: ['Hello.'],
+  },
+};
+
 function makeContent(overrides: Partial<RunContent> = {}): RunContent {
   return {
     cardDefinitions,
@@ -125,6 +161,10 @@ function makeContent(overrides: Partial<RunContent> = {}): RunContent {
     treasureCardPool: ['strike'],
     shipSystemDefinitions,
     availableShipSystemIds: ['hullPlating', 'powerCore', 'deflector'],
+    crewDefinitions,
+    recruitableCrewIds: ['medic', 'gunner'],
+    // 0 by default so pre-existing event-node tests stay deterministic; crew tests override.
+    crewOfferChance: 0,
     ...overrides,
   };
 }
@@ -389,6 +429,103 @@ describe('shop nodes', () => {
     const afterFirstBuy = run;
     run = buyShopItem(run, 0, makeContent());
     expect(run).toEqual(afterFirstBuy); // already purchased
+  });
+});
+
+describe('crew recruitment', () => {
+  it('offers a crew member at an event node when the chance roll passes', () => {
+    const rng = createRng(30);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
+    const content = makeContent({ crewOfferChance: 1 });
+    run = enterNode(run, 'midEvent', content, rng);
+
+    expect(run.phase).toBe('crewOffer');
+    expect(run.activeCrewId).not.toBeNull();
+    expect(content.recruitableCrewIds).toContain(run.activeCrewId);
+  });
+
+  it('never offers crew when the chance is 0 or everyone is already aboard', () => {
+    const rng = createRng(31);
+    let run = initRun(testMap, startingDeck);
+    run = {
+      ...run,
+      currentNodeId: 'entryCombat',
+      visitedNodeIds: ['entryCombat'],
+      crewIds: ['medic', 'gunner'],
+    };
+    const content = makeContent({ crewOfferChance: 1 }); // chance would pass, but no one left
+    run = enterNode(run, 'midEvent', content, rng);
+    expect(run.phase).toBe('event');
+  });
+
+  it('accepting adds the crew member, their cards, and moves to dialogue then map', () => {
+    const rng = createRng(32);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
+    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['medic'] });
+    run = enterNode(run, 'midEvent', content, rng);
+    expect(run.activeCrewId).toBe('medic');
+    const deckBefore = run.deckCardIds.length;
+
+    run = resolveCrewOffer(run, true, content);
+
+    expect(run.crewIds).toEqual(['medic']);
+    expect(run.deckCardIds.length).toBe(deckBefore + 2);
+    expect(run.deckCardIds.filter((id) => id === 'crewHeal')).toHaveLength(2);
+    expect(run.phase).toBe('dialogue');
+    expect(run.activeCrewId).toBe('medic'); // still set so the dialogue screen knows who speaks
+
+    run = dismissDialogue(run);
+    expect(run.phase).toBe('map');
+    expect(run.activeCrewId).toBeNull();
+  });
+
+  it('declining leaves the deck and crew untouched', () => {
+    const rng = createRng(33);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
+    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['medic'] });
+    run = enterNode(run, 'midEvent', content, rng);
+    const deckBefore = run.deckCardIds;
+
+    run = resolveCrewOffer(run, false, content);
+
+    expect(run.crewIds).toEqual([]);
+    expect(run.deckCardIds).toEqual(deckBefore);
+    expect(run.phase).toBe('map');
+    expect(run.activeCrewId).toBeNull();
+  });
+
+  it('crew cards in the deck are playable in combat', () => {
+    const rng = createRng(34);
+    let run = initRun(testMap, ['crewHeal', 'crewHeal', 'crewHeal']);
+    run = { ...run, crewIds: ['medic'], hull: 30 };
+    const content = makeContent();
+    run = enterNode(run, 'entryCombat', content, rng);
+
+    const crewCard = run.activeCombat!.hand.find((c) => c.cardId === 'crewHeal');
+    expect(crewCard).toBeDefined();
+    run = playRunCombatCard(run, crewCard!.instanceId, content, rng);
+    expect(run.activeCombat?.player.hull).toBe(36); // 30 + 6 heal
+  });
+
+  it('applies a baselineShield crew passive to combat', () => {
+    const rng = createRng(35);
+    const shieldCrew: CrewDefinition = {
+      ...crewDefinitions.medic,
+      id: 'shieldCrew',
+      passive: { kind: 'baselineShield', amount: 4 },
+    };
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, crewIds: ['shieldCrew'] };
+    const content = makeContent({
+      crewDefinitions: { ...crewDefinitions, shieldCrew },
+      recruitableCrewIds: ['shieldCrew'],
+    });
+    run = enterNode(run, 'entryCombat', content, rng);
+
+    expect(run.activeCombat?.player.shield).toBe(4);
   });
 });
 

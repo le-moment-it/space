@@ -1,6 +1,8 @@
 import { useGameStore } from '../../state/gameStore';
 import { TOTAL_ACTS } from '../../engine/run/types';
 import { BattleScreen } from './BattleScreen';
+import { CrewOfferScreen } from './CrewOfferScreen';
+import { DialogueScreen } from './DialogueScreen';
 import { EventScreen } from './EventScreen';
 import { MapScreen } from './MapScreen';
 import { RestScreen } from './RestScreen';
@@ -29,6 +31,7 @@ export function RunScreen() {
         <span>Salvage: {run.salvage}</span>
         <span>Deck: {run.deckCardIds.length} cards</span>
         <span>Ship systems: {run.shipSystemIds.length}</span>
+        <span>Crew: {run.crewIds.length}</span>
       </div>
 
       {run.phase === 'map' && <MapScreen run={run} />}
@@ -43,6 +46,8 @@ export function RunScreen() {
       )}
 
       {run.phase === 'event' && <EventScreen run={run} />}
+      {run.phase === 'crewOffer' && <CrewOfferScreen run={run} />}
+      {run.phase === 'dialogue' && <DialogueScreen run={run} />}
       {run.phase === 'rest' && <RestScreen run={run} />}
       {run.phase === 'shop' && <ShopScreen run={run} />}
       {run.phase === 'treasure' && <TreasureScreen run={run} />}

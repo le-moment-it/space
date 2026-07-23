@@ -11,11 +11,13 @@ function mergeUnique(existing: readonly string[], additions: readonly string[]):
  * Checks each not-yet-completed milestone against current stats, marking any newly
  * completed ones and merging their unlocks into the pool. Pure and idempotent —
  * safe to call after every stats change; already-completed milestones are skipped.
+ * Generic so later save-meta versions (which extend the v2 shape) pass through
+ * with their extra fields intact.
  */
-export function evaluateMilestones(
-  meta: SaveMetaV2,
+export function evaluateMilestones<T extends SaveMetaV2>(
+  meta: T,
   milestones: readonly MilestoneDefinition[],
-): SaveMetaV2 {
+): T {
   let unlockedCardIds = meta.unlockedCardIds;
   let unlockedShipSystemIds = meta.unlockedShipSystemIds;
   let milestoneFlags = meta.milestones;

@@ -1,4 +1,4 @@
-export type CardType = 'weapon' | 'maneuver' | 'shipSystem';
+export type CardType = 'weapon' | 'maneuver' | 'shipSystem' | 'crew';
 
 export type CardEffect =
   | { kind: 'damage'; amount: number }
