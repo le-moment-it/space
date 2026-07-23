@@ -31,6 +31,44 @@
   text-transform: uppercase;
   color: var(--signal);
 }
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.topbar__confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.topbar__confirm-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hazard);
+}
+.topbar__btn {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.7rem;
+  color: var(--ink-dim);
+  background: transparent;
+}
+.topbar__btn:hover:not(:disabled) {
+  color: var(--ink);
+}
+.topbar__btn--danger {
+  color: var(--hazard);
+  border-color: color-mix(in srgb, var(--hazard) 45%, var(--line-2));
+}
+.topbar__btn--danger:hover:not(:disabled) {
+  color: var(--hazard);
+  border-color: var(--hazard);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hazard) 25%, transparent);
+}
 
 .app-main {
   flex: 1;

@@ -308,11 +308,13 @@ export function chooseShipSystemReward(
     return { ...runState, hull, maxHull, shipSystemIds, rewardOptions: null, phase: 'runWon', log };
   }
 
+  // Clearing an act boss fully restores the hull for the next act — a breather
+  // between acts, so attrition is per-act rather than across the whole run.
   const nextAct = runState.act + 1;
   const map = generateMap(rng, DEFAULT_MAP_CONFIG);
   return {
     ...runState,
-    hull,
+    hull: maxHull,
     maxHull,
     shipSystemIds,
     rewardOptions: null,
@@ -321,7 +323,7 @@ export function chooseShipSystemReward(
     currentNodeId: null,
     visitedNodeIds: [],
     phase: 'map',
-    log: [...log, `Entering Act ${nextAct}.`],
+    log: [...log, 'Hull fully restored.', `Entering Act ${nextAct}.`],
   };
 }
 

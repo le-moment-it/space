@@ -292,13 +292,13 @@ describe('combat within a run', () => {
 
     expect(run.act).toBe(1);
     const beforeMaxHull = run.maxHull;
-    const beforeHull = run.hull;
     const beforeDeck = run.deckCardIds;
     const beforeSalvage = run.salvage;
     run = chooseShipSystemReward(run, 'hullPlating', content, rng);
 
     expect(run.maxHull).toBe(beforeMaxHull + 15);
-    expect(run.hull).toBe(beforeHull + 15);
+    // Hull is fully restored on act advance (to the newly increased max).
+    expect(run.hull).toBe(run.maxHull);
     expect(run.shipSystemIds).toEqual(['hullPlating']);
     expect(run.rewardOptions).toBeNull();
     // Advancing to the next act, not ending the run (TOTAL_ACTS is 3).
@@ -309,6 +309,24 @@ describe('combat within a run', () => {
     // Everything else carries over between acts.
     expect(run.deckCardIds).toEqual(beforeDeck);
     expect(run.salvage).toBe(beforeSalvage);
+  });
+
+  it('fully restores hull when advancing to the next act', () => {
+    const rng = createRng(6);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, hull: 12, currentNodeId: 'midElite', visitedNodeIds: ['midElite'] };
+    const content = makeContent();
+    run = enterNode(run, 'boss', content, rng);
+    const card = run.activeCombat!.hand[0];
+    run = playRunCombatCard(run, card.instanceId, content, rng);
+    run = acknowledgeCombat(run, content, rng);
+    expect(run.hull).toBe(12); // still damaged going into the reward
+
+    // Pick a non-maxHull system so the heal is isolated from any max increase.
+    run = chooseShipSystemReward(run, 'powerCore', content, rng);
+
+    expect(run.act).toBe(2);
+    expect(run.hull).toBe(run.maxHull);
   });
 
   it('ends the run in victory after the final act boss', () => {
