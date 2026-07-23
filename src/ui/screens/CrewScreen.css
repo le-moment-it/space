@@ -1,0 +1,50 @@
+.crew__head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.crew__portrait {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: var(--void);
+  border: 1px solid color-mix(in srgb, var(--card-crew) 40%, var(--line-2));
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(236, 200, 121, 0.15);
+}
+.crew__role {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-crew);
+}
+.crew__prompt {
+  color: var(--ink);
+  line-height: 1.55;
+  font-style: italic;
+}
+.crew__joins {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.crew__passive {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  text-align: center;
+}
+.crew__line {
+  margin: 0;
+  padding: 1rem 1.25rem;
+  border-left: 2px solid var(--card-crew);
+  background: rgba(236, 200, 121, 0.06);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 1.1rem;
+  line-height: 1.55;
+  color: var(--ink);
+}

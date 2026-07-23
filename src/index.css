@@ -1,96 +1,217 @@
+/* =========================================================================
+   Space Roguelike — design system
+   "Cold instrument deck": a lit cockpit in the dark. Cyan = you, amber = threat.
+   Machine speaks in mono (stats, costs, keywords); humans speak in sans (lore).
+   ========================================================================= */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  color-scheme: dark;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Surfaces — cold blue-black, layered like a lit cockpit */
+  --void: #05070e;
+  --deep: #080c16;
+  --hull: #0f1524;
+  --hull-2: #151d30;
+  --hull-3: #1d2942;
+  --line: #26324e;
+  --line-2: #3a4a70;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  /* Ink — cool screen-glow off-white */
+  --ink: #d7e2f2;
+  --ink-dim: #8a9ab6;
+  --ink-faint: #566179;
+
+  /* Signal cyan — the identity accent: you, energy, shields, interactive */
+  --signal: #35e0d6;
+  --signal-hi: #82f4ec;
+  --signal-glow: rgba(53, 224, 214, 0.4);
+  --signal-soft: rgba(53, 224, 214, 0.1);
+
+  /* Semantic temperatures — used only for their meaning */
+  --threat: #ff9052; /* enemy / hostile */
+  --threat-soft: rgba(255, 144, 82, 0.12);
+  --hazard: #ff5566; /* hull damage / loss */
+  --repair: #56e0a6; /* healing */
+  --plasma: #a98bff; /* ship systems / reactor power */
+  --salvage: #ecc879; /* loot / currency */
+
+  /* Card type accents */
+  --card-weapon: #ff6f5e;
+  --card-maneuver: #35e0d6;
+  --card-shipsystem: #a98bff;
+  --card-crew: #ecc879;
+
+  --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  --radius: 6px;
+  --radius-lg: 12px;
+  --pad: 1rem;
+
+  font: 400 16px/1.5 var(--sans);
+  color: var(--ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  text-rendering: optimizeLegibility;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow: rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-}
-
-#root {
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
+* {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-height: 100svh;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, #10203a 0%, transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 110%, #1a1030 0%, transparent 55%),
+    linear-gradient(180deg, var(--deep) 0%, var(--void) 100%);
+  background-attachment: fixed;
 }
+
+/* Sparse starfield — quiet, behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(215, 226, 242, 0.7), transparent),
+    radial-gradient(1px 1px at 65% 15%, rgba(215, 226, 242, 0.5), transparent),
+    radial-gradient(1px 1px at 40% 70%, rgba(130, 244, 236, 0.5), transparent),
+    radial-gradient(1px 1px at 85% 55%, rgba(215, 226, 242, 0.6), transparent),
+    radial-gradient(1px 1px at 10% 85%, rgba(215, 226, 242, 0.4), transparent),
+    radial-gradient(1.5px 1.5px at 75% 82%, rgba(169, 139, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 55% 45%, rgba(215, 226, 242, 0.35), transparent);
+  background-repeat: repeat;
+  background-size: 100% 100%;
+  opacity: 0.6;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Typography -------------------------------------------------------- */
 
 h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+h2,
+h3 {
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.01em;
 }
-
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: clamp(2rem, 6vw, 3.5rem);
 }
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: 1.35rem;
+}
+h3 {
+  font-size: 1rem;
 }
 p {
   margin: 0;
 }
 
+/* Console-panel label: uppercase mono eyebrow. Machine voice. */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Buttons ----------------------------------------------------------- */
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--hull-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.05s ease;
+}
+button:hover:not(:disabled) {
+  background: var(--hull-3);
+  border-color: var(--signal);
+  box-shadow: 0 0 0 1px var(--signal-soft);
+}
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+button:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+/* Primary call-to-action — the glowing console key */
+.btn-primary {
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: var(--void);
+  background: linear-gradient(180deg, var(--signal-hi), var(--signal));
+  border: 1px solid var(--signal-hi);
+  box-shadow:
+    0 0 20px var(--signal-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  padding: 0.7rem 1.4rem;
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #a6f8f1, var(--signal-hi));
+  box-shadow:
+    0 0 28px var(--signal-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ---- Panels ------------------------------------------------------------ */
+
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent), var(--hull);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
 code {
   font-family: var(--mono);
-  display: inline-flex;
+  font-size: 0.85em;
+  padding: 0.1rem 0.4rem;
   border-radius: 4px;
-  color: var(--text-h);
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+  background: var(--hull-2);
+  color: var(--signal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

@@ -7,21 +7,21 @@ export function RewardScreen({ run }: { run: RunState }) {
   if (!run.rewardOptions) return null;
 
   return (
-    <section>
-      <h2>Choose a Ship System</h2>
-      <p>Sector cleared — install one upgrade for the rest of this run.</p>
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+    <section className="screen">
+      <header className="screen__head">
+        <p className="eyebrow" style={{ color: 'var(--plasma)' }}>
+          Boss reward
+        </p>
+        <h2>Install a ship system</h2>
+        <p className="screen__sub">One upgrade, bolted on for the rest of the run.</p>
+      </header>
+      <div className="reward-grid">
         {run.rewardOptions.map((id) => {
           const def = shipSystemDefinitions[id];
           return (
-            <button
-              key={id}
-              onClick={() => chooseShipSystem(id)}
-              style={{ textAlign: 'left', maxWidth: '14rem' }}
-            >
-              <strong>{def.name}</strong>
-              <br />
-              {def.description}
+            <button key={id} className="reward-option" onClick={() => chooseShipSystem(id)}>
+              <span className="reward-option__name">{def.name}</span>
+              <span className="reward-option__desc">{def.description}</span>
             </button>
           );
         })}

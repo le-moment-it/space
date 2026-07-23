@@ -1,0 +1,234 @@
+.battle {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.battle__combatants {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+@media (max-width: 640px) {
+  .battle__combatants {
+    grid-template-columns: 1fr;
+  }
+}
+
+.combatant {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent), var(--hull);
+}
+.combatant--enemy {
+  border-color: color-mix(in srgb, var(--threat) 30%, var(--line));
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, var(--threat-soft), transparent 70%), var(--hull);
+}
+.combatant--player {
+  border-color: color-mix(in srgb, var(--signal) 26%, var(--line));
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 100%, var(--signal-soft), transparent 70%), var(--hull);
+}
+.combatant__tag {
+  margin-bottom: 0.25rem;
+}
+.combatant--enemy .combatant__tag {
+  color: var(--threat);
+}
+.combatant--player .combatant__tag {
+  color: var(--signal);
+}
+.combatant__name {
+  font-size: 1.25rem;
+  margin-bottom: 0.6rem;
+}
+.combatant__status {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--threat);
+  margin-bottom: 0.5rem;
+}
+.combatant__resources {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+  min-height: 26px;
+}
+
+/* Intent readout — the telegraph */
+.intent {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius);
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--line);
+}
+.intent--attack {
+  border-color: color-mix(in srgb, var(--threat) 45%, transparent);
+  background: var(--threat-soft);
+}
+.intent--defend {
+  border-color: color-mix(in srgb, var(--signal) 40%, transparent);
+  background: var(--signal-soft);
+}
+.intent__label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.intent__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.intent--attack .intent__value {
+  color: var(--threat);
+}
+.intent--defend .intent__value {
+  color: var(--signal);
+}
+
+/* HP bar */
+.hpbar__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+.hpbar__label {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.hpbar__val {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+.hpbar__track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--void);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.hpbar__fill {
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.3s ease;
+}
+.hpbar--hull .hpbar__fill {
+  background: linear-gradient(90deg, var(--repair), var(--signal));
+}
+.hpbar--threat .hpbar__fill {
+  background: linear-gradient(90deg, var(--hazard), var(--threat));
+}
+
+.shieldchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--signal);
+  background: var(--signal-soft);
+  border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent);
+  border-radius: 999px;
+}
+
+/* Reactor power pips */
+.pips {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+.pip {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  background: var(--void);
+}
+.pip--on {
+  border-color: var(--signal);
+  background: radial-gradient(circle at 50% 35%, var(--signal-hi), var(--signal));
+  box-shadow: 0 0 8px var(--signal-glow);
+}
+
+/* Hand */
+.battle__hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+  min-height: 230px;
+}
+
+.battle__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+.pilecount {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+.pilecount b {
+  color: var(--ink);
+}
+
+.battle__log {
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+.battle__log summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.battle__log ul {
+  list-style: none;
+  padding: 0.5rem 0 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Win / loss overlay */
+.battle__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(5, 7, 14, 0.72);
+  backdrop-filter: blur(4px);
+}
+.battle__result {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 260px;
+}
+.battle__result h2 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}

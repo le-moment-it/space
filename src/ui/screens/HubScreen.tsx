@@ -3,6 +3,7 @@ import { crewDefinitions } from '../../data/crew';
 import { milestoneDefinitions } from '../../data/milestones';
 import { shipSystemDefinitions } from '../../data/shipSystems';
 import { useGameStore } from '../../state/gameStore';
+import './HubScreen.css';
 
 // Crew cards are excluded: they join via recruitment, not the unlock pool.
 const TOTAL_UNLOCKABLE_CARDS = runCardPool.length;
@@ -12,68 +13,112 @@ export function HubScreen() {
   const meta = useGameStore((s) => s.meta);
   const startNewRun = useGameStore((s) => s.startNewRun);
 
+  const completedMilestones = milestoneDefinitions.filter((m) => meta.milestones[m.id]).length;
+
   return (
-    <section>
-      <h2>Hub</h2>
-      <p>Runs started: {meta.stats.runsStarted}</p>
-      <p>Runs won: {meta.stats.runsWon}</p>
-      <p>Runs lost: {meta.stats.runsLost}</p>
-      <p>Elites defeated: {meta.stats.elitesDefeated}</p>
-      <p>
-        Cards unlocked: {meta.unlockedCardIds.length}/{TOTAL_UNLOCKABLE_CARDS}
-      </p>
-      <p>
-        Ship systems unlocked: {meta.unlockedShipSystemIds.length}/{TOTAL_SHIP_SYSTEMS}
-      </p>
+    <section className="screen hub">
+      <header className="hub__head">
+        <div>
+          <p className="eyebrow">Command bridge</p>
+          <h2>Hub</h2>
+          <p className="screen__sub">Between runs. The pool grows; the Reach waits.</p>
+        </div>
+        <button className="btn-primary" onClick={startNewRun}>
+          Launch new run
+        </button>
+      </header>
 
-      <h3>Milestones</h3>
-      <ul>
-        {milestoneDefinitions.map((milestone) => (
-          <li key={milestone.id}>
-            {meta.milestones[milestone.id] ? '✅' : '⬜'} {milestone.description}
-          </li>
-        ))}
-      </ul>
-
-      <h3>Crew Codex</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {Object.values(crewDefinitions).map((crew) => {
-          const timesRecruited = meta.crew[crew.id]?.timesRecruited ?? 0;
-          if (timesRecruited === 0) {
-            return (
-              <div key={crew.id}>
-                <strong>❔ Unknown drifter</strong>
-                <p>Someone is out there among the wrecks. Recruit them to learn their story.</p>
-              </div>
-            );
-          }
-          const seenDialogues = crew.dialogues.slice(
-            0,
-            Math.min(timesRecruited, crew.dialogues.length),
-          );
-          return (
-            <div key={crew.id}>
-              <strong>
-                {crew.portrait} {crew.name}
-              </strong>{' '}
-              — <em>{crew.role}</em> (recruited {timesRecruited}×)
-              <p>{crew.bio}</p>
-              <ul>
-                {seenDialogues.map((line, index) => (
-                  <li key={index}>“{line}”</li>
-                ))}
-              </ul>
-              {seenDialogues.length < crew.dialogues.length && (
-                <p>
-                  <em>Recruit again to hear more…</em>
-                </p>
-              )}
-            </div>
-          );
-        })}
+      <div className="statgrid">
+        <Stat label="Runs started" value={meta.stats.runsStarted} />
+        <Stat label="Runs won" value={meta.stats.runsWon} />
+        <Stat label="Runs lost" value={meta.stats.runsLost} />
+        <Stat label="Elites downed" value={meta.stats.elitesDefeated} />
+        <Stat label="Bosses downed" value={meta.stats.bossesDefeated} />
+        <Stat
+          label="Cards unlocked"
+          value={`${meta.unlockedCardIds.length}/${TOTAL_UNLOCKABLE_CARDS}`}
+        />
+        <Stat
+          label="Systems unlocked"
+          value={`${meta.unlockedShipSystemIds.length}/${TOTAL_SHIP_SYSTEMS}`}
+        />
       </div>
 
-      <button onClick={startNewRun}>Launch new run</button>
+      <div className="hub__cols">
+        <div className="panel hub__milestones">
+          <div className="hub__section-head">
+            <p className="eyebrow">Milestones</p>
+            <span className="mono hub__count">
+              {completedMilestones}/{milestoneDefinitions.length}
+            </span>
+          </div>
+          <ul className="milestone-list">
+            {milestoneDefinitions.map((m) => {
+              const done = Boolean(meta.milestones[m.id]);
+              return (
+                <li key={m.id} className={done ? 'milestone milestone--done' : 'milestone'}>
+                  <span className="milestone__mark">{done ? '◆' : '◇'}</span>
+                  <span>{m.description}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div className="panel hub__codex">
+          <p className="eyebrow">Crew codex</p>
+          <div className="codex-grid">
+            {Object.values(crewDefinitions).map((crew) => {
+              const timesRecruited = meta.crew[crew.id]?.timesRecruited ?? 0;
+              if (timesRecruited === 0) {
+                return (
+                  <article key={crew.id} className="codex-card codex-card--unknown">
+                    <div className="codex-card__portrait">?</div>
+                    <div>
+                      <h3 className="codex-card__name">Unknown drifter</h3>
+                      <p className="codex-card__bio">
+                        Somewhere among the wrecks. Recruit to learn more.
+                      </p>
+                    </div>
+                  </article>
+                );
+              }
+              const seen = crew.dialogues.slice(0, Math.min(timesRecruited, crew.dialogues.length));
+              return (
+                <article key={crew.id} className="codex-card">
+                  <div className="codex-card__head">
+                    <span className="codex-card__portrait">{crew.portrait}</span>
+                    <div>
+                      <h3 className="codex-card__name">{crew.name}</h3>
+                      <p className="codex-card__role">
+                        {crew.role} · met {timesRecruited}×
+                      </p>
+                    </div>
+                  </div>
+                  <p className="codex-card__bio">{crew.bio}</p>
+                  <ul className="codex-card__log">
+                    {seen.map((line, i) => (
+                      <li key={i}>&ldquo;{line}&rdquo;</li>
+                    ))}
+                  </ul>
+                  {seen.length < crew.dialogues.length && (
+                    <p className="codex-card__more">Recruit again to hear more…</p>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </section>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="stat">
+      <span className="stat__label">{label}</span>
+      <span className="stat__value mono">{value}</span>
+    </div>
   );
 }

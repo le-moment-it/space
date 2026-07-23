@@ -1,28 +1,41 @@
 .app-shell {
-  max-width: 75rem;
-  margin: 4rem auto;
-  padding: 0 1.5rem;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
-  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
 }
 
-.app-shell h1,
-.app-shell h2,
-.app-shell h3 {
-  color: var(--text-h);
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.5rem;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+  backdrop-filter: blur(6px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar__brand {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.topbar__loc {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--signal);
 }
 
-.app-shell h1 {
-  font-size: 1.75rem;
-  margin-bottom: 0.5rem;
-}
-
-.app-shell code {
-  background: var(--code-bg);
-  color: var(--text-h);
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem 3rem;
 }

@@ -8,10 +8,11 @@ export function EventScreen({ run }: { run: RunState }) {
   if (!def) return null;
 
   return (
-    <section>
+    <section className="screen screen--focus panel">
+      <p className="eyebrow">Anomaly</p>
       <h2>{def.title}</h2>
-      <p>{def.prompt}</p>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <p className="screen__sub">{def.prompt}</p>
+      <div className="choices">
         {def.choices.map((choice, index) => (
           <button key={index} onClick={() => resolveEvent(index)}>
             {choice.label}

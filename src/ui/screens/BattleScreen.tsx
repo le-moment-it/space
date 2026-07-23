@@ -1,10 +1,7 @@
 import { cardDefinitions } from '../../data/cards';
-import type { CombatState } from '../../engine/combat/types';
-
-function intentLabel(intent: { kind: string; amount: number }): string {
-  if (intent.kind === 'attack') return `Attack for ${intent.amount}`;
-  return `Defend (+${intent.amount} shield)`;
-}
+import type { CombatState, Intent } from '../../engine/combat/types';
+import { Card } from '../components/Card';
+import './BattleScreen.css';
 
 interface BattleScreenProps {
   combat: CombatState;
@@ -15,95 +12,136 @@ interface BattleScreenProps {
 
 export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: BattleScreenProps) {
   const isPlayerTurn = combat.phase === 'playerTurn';
+  const { player, enemy } = combat;
 
   return (
-    <section>
-      <h2>Battle</h2>
-
-      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
-        <div>
-          <h3>Your ship</h3>
-          <p>
-            Hull: {combat.player.hull}/{combat.player.maxHull}
-          </p>
-          <p>Shields: {combat.player.shield}</p>
-          <p>
-            Power: {combat.player.power}/{combat.player.maxPower}
-          </p>
-        </div>
-
-        <div>
-          <h3>{combat.enemy.name}</h3>
-          <p>
-            Hull: {combat.enemy.hull}/{combat.enemy.maxHull}
-          </p>
-          <p>Shields: {combat.enemy.shield}</p>
-          <p>Intent: {intentLabel(combat.enemy.intent)}</p>
-          {combat.enemy.weakenTurnsRemaining > 0 && (
-            <p>
-              Weakened: -{combat.enemy.weakenAmount} dmg ({combat.enemy.weakenTurnsRemaining} turns
-              left)
+    <section className="battle">
+      <div className="battle__combatants">
+        <div className="combatant combatant--enemy">
+          <p className="eyebrow combatant__tag">Hostile contact</p>
+          <h3 className="combatant__name">{enemy.name}</h3>
+          <IntentReadout intent={enemy.intent} />
+          {enemy.weakenTurnsRemaining > 0 && (
+            <p className="combatant__status">
+              Weakened −{enemy.weakenAmount} for {enemy.weakenTurnsRemaining}t
             </p>
           )}
+          <HpBar value={enemy.hull} max={enemy.maxHull} tone="threat" />
+          {enemy.shield > 0 && <ShieldChip value={enemy.shield} />}
+        </div>
+
+        <div className="combatant combatant--player">
+          <p className="eyebrow combatant__tag">Your ship</p>
+          <div className="combatant__resources">
+            <PowerPips current={player.power} max={player.maxPower} />
+            {player.shield > 0 && <ShieldChip value={player.shield} />}
+          </div>
+          <HpBar value={player.hull} max={player.maxHull} tone="hull" />
         </div>
       </div>
 
-      <p>Turn {combat.turn}</p>
-
-      {combat.phase === 'won' && (
-        <div>
-          <p>
-            <strong>Victory!</strong> {combat.enemy.name} destroyed.
-          </p>
-          <button onClick={onContinue}>Continue</button>
-        </div>
-      )}
-
-      {combat.phase === 'lost' && (
-        <div>
-          <p>
-            <strong>Your ship was destroyed.</strong>
-          </p>
-          <button onClick={onContinue}>Continue</button>
-        </div>
-      )}
-
-      <h3>Hand</h3>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {combat.hand.map((card) => {
-          const def = cardDefinitions[card.cardId];
-          const affordable = combat.player.power >= def.cost;
+      <div className="battle__hand" role="list" aria-label="Your hand">
+        {combat.hand.map((instance) => {
+          const def = cardDefinitions[instance.cardId];
+          const playable = isPlayerTurn && player.power >= def.cost;
           return (
-            <button
-              key={card.instanceId}
-              disabled={!isPlayerTurn || !affordable}
-              onClick={() => onPlayCard(card.instanceId)}
-              title={def.description}
-            >
-              {def.name} ({def.cost})
-            </button>
+            <div role="listitem" key={instance.instanceId}>
+              <Card
+                card={def}
+                playable={playable}
+                onClick={() => onPlayCard(instance.instanceId)}
+              />
+            </div>
           );
         })}
       </div>
 
-      <p>
-        <button disabled={!isPlayerTurn} onClick={onEndTurn}>
+      <div className="battle__bar">
+        <span className="pilecount mono">
+          Draw <b>{combat.drawPile.length}</b> · Discard <b>{combat.discardPile.length}</b> · Turn{' '}
+          <b>{combat.turn}</b>
+        </span>
+        <button className="btn-primary" disabled={!isPlayerTurn} onClick={onEndTurn}>
           End turn
         </button>
-      </p>
+      </div>
 
-      <h3>Draw pile: {combat.drawPile.length}</h3>
-      <h3>Discard pile: {combat.discardPile.length}</h3>
+      <details className="battle__log">
+        <summary>Combat log</summary>
+        <ul>
+          {combat.log
+            .slice(-10)
+            .reverse()
+            .map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+        </ul>
+      </details>
 
-      <h3>Log</h3>
-      <ul>
-        {combat.log
-          .slice(-12)
-          .reverse()
-          .map((line, i) => (
-            <li key={i}>{line}</li>
-          ))}
-      </ul>
+      {(combat.phase === 'won' || combat.phase === 'lost') && (
+        <div className="battle__overlay">
+          <div className="panel battle__result">
+            <p className="eyebrow">
+              {combat.phase === 'won' ? 'Contact neutralized' : 'Hull breach'}
+            </p>
+            <h2>{combat.phase === 'won' ? 'Victory' : 'Ship lost'}</h2>
+            <button className="btn-primary" onClick={onContinue}>
+              Continue
+            </button>
+          </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+function IntentReadout({ intent }: { intent: Intent }) {
+  const attack = intent.kind === 'attack';
+  return (
+    <div className={`intent ${attack ? 'intent--attack' : 'intent--defend'}`}>
+      <span className="intent__label">{attack ? 'Incoming attack' : 'Bracing'}</span>
+      <span className="intent__value mono">
+        {attack ? '⌖' : '◈'} {intent.amount}
+      </span>
+    </div>
+  );
+}
+
+function HpBar({ value, max, tone }: { value: number; max: number; tone: 'hull' | 'threat' }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
+  return (
+    <div className={`hpbar hpbar--${tone}`}>
+      <div className="hpbar__head">
+        <span className="hpbar__label">Hull</span>
+        <span className="hpbar__val mono">
+          {value}/{max}
+        </span>
+      </div>
+      <div className="hpbar__track">
+        <div className="hpbar__fill" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ShieldChip({ value }: { value: number }) {
+  return (
+    <span className="shieldchip mono" title="Shields">
+      ◈ {value}
+    </span>
+  );
+}
+
+function PowerPips({ current, max }: { current: number; max: number }) {
+  return (
+    <span
+      className="pips"
+      title={`Reactor power ${current}/${max}`}
+      aria-label={`Power ${current} of ${max}`}
+    >
+      {Array.from({ length: max }).map((_, i) => (
+        <span key={i} className={i < current ? 'pip pip--on' : 'pip'} />
+      ))}
+    </span>
   );
 }

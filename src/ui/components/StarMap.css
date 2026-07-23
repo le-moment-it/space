@@ -1,0 +1,116 @@
+.starmap-scroll {
+  max-height: 66vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(255, 144, 82, 0.06), transparent 70%),
+    linear-gradient(180deg, var(--hull), var(--deep));
+  /* faint sensor grid */
+  background-image:
+    linear-gradient(rgba(53, 224, 214, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(53, 224, 214, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.starmap {
+  position: relative;
+  margin: 0 auto;
+}
+
+.starmap__wires {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.wire {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 5;
+  opacity: 0.55;
+}
+.wire--active {
+  stroke: var(--signal);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  opacity: 0.9;
+  filter: drop-shadow(0 0 4px var(--signal-glow));
+}
+
+.node {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--hull-2);
+  border: 1.5px solid var(--line-2);
+  color: var(--ink-dim);
+}
+.node__glyph {
+  width: 55%;
+  height: 55%;
+}
+
+.node--locked {
+  opacity: 0.4;
+  border-color: var(--line);
+  color: var(--ink-faint);
+}
+.node--visited {
+  opacity: 0.65;
+  color: var(--ink-faint);
+  border-color: var(--line);
+}
+.node--available {
+  color: var(--signal);
+  border-color: var(--signal);
+  background: var(--hull-2);
+  box-shadow:
+    0 0 0 4px var(--signal-soft),
+    0 0 16px var(--signal-glow);
+  animation: node-pulse 2.2s ease-in-out infinite;
+}
+.node--available:hover:not(:disabled) {
+  background: var(--signal-soft);
+  transform: translate(-50%, -50%) scale(1.12);
+}
+.node--current {
+  color: var(--void);
+  background: radial-gradient(circle at 50% 35%, var(--signal-hi), var(--signal));
+  border-color: var(--signal-hi);
+  box-shadow: 0 0 18px var(--signal-glow);
+}
+
+/* Boss node — threat amber, larger presence */
+.node--boss {
+  color: var(--threat);
+  border-color: var(--threat);
+}
+.node--boss.node--available {
+  box-shadow:
+    0 0 0 4px var(--threat-soft),
+    0 0 20px rgba(255, 144, 82, 0.4);
+  animation: none;
+}
+.node--boss.node--current {
+  color: var(--void);
+  background: radial-gradient(circle at 50% 35%, #ffc39a, var(--threat));
+  border-color: #ffc39a;
+}
+
+@keyframes node-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px var(--signal-soft),
+      0 0 16px var(--signal-glow);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px var(--signal-soft),
+      0 0 22px var(--signal-glow);
+  }
+}

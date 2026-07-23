@@ -12,7 +12,8 @@ describe('RunScreen', () => {
   it('renders the star chart at the start of a run', () => {
     render(<RunScreen />);
     expect(screen.getByRole('heading', { name: /star chart/i })).toBeInTheDocument();
-    expect(screen.getByText(/hull:/i)).toBeInTheDocument();
-    expect(screen.getByText(/salvage:/i)).toBeInTheDocument();
+    // HUD readout chips.
+    expect(screen.getByText('Hull')).toBeInTheDocument();
+    expect(screen.getByText('Salvage')).toBeInTheDocument();
   });
 });

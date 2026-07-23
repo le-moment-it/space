@@ -1,5 +1,6 @@
 import { cardDefinitions } from '../../data/cards';
 import type { RunState } from '../../engine/run/types';
+import { Card } from '../components/Card';
 import { useGameStore } from '../../state/gameStore';
 
 export function ShopScreen({ run }: { run: RunState }) {
@@ -8,25 +9,35 @@ export function ShopScreen({ run }: { run: RunState }) {
   if (!run.shopOffer) return null;
 
   return (
-    <section>
-      <h2>Salvage Trader</h2>
-      <p>Salvage: {run.salvage}</p>
-      <ul>
+    <section className="screen">
+      <header className="shop__head">
+        <div>
+          <p className="eyebrow" style={{ color: 'var(--salvage)' }}>
+            Salvage trader
+          </p>
+          <h2>Trade for parts</h2>
+        </div>
+        <span className="stat">
+          <span className="stat__label">Salvage</span>
+          <span className="stat__value mono stat__value--salvage">{run.salvage}</span>
+        </span>
+      </header>
+
+      <div className="shop__offers">
         {run.shopOffer.map((item, index) => {
           const def = cardDefinitions[item.cardId];
+          const affordable = !item.purchased && run.salvage >= item.price;
           return (
-            <li key={item.cardId}>
-              {def.name} — {item.price} salvage{' '}
-              <button
-                disabled={item.purchased || run.salvage < item.price}
-                onClick={() => buyItem(index)}
-              >
-                {item.purchased ? 'Bought' : 'Buy'}
+            <div key={item.cardId} className="shop__offer">
+              <Card card={def} dimmed={item.purchased} />
+              <button className="shop__buy" disabled={!affordable} onClick={() => buyItem(index)}>
+                {item.purchased ? 'Bought' : `Buy · ${item.price}`}
               </button>
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
+
       <button onClick={leaveNode}>Leave</button>
     </section>
   );

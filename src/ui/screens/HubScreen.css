@@ -1,0 +1,138 @@
+.hub__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.hub__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  .hub__cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hub__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.hub__count {
+  color: var(--signal);
+  font-size: 0.85rem;
+}
+
+.milestone-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.milestone {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: var(--ink-dim);
+}
+.milestone__mark {
+  color: var(--ink-faint);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.milestone--done {
+  color: var(--ink);
+}
+.milestone--done .milestone__mark {
+  color: var(--signal);
+  text-shadow: 0 0 8px var(--signal-glow);
+}
+
+/* Codex */
+.codex-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.codex-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.85rem;
+  background: var(--hull-2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.codex-card--unknown {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  opacity: 0.6;
+  border-style: dashed;
+}
+.codex-card__head {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.codex-card__portrait {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  background: var(--void);
+  border: 1px solid var(--line-2);
+  border-radius: 50%;
+}
+.codex-card--unknown .codex-card__portrait {
+  font-family: var(--mono);
+  color: var(--ink-faint);
+}
+.codex-card__name {
+  font-size: 0.95rem;
+}
+.codex-card__role {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--signal);
+}
+.codex-card__bio {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  line-height: 1.4;
+}
+.codex-card__log {
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0 0;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.codex-card__log li {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--ink);
+}
+.codex-card__more {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}

@@ -1,0 +1,92 @@
+.title {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 2rem 1.5rem 3rem;
+  text-align: center;
+}
+
+.title__stage {
+  width: min(460px, 82vw);
+  margin-bottom: 0.5rem;
+}
+.title__ship {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.title__ship-body {
+  animation: ship-drift 7s ease-in-out infinite;
+  transform-origin: center;
+}
+.title__thrust {
+  animation: thrust-flicker 2.4s ease-in-out infinite;
+}
+
+.title__eyebrow {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.title__name {
+  font-size: clamp(2.4rem, 8vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-shadow:
+    0 0 24px var(--signal-glow),
+    0 0 2px rgba(130, 244, 236, 0.4);
+  margin: 0.2rem 0;
+}
+
+.title__tagline {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+  max-width: 30rem;
+}
+
+.title__engage {
+  margin-top: 1.6rem;
+  font-size: 1rem;
+  padding: 0.85rem 2.8rem;
+  letter-spacing: 0.24em;
+}
+
+.title__hint {
+  margin-top: 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+@keyframes ship-drift {
+  0%,
+  100% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+@keyframes thrust-flicker {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  40% {
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 1;
+  }
+}
