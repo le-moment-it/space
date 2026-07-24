@@ -1,0 +1,56 @@
+.deckview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(5, 7, 14, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.deckview {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, 100%);
+  max-height: min(80vh, 780px);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent), var(--hull);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.deckview__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.3rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--hull-2);
+}
+.deckview__sub {
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+.deckview__close {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  padding: 0.2rem 0.55rem;
+  color: var(--ink-dim);
+  background: transparent;
+}
+.deckview__close:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.deckview__cards {
+  overflow-y: auto;
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+}

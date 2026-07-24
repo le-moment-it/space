@@ -19,6 +19,7 @@ import { evaluateMilestones } from '../engine/progression/unlocks';
 import {
   acknowledgeCombat,
   buyShopItem,
+  chooseCardReward,
   chooseShipSystemReward,
   dismissDialogue,
   endRunCombatTurn,
@@ -139,6 +140,8 @@ interface GameStore {
   playCard: (instanceId: string) => void;
   endTurn: () => void;
   acknowledgeCombat: () => void;
+  /** Pick a card (or null to skip) from the post-combat card reward. */
+  chooseCardReward: (cardId: string | null) => void;
   chooseShipSystem: (shipSystemId: string) => void;
   resolveEvent: (choiceIndex: number) => void;
   resolveCrewOffer: (accept: boolean) => void;
@@ -211,8 +214,9 @@ export const useGameStore = create<GameStore>((set, get) => {
     enterNode: (nodeId) => withRun((run, content) => enterNode(run, nodeId, content, rng)),
     playCard: (instanceId) =>
       withRun((run, content) => playRunCombatCard(run, instanceId, content, rng)),
-    endTurn: () => withRun((run, content) => endRunCombatTurn(run, content, rng)),
+    endTurn: () => withRun((run) => endRunCombatTurn(run, rng)),
     acknowledgeCombat: () => withRun((run, content) => acknowledgeCombat(run, content, rng)),
+    chooseCardReward: (cardId) => withRun((run, content) => chooseCardReward(run, cardId, content)),
     chooseShipSystem: (shipSystemId) =>
       withRun((run, content) => chooseShipSystemReward(run, shipSystemId, content, rng)),
     resolveEvent: (choiceIndex) =>

@@ -35,6 +35,17 @@
 .stat--wide {
   flex: 2 1 180px;
 }
+/* A stat that doubles as a button (e.g. Deck → open the deck viewer). */
+.stat--action {
+  align-items: stretch;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.stat--action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--signal) 20%, transparent);
+}
 .stat__label {
   font-family: var(--mono);
   font-size: 0.6rem;

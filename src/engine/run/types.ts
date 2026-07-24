@@ -15,6 +15,7 @@ export type RunPhase =
   | 'rest'
   | 'shop'
   | 'treasure'
+  | 'cardReward'
   | 'reward'
   | 'runWon'
   | 'runLost';
@@ -55,6 +56,8 @@ export interface RunState {
   pendingReward: PendingReward | null;
   /** The 3 ship systems offered while phase is 'reward'. */
   rewardOptions: string[] | null;
+  /** The card choices offered after a (non-boss) combat win, while phase is 'cardReward'. */
+  cardRewardOptions: string[] | null;
   log: string[];
 }
 

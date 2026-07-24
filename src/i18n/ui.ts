@@ -9,6 +9,7 @@ import type { Language } from './types';
 const en = {
   // Shared
   'common.continue': 'Continue',
+  'common.close': 'Close',
 
   // Title screen
   'title.eyebrow': 'Working title · a deck-building descent',
@@ -186,10 +187,22 @@ const en = {
   'rest.title': 'Systems restored',
   'rest.hullPatchedTo': 'Hull patched to',
 
+  // Card reward (after a combat win)
+  'reward.cardEyebrow': 'Combat spoils',
+  'reward.cardTitle': 'Add a card to your deck',
+  'reward.cardSub': 'Pick one card to keep, or skip it.',
+  'reward.skip': 'Skip',
+  'reward.viewDeck': 'View deck ({count})',
+
   // Reward screen
   'reward.eyebrow': 'Boss reward',
   'reward.title': 'Install a ship system',
   'reward.sub': 'One upgrade, bolted on for the rest of the run.',
+
+  // Deck viewer (current run deck)
+  'deckView.title': 'Current deck',
+  'deckView.sub': '{count} cards',
+  'run.viewDeckHint': 'View current deck',
 
   // Shop screen
   'shop.eyebrow': 'Salvage trader',
@@ -216,6 +229,7 @@ export type UiKey = keyof typeof en;
 const fr: Record<UiKey, string> = {
   // Shared
   'common.continue': 'Continuer',
+  'common.close': 'Fermer',
 
   // Title screen
   'title.eyebrow': 'Titre provisoire · une descente en deck-building',
@@ -396,10 +410,22 @@ const fr: Record<UiKey, string> = {
   'rest.title': 'Systèmes restaurés',
   'rest.hullPatchedTo': 'Coque réparée à',
 
+  // Card reward (after a combat win)
+  'reward.cardEyebrow': 'Butin de combat',
+  'reward.cardTitle': 'Ajoutez une carte à votre deck',
+  'reward.cardSub': 'Choisissez une carte à garder, ou passez.',
+  'reward.skip': 'Passer',
+  'reward.viewDeck': 'Voir le deck ({count})',
+
   // Reward screen
   'reward.eyebrow': 'Récompense de boss',
   'reward.title': 'Installer un système de vaisseau',
   'reward.sub': 'Une amélioration, montée pour le reste de la partie.',
+
+  // Deck viewer (current run deck)
+  'deckView.title': 'Deck actuel',
+  'deckView.sub': '{count} cartes',
+  'run.viewDeckHint': 'Voir le deck actuel',
 
   // Shop screen
   'shop.eyebrow': 'Négociant en débris',

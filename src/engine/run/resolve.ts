@@ -40,8 +40,15 @@ export function initRun(
     shopOffer: null,
     pendingReward: null,
     rewardOptions: null,
+    cardRewardOptions: null,
     log: ['Departing on a new run. Act 1.'],
   };
+}
+
+/** The 3 cards offered after a win: the elite pool for elites, the general run pool otherwise. */
+function generateCardReward(isElite: boolean, content: RunContent, rng: Rng): string[] {
+  const pool = isElite ? content.eliteRewardCardIds : content.shopCardPool;
+  return shuffle(pool, rng).slice(0, 3);
 }
 
 /**
@@ -193,7 +200,7 @@ export function enterNode(
   }
 }
 
-function resolveCombatOutcome(runState: RunState, content: RunContent, rng: Rng): RunState {
+function resolveCombatOutcome(runState: RunState): RunState {
   const combat = runState.activeCombat;
   if (!combat) return runState;
 
@@ -214,19 +221,14 @@ function resolveCombatOutcome(runState: RunState, content: RunContent, rng: Rng)
         log: [...runState.log, 'The boss has been defeated.'],
       };
     }
-    const isElite = node.type === 'elite';
-    const baseSalvage = isElite ? 25 : 12;
+    // Card choice (if any) is offered on acknowledge; here we just bank the salvage.
+    const baseSalvage = node.type === 'elite' ? 25 : 12;
     const salvageGain = Math.round(baseSalvage * rewardMultiplierForAct(runState.act));
-    const cardId = isElite ? rng.pick(content.eliteRewardCardIds) : undefined;
     return {
       ...runState,
       hull: combat.player.hull,
       salvage: runState.salvage + salvageGain,
-      deckCardIds: cardId ? [...runState.deckCardIds, cardId] : runState.deckCardIds,
-      log: [
-        ...runState.log,
-        `Salvaged ${salvageGain} scrap.${cardId ? ` Recovered a ${content.cardDefinitions[cardId].name} schematic.` : ''}`,
-      ],
+      log: [...runState.log, `Salvaged ${salvageGain} scrap.`],
     };
   }
 
@@ -241,13 +243,13 @@ export function playRunCombatCard(
 ): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
   const combat = playCard(runState.activeCombat, instanceId, content.cardDefinitions, rng);
-  return resolveCombatOutcome({ ...runState, activeCombat: combat }, content, rng);
+  return resolveCombatOutcome({ ...runState, activeCombat: combat });
 }
 
-export function endRunCombatTurn(runState: RunState, content: RunContent, rng: Rng): RunState {
+export function endRunCombatTurn(runState: RunState, rng: Rng): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
   const combat = endPlayerTurn(runState.activeCombat, rng);
-  return resolveCombatOutcome({ ...runState, activeCombat: combat }, content, rng);
+  return resolveCombatOutcome({ ...runState, activeCombat: combat });
 }
 
 /**
@@ -272,10 +274,36 @@ export function acknowledgeCombat(runState: RunState, content: RunContent, rng: 
       const rewardOptions = shuffle(pool, rng).slice(0, 3);
       return { ...runState, phase: 'reward', activeCombat: null, rewardOptions };
     }
-    return { ...runState, phase: 'map', activeCombat: null };
+    // Regular / elite win: offer a card to add to the deck (Slay-the-Spire style).
+    const cardRewardOptions = generateCardReward(node?.type === 'elite', content, rng);
+    if (cardRewardOptions.length === 0) {
+      return { ...runState, phase: 'map', activeCombat: null };
+    }
+    return { ...runState, phase: 'cardReward', activeCombat: null, cardRewardOptions };
   }
 
   return runState;
+}
+
+/**
+ * Resolves the post-combat card reward: `cardId` (one of the offered options) adds
+ * that card to the deck; `null` skips the reward. Either way, returns to the map.
+ */
+export function chooseCardReward(
+  runState: RunState,
+  cardId: string | null,
+  content: RunContent,
+): RunState {
+  if (runState.phase !== 'cardReward') return runState;
+  const options = runState.cardRewardOptions ?? [];
+  if (cardId !== null && !options.includes(cardId)) return runState;
+
+  const deckCardIds = cardId !== null ? [...runState.deckCardIds, cardId] : runState.deckCardIds;
+  const log =
+    cardId !== null
+      ? [...runState.log, `Added ${content.cardDefinitions[cardId]?.name ?? cardId} to the deck.`]
+      : [...runState.log, 'Skipped the card reward.'];
+  return { ...runState, deckCardIds, cardRewardOptions: null, phase: 'map', log };
 }
 
 /**

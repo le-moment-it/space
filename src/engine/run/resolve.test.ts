@@ -9,6 +9,7 @@ import type { ShipSystemDefinition } from '../shipSystems/types';
 import {
   acknowledgeCombat,
   buyShopItem,
+  chooseCardReward,
   chooseShipSystemReward,
   dismissDialogue,
   endRunCombatTurn,
@@ -209,7 +210,7 @@ describe('enterNode: combat carries hull over and rejects unavailable nodes', ()
 });
 
 describe('combat within a run', () => {
-  it('grants salvage after winning a plain combat node, then returns to map on acknowledge', () => {
+  it('grants salvage then offers a 3-card reward after winning a plain combat node', () => {
     const rng = createRng(3);
     let run = initRun(testMap, startingDeck);
     const content = makeContent();
@@ -223,12 +224,40 @@ describe('combat within a run', () => {
     expect(run.salvage).toBe(12);
 
     run = acknowledgeCombat(run, content, rng);
-    expect(run.phase).toBe('map');
+    expect(run.phase).toBe('cardReward');
     expect(run.activeCombat).toBeNull();
+    // Options come from the general run pool, and every option is a valid card id.
+    for (const id of run.cardRewardOptions ?? []) {
+      expect(content.shopCardPool).toContain(id);
+    }
+
+    const before = run.deckCardIds.length;
+    const pick = run.cardRewardOptions![0];
+    run = chooseCardReward(run, pick, content);
+    expect(run.phase).toBe('map');
+    expect(run.cardRewardOptions).toBeNull();
+    expect(run.deckCardIds).toHaveLength(before + 1);
+    expect(run.deckCardIds).toContain(pick);
     expect(getAvailableNodeIds(run)).toEqual(['midEvent']);
   });
 
-  it('grants a bonus card after winning an elite node', () => {
+  it('skipping the card reward returns to the map without changing the deck', () => {
+    const rng = createRng(3);
+    let run = initRun(testMap, startingDeck);
+    const content = makeContent();
+    run = enterNode(run, 'entryCombat', content, rng);
+    run = playRunCombatCard(run, run.activeCombat!.hand[0].instanceId, content, rng);
+    run = acknowledgeCombat(run, content, rng);
+    expect(run.phase).toBe('cardReward');
+
+    const before = run.deckCardIds;
+    run = chooseCardReward(run, null, content);
+    expect(run.phase).toBe('map');
+    expect(run.cardRewardOptions).toBeNull();
+    expect(run.deckCardIds).toEqual(before);
+  });
+
+  it('offers elite-pool cards as the reward after winning an elite node', () => {
     const rng = createRng(4);
     let run = initRun(testMap, startingDeck);
     run = { ...run, currentNodeId: 'midTreasure', visitedNodeIds: ['midTreasure'] };
@@ -237,9 +266,14 @@ describe('combat within a run', () => {
     const card = run.activeCombat!.hand[0];
 
     run = playRunCombatCard(run, card.instanceId, content, rng);
-
     expect(run.activeCombat?.phase).toBe('won');
     expect(run.salvage).toBe(25);
+
+    run = acknowledgeCombat(run, content, rng);
+    expect(run.phase).toBe('cardReward');
+    expect(run.cardRewardOptions).toContain('eliteReward');
+
+    run = chooseCardReward(run, 'eliteReward', content);
     expect(run.deckCardIds).toContain('eliteReward');
   });
 
@@ -251,7 +285,7 @@ describe('combat within a run', () => {
     });
     run = enterNode(run, 'entryCombat', content, rng);
 
-    run = endRunCombatTurn(run, content, rng);
+    run = endRunCombatTurn(run, rng);
 
     expect(run.activeCombat?.phase).toBe('lost');
     expect(run.phase).toBe('combat');
