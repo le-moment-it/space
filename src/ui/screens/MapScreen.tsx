@@ -15,8 +15,10 @@ export function MapScreen({ run }: { run: RunState }) {
         <h2>{t('map.title', { act: run.act })}</h2>
         <p className="screen__sub">{t('map.sub')}</p>
       </header>
-      <StarMap run={run} onEnter={enterNode} />
-      <MapLegend />
+      <div className="map-layout">
+        <StarMap run={run} onEnter={enterNode} />
+        <MapLegend />
+      </div>
     </section>
   );
 }

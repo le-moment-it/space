@@ -6,12 +6,15 @@
   border-radius: var(--radius-lg);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent), var(--hull);
   overflow: hidden;
-  /* Track the combatants + hand height on wide screens; cap so it scrolls. */
-  max-height: min(560px, 70vh);
+  /* A tall right-hand rail: force the fight row to a generous height so the log
+     fills it, then scroll internally. Stretched to match the fight column. */
+  min-height: min(74vh, 660px);
 }
 @media (max-width: 820px) {
+  /* Stacked below the board on narrow screens — go back to a short, capped panel. */
   .battlelog {
-    max-height: 220px;
+    min-height: 0;
+    max-height: 240px;
   }
 }
 

@@ -1,8 +1,9 @@
 .battle {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 1.25rem;
-  align-items: start;
+  /* Stretch both columns to the same height so the log becomes a full-height rail. */
+  align-items: stretch;
 }
 .battle__main {
   display: flex;
