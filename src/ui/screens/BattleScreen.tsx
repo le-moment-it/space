@@ -1,5 +1,6 @@
 import { cardDefinitions } from '../../data/cards';
 import type { CombatState, Intent } from '../../engine/combat/types';
+import { BattleLog } from '../components/BattleLog';
 import { Card } from '../components/Card';
 import './BattleScreen.css';
 
@@ -16,67 +17,59 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
 
   return (
     <section className="battle">
-      <div className="battle__combatants">
-        <div className="combatant combatant--enemy">
-          <p className="eyebrow combatant__tag">Hostile contact</p>
-          <h3 className="combatant__name">{enemy.name}</h3>
-          <IntentReadout intent={enemy.intent} />
-          {enemy.weakenTurnsRemaining > 0 && (
-            <p className="combatant__status">
-              Weakened −{enemy.weakenAmount} for {enemy.weakenTurnsRemaining}t
-            </p>
-          )}
-          <HpBar value={enemy.hull} max={enemy.maxHull} tone="threat" />
-          {enemy.shield > 0 && <ShieldChip value={enemy.shield} />}
-        </div>
-
-        <div className="combatant combatant--player">
-          <p className="eyebrow combatant__tag">Your ship</p>
-          <div className="combatant__resources">
-            <PowerPips current={player.power} max={player.maxPower} />
-            {player.shield > 0 && <ShieldChip value={player.shield} />}
+      <div className="battle__main">
+        <div className="battle__combatants">
+          <div className="combatant combatant--enemy">
+            <p className="eyebrow combatant__tag">Hostile contact</p>
+            <h3 className="combatant__name">{enemy.name}</h3>
+            <IntentReadout intent={enemy.intent} />
+            {enemy.weakenTurnsRemaining > 0 && (
+              <p className="combatant__status">
+                Weakened −{enemy.weakenAmount} for {enemy.weakenTurnsRemaining}t
+              </p>
+            )}
+            <HpBar value={enemy.hull} max={enemy.maxHull} tone="threat" />
+            {enemy.shield > 0 && <ShieldChip value={enemy.shield} />}
           </div>
-          <HpBar value={player.hull} max={player.maxHull} tone="hull" />
+
+          <div className="combatant combatant--player">
+            <p className="eyebrow combatant__tag">Your ship</p>
+            <div className="combatant__resources">
+              <PowerPips current={player.power} max={player.maxPower} />
+              {player.shield > 0 && <ShieldChip value={player.shield} />}
+            </div>
+            <HpBar value={player.hull} max={player.maxHull} tone="hull" />
+          </div>
+        </div>
+
+        <div className="battle__hand" role="list" aria-label="Your hand">
+          {combat.hand.map((instance) => {
+            const def = cardDefinitions[instance.cardId];
+            const playable = isPlayerTurn && player.power >= def.cost;
+            return (
+              <div role="listitem" key={instance.instanceId}>
+                <Card
+                  card={def}
+                  playable={playable}
+                  onClick={() => onPlayCard(instance.instanceId)}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="battle__bar">
+          <span className="pilecount mono">
+            Draw <b>{combat.drawPile.length}</b> · Discard <b>{combat.discardPile.length}</b> · Turn{' '}
+            <b>{combat.turn}</b>
+          </span>
+          <button className="btn-primary" disabled={!isPlayerTurn} onClick={onEndTurn}>
+            End turn
+          </button>
         </div>
       </div>
 
-      <div className="battle__hand" role="list" aria-label="Your hand">
-        {combat.hand.map((instance) => {
-          const def = cardDefinitions[instance.cardId];
-          const playable = isPlayerTurn && player.power >= def.cost;
-          return (
-            <div role="listitem" key={instance.instanceId}>
-              <Card
-                card={def}
-                playable={playable}
-                onClick={() => onPlayCard(instance.instanceId)}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="battle__bar">
-        <span className="pilecount mono">
-          Draw <b>{combat.drawPile.length}</b> · Discard <b>{combat.discardPile.length}</b> · Turn{' '}
-          <b>{combat.turn}</b>
-        </span>
-        <button className="btn-primary" disabled={!isPlayerTurn} onClick={onEndTurn}>
-          End turn
-        </button>
-      </div>
-
-      <details className="battle__log">
-        <summary>Combat log</summary>
-        <ul>
-          {combat.log
-            .slice(-10)
-            .reverse()
-            .map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-        </ul>
-      </details>
+      <BattleLog log={combat.log} />
 
       {(combat.phase === 'won' || combat.phase === 'lost') && (
         <div className="battle__overlay">

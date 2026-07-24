@@ -1,0 +1,59 @@
+.maplegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin-top: 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent), var(--hull);
+}
+
+.maplegend__item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.35rem;
+  /* leave room so long hints don't crowd; wrap as a unit */
+  flex: 1 1 170px;
+  min-width: 150px;
+}
+
+.maplegend__glyph {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  background: var(--hull-2);
+  color: var(--ink-dim);
+}
+.maplegend__glyph .node__glyph {
+  width: 56%;
+  height: 56%;
+}
+
+/* Match each node's on-map accent so the key reads as the same object. */
+.maplegend__item--elite .maplegend__glyph,
+.maplegend__item--boss .maplegend__glyph {
+  color: var(--threat);
+  border-color: color-mix(in srgb, var(--threat) 45%, var(--line-2));
+}
+
+.maplegend__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.maplegend__label {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.maplegend__hint {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+}

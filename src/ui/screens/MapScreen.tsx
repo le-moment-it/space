@@ -1,4 +1,5 @@
 import type { RunState } from '../../engine/run/types';
+import { MapLegend } from '../components/MapLegend';
 import { StarMap } from '../components/StarMap';
 import { useGameStore } from '../../state/gameStore';
 
@@ -13,6 +14,7 @@ export function MapScreen({ run }: { run: RunState }) {
         <p className="screen__sub">Plot a course. Every path bends toward the boss.</p>
       </header>
       <StarMap run={run} onEnter={enterNode} />
+      <MapLegend />
     </section>
   );
 }
