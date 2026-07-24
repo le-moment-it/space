@@ -1,19 +1,21 @@
 import type { NodeType } from '../../engine/map/types';
+import { useTranslation, type UiKey } from '../../i18n';
 import { NodeGlyph } from './NodeGlyph';
 import './MapLegend.css';
 
 /** Ordered so the two "fight" nodes sit together, then the soft stops, then boss. */
-const LEGEND: { type: NodeType; label: string; hint: string }[] = [
-  { type: 'combat', label: 'Battle', hint: 'A hostile contact' },
-  { type: 'elite', label: 'Elite', hint: 'Tougher fight, better reward' },
-  { type: 'event', label: 'Signal', hint: 'An unknown encounter' },
-  { type: 'rest', label: 'Repair', hint: 'Mend hull or upgrade a card' },
-  { type: 'shop', label: 'Trade', hint: 'Spend salvage' },
-  { type: 'treasure', label: 'Cache', hint: 'Free loot' },
-  { type: 'boss', label: 'Boss', hint: 'Guards the way out' },
+const LEGEND: { type: NodeType; label: UiKey; hint: UiKey }[] = [
+  { type: 'combat', label: 'legend.battle', hint: 'legend.battle.hint' },
+  { type: 'elite', label: 'legend.elite', hint: 'legend.elite.hint' },
+  { type: 'event', label: 'legend.signal', hint: 'legend.signal.hint' },
+  { type: 'rest', label: 'legend.repair', hint: 'legend.repair.hint' },
+  { type: 'shop', label: 'legend.trade', hint: 'legend.trade.hint' },
+  { type: 'treasure', label: 'legend.cache', hint: 'legend.cache.hint' },
+  { type: 'boss', label: 'legend.boss', hint: 'legend.boss.hint' },
 ];
 
 export function MapLegend() {
+  const { t } = useTranslation();
   return (
     <div className="maplegend" aria-label="Chart legend">
       {LEGEND.map((item) => (
@@ -22,8 +24,8 @@ export function MapLegend() {
             <NodeGlyph type={item.type} />
           </span>
           <span className="maplegend__text">
-            <span className="maplegend__label">{item.label}</span>
-            <span className="maplegend__hint">{item.hint}</span>
+            <span className="maplegend__label">{t(item.label)}</span>
+            <span className="maplegend__hint">{t(item.hint)}</span>
           </span>
         </div>
       ))}

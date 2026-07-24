@@ -1,5 +1,6 @@
 import { useGameStore } from '../../state/gameStore';
 import { TOTAL_ACTS } from '../../engine/run/types';
+import { useTranslation } from '../../i18n';
 import { BattleScreen } from './BattleScreen';
 import { CrewOfferScreen } from './CrewOfferScreen';
 import { DialogueScreen } from './DialogueScreen';
@@ -17,6 +18,7 @@ export function RunScreen() {
   const endTurn = useGameStore((s) => s.endTurn);
   const acknowledgeCombat = useGameStore((s) => s.acknowledgeCombat);
   const returnToHub = useGameStore((s) => s.returnToHub);
+  const { t } = useTranslation();
 
   if (!run) return null;
 
@@ -26,7 +28,7 @@ export function RunScreen() {
     <div className="run">
       <div className="statgrid">
         <div className="stat stat--wide">
-          <span className="stat__label">Hull</span>
+          <span className="stat__label">{t('stat.hull')}</span>
           <span className="stat__value mono">
             {run.hull}/{run.maxHull}
           </span>
@@ -35,25 +37,25 @@ export function RunScreen() {
           </span>
         </div>
         <div className="stat">
-          <span className="stat__label">Act</span>
+          <span className="stat__label">{t('stat.act')}</span>
           <span className="stat__value mono">
             {run.act}/{TOTAL_ACTS}
           </span>
         </div>
         <div className="stat">
-          <span className="stat__label">Salvage</span>
+          <span className="stat__label">{t('stat.salvage')}</span>
           <span className="stat__value mono stat__value--salvage">{run.salvage}</span>
         </div>
         <div className="stat">
-          <span className="stat__label">Deck</span>
+          <span className="stat__label">{t('stat.deck')}</span>
           <span className="stat__value mono">{run.deckCardIds.length}</span>
         </div>
         <div className="stat">
-          <span className="stat__label">Systems</span>
+          <span className="stat__label">{t('stat.systems')}</span>
           <span className="stat__value mono">{run.shipSystemIds.length}</span>
         </div>
         <div className="stat">
-          <span className="stat__label">Crew</span>
+          <span className="stat__label">{t('stat.crew')}</span>
           <span className="stat__value mono">{run.crewIds.length}</span>
         </div>
       </div>
@@ -78,12 +80,12 @@ export function RunScreen() {
       {run.phase === 'runWon' && (
         <section className="screen run-end">
           <p className="eyebrow" style={{ color: 'var(--signal)' }}>
-            Sector cleared
+            {t('run.wonEyebrow')}
           </p>
-          <h2>The Reach falls quiet</h2>
-          <p className="screen__sub">You defeated the final boss and completed the run.</p>
+          <h2>{t('run.wonTitle')}</h2>
+          <p className="screen__sub">{t('run.wonSub')}</p>
           <button className="btn-primary" onClick={returnToHub}>
-            Return to bridge
+            {t('run.returnToBridge')}
           </button>
         </section>
       )}
@@ -91,12 +93,12 @@ export function RunScreen() {
       {run.phase === 'runLost' && (
         <section className="screen run-end">
           <p className="eyebrow" style={{ color: 'var(--hazard)' }}>
-            Signal lost
+            {t('run.lostEyebrow')}
           </p>
-          <h2>Your ship was destroyed</h2>
-          <p className="screen__sub">The Reach keeps its census.</p>
+          <h2>{t('run.lostTitle')}</h2>
+          <p className="screen__sub">{t('run.lostSub')}</p>
           <button className="btn-primary" onClick={returnToHub}>
-            Return to bridge
+            {t('run.returnToBridge')}
           </button>
         </section>
       )}

@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import './ui.css';
 import { endingDefinitions } from '../data/endings';
+import { useTranslation, type UiKey } from '../i18n';
 import { useGameStore } from '../state/gameStore';
+import { SettingsPanel } from './components/SettingsPanel';
 import { AchievementsScreen } from './screens/AchievementsScreen';
 import { DeckScreen } from './screens/DeckScreen';
 import { EndingScene } from './screens/EndingScene';
@@ -12,16 +14,18 @@ import { TitleScreen } from './screens/TitleScreen';
 
 type MenuTab = 'game' | 'deck' | 'achievements';
 
-const TABS: { id: MenuTab; label: string }[] = [
-  { id: 'game', label: 'Game' },
-  { id: 'deck', label: 'Deck' },
-  { id: 'achievements', label: 'Achievements' },
+const TABS: { id: MenuTab; label: UiKey }[] = [
+  { id: 'game', label: 'nav.game' },
+  { id: 'deck', label: 'nav.deck' },
+  { id: 'achievements', label: 'nav.achievements' },
 ];
 
 export function App() {
   const [entered, setEntered] = useState(false);
   const [tab, setTab] = useState<MenuTab>('game');
   const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { t } = useTranslation();
   const appPhase = useGameStore((s) => s.appPhase);
   const runPhase = useGameStore((s) => s.run?.phase);
   const returnToHub = useGameStore((s) => s.returnToHub);
@@ -48,17 +52,17 @@ export function App() {
       <header className="topbar">
         <div className="topbar__left">
           <span className="topbar__brand">Space Roguelike</span>
-          <nav className="topnav" aria-label="Main menu">
-            {TABS.map((t) => (
+          <nav className="topnav" aria-label={t('nav.mainMenu')}>
+            {TABS.map((item) => (
               <button
-                key={t.id}
-                className={`topnav__tab${tab === t.id ? ' topnav__tab--active' : ''}`}
-                aria-current={tab === t.id ? 'page' : undefined}
-                onClick={() => setTab(t.id)}
+                key={item.id}
+                className={`topnav__tab${tab === item.id ? ' topnav__tab--active' : ''}`}
+                aria-current={tab === item.id ? 'page' : undefined}
+                onClick={() => setTab(item.id)}
               >
-                {t.label}
-                {t.id === 'game' && inRun && (
-                  <span className="topnav__dot" title="Run in progress" />
+                {t(item.label)}
+                {item.id === 'game' && inRun && (
+                  <span className="topnav__dot" title={t('nav.runInProgress')} />
                 )}
               </button>
             ))}
@@ -68,7 +72,7 @@ export function App() {
           {inActiveRun &&
             (confirmAbandon ? (
               <span className="topbar__confirm">
-                <span className="topbar__confirm-label">Abandon run?</span>
+                <span className="topbar__confirm-label">{t('nav.abandonConfirm')}</span>
                 <button
                   className="topbar__btn topbar__btn--danger"
                   onClick={() => {
@@ -77,17 +81,20 @@ export function App() {
                     setTab('game');
                   }}
                 >
-                  Yes
+                  {t('nav.yes')}
                 </button>
                 <button className="topbar__btn" onClick={() => setConfirmAbandon(false)}>
-                  No
+                  {t('nav.no')}
                 </button>
               </span>
             ) : (
               <button className="topbar__btn" onClick={() => setConfirmAbandon(true)}>
-                Abandon run
+                {t('nav.abandonRun')}
               </button>
             ))}
+          <button className="topbar__btn" onClick={() => setSettingsOpen(true)}>
+            {t('settings.open')}
+          </button>
         </div>
       </header>
 
@@ -101,6 +108,8 @@ export function App() {
       {pendingEnding && (
         <EndingScene key={pendingEnding.id} ending={pendingEnding} onDismiss={dismissEnding} />
       )}
+
+      {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

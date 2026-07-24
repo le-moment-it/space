@@ -34,6 +34,7 @@ import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/ru
 import { createRng, type Rng } from '../engine/rng';
 import { loadSave, persistSave } from '../engine/save/serialize';
 import { LOADOUT_SIZE, type SaveDataV5, type SaveMetaV5 } from '../engine/save/types';
+import { loadLanguage, persistLanguage, type Language } from '../i18n/types';
 
 const SAVE_DEFAULTS = {
   unlockedCardIds: defaultUnlockedCardIds,
@@ -128,6 +129,9 @@ interface GameStore {
   meta: SaveMetaV5;
   run: RunState | null;
   appPhase: 'hub' | 'run';
+  /** UI language. App-level preference, persisted to localStorage separately from the save. */
+  language: Language;
+  setLanguage: (language: Language) => void;
   /** Endings unlocked this session but not yet shown — queues the ending scene(s). */
   pendingEndingIds: string[];
   startNewRun: () => void;
@@ -185,7 +189,13 @@ export const useGameStore = create<GameStore>((set, get) => {
     meta: initialSave.meta,
     run: initialSave.currentRun,
     appPhase: initialSave.currentRun ? 'run' : 'hub',
+    language: loadLanguage(),
     pendingEndingIds: [],
+
+    setLanguage: (language) => {
+      persistLanguage(language);
+      set({ language });
+    },
 
     startNewRun: () => {
       const map = generateMap(rng, DEFAULT_MAP_CONFIG);

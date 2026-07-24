@@ -1,5 +1,6 @@
 import { cardDefinitions } from '../../data/cards';
 import { LOADOUT_SIZE } from '../../engine/save/types';
+import { useTranslation } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
 import { HeroShip } from '../components/HeroShip';
 import './StartScreen.css';
@@ -8,6 +9,7 @@ import './StartScreen.css';
 export function StartScreen({ onEditDeck }: { onEditDeck: () => void }) {
   const meta = useGameStore((s) => s.meta);
   const startNewRun = useGameStore((s) => s.startNewRun);
+  const { t, cardName } = useTranslation();
   const loadout = meta.loadoutCardIds;
   const ready = loadout.length === LOADOUT_SIZE;
 
@@ -21,16 +23,14 @@ export function StartScreen({ onEditDeck }: { onEditDeck: () => void }) {
         <HeroShip animated />
       </div>
 
-      <p className="eyebrow">Ready room</p>
-      <h2>Launch a run</h2>
-      <p className="screen__sub">
-        Your ship carries a {LOADOUT_SIZE}-card deck into the Reach. Build it in the Deck tab.
-      </p>
+      <p className="eyebrow">{t('start.readyRoom')}</p>
+      <h2>{t('start.title')}</h2>
+      <p className="screen__sub">{t('start.sub', { size: LOADOUT_SIZE })}</p>
 
       <div className="start__manifest">
         {[...counts.entries()].map(([id, n]) => (
           <span key={id} className="manifest-chip" data-type={cardDefinitions[id].type}>
-            {cardDefinitions[id].name}
+            {cardName(id)}
             {n > 1 && <span className="manifest-chip__n mono">×{n}</span>}
           </span>
         ))}
@@ -38,15 +38,14 @@ export function StartScreen({ onEditDeck }: { onEditDeck: () => void }) {
 
       <div className="start__actions">
         <button className="btn-primary" disabled={!ready} onClick={startNewRun}>
-          Launch new run
+          {t('start.launch')}
         </button>
-        <button onClick={onEditDeck}>Edit deck</button>
+        <button onClick={onEditDeck}>{t('start.editDeck')}</button>
       </div>
 
       {!ready && (
         <p className="start__warn">
-          Your deck needs {LOADOUT_SIZE} cards ({loadout.length}/{LOADOUT_SIZE}). Edit it in the
-          Deck tab.
+          {t('start.warn', { size: LOADOUT_SIZE, have: loadout.length })}
         </p>
       )}
     </section>

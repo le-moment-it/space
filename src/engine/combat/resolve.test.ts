@@ -178,7 +178,7 @@ describe('playCard', () => {
 
     expect(next.enemy.hull).toBe(passiveEnemy.maxHull);
     expect(next.hand).toHaveLength(state.hand.length);
-    expect(next.log.at(-1)).toMatch(/not enough/i);
+    expect(next.log.at(-1)?.t).toBe('notEnoughPower');
   });
 
   it('damage is absorbed by enemy shields before hull', () => {
@@ -282,7 +282,7 @@ describe('playCard', () => {
     const scanInHand = state.hand.find((c) => c.cardId === 'scan');
     if (!scanInHand) throw new Error('scan not in opening hand for this seed');
     state = playCard(state, scanInHand.instanceId, cardDefinitions, rng);
-    expect(state.log.some((line) => line.includes('reshuffled'))).toBe(true);
+    expect(state.log.some((entry) => entry.t === 'reshuffle')).toBe(true);
   });
 });
 
@@ -358,7 +358,7 @@ describe('endPlayerTurn', () => {
       state = endPlayerTurn(state, rng);
     }
 
-    expect(state.log.some((line) => line.includes('reshuffled'))).toBe(true);
+    expect(state.log.some((entry) => entry.t === 'reshuffle')).toBe(true);
   });
 
   it('a full scripted battle ends in victory when enough damage is dealt', () => {

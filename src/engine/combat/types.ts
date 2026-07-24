@@ -33,6 +33,27 @@ export interface PlayerState {
 
 export type CombatPhase = 'playerTurn' | 'enemyTurn' | 'won' | 'lost';
 
+/**
+ * Structured combat-log events. The engine stays language-agnostic: it records what
+ * happened (with card/enemy ids, not display names), and the UI formats + translates
+ * each entry at render time. `absorbed` is 0 when no shields soaked the hit.
+ */
+export type CombatLogEntry =
+  | { t: 'contact'; enemyId: string; hull: number }
+  | { t: 'notEnoughPower'; cardId: string }
+  | { t: 'played'; cardId: string }
+  | { t: 'damage'; cardId: string; amount: number; absorbed: number }
+  | { t: 'shield'; amount: number }
+  | { t: 'heal'; amount: number }
+  | { t: 'power'; amount: number }
+  | { t: 'weaken'; enemyId: string; amount: number; duration: number }
+  | { t: 'draw'; amount: number }
+  | { t: 'reshuffle' }
+  | { t: 'endTurn' }
+  | { t: 'enemyAttack'; enemyId: string; amount: number; absorbed: number }
+  | { t: 'enemyShield'; enemyId: string; amount: number }
+  | { t: 'enemyDestroyed'; enemyId: string };
+
 export interface CombatState {
   player: PlayerState;
   enemy: EnemyState;
@@ -41,7 +62,7 @@ export interface CombatState {
   discardPile: CardInstance[];
   turn: number;
   phase: CombatPhase;
-  log: string[];
+  log: CombatLogEntry[];
 }
 
 export interface CombatConfig {

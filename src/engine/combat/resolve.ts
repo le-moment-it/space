@@ -1,7 +1,7 @@
 import type { CardDefinition, CardInstance } from '../cards/types';
 import { shuffle, type Rng } from '../rng';
 import { intentForTurn } from './enemyAI';
-import type { CombatConfig, CombatState, EnemyDefinition } from './types';
+import type { CombatConfig, CombatLogEntry, CombatState, EnemyDefinition } from './types';
 import { DEFAULT_COMBAT_CONFIG } from './types';
 
 function buildDeckInstances(cardIds: readonly string[]): CardInstance[] {
@@ -15,8 +15,13 @@ function drawCards(
   discardPile: CardInstance[],
   amount: number,
   rng: Rng,
-  log: string[],
-): { hand: CardInstance[]; drawPile: CardInstance[]; discardPile: CardInstance[]; log: string[] } {
+  log: CombatLogEntry[],
+): {
+  hand: CardInstance[];
+  drawPile: CardInstance[];
+  discardPile: CardInstance[];
+  log: CombatLogEntry[];
+} {
   let newHand = [...hand];
   let newDrawPile = [...drawPile];
   let newDiscardPile = [...discardPile];
@@ -27,7 +32,7 @@ function drawCards(
       if (newDiscardPile.length === 0) break;
       newDrawPile = shuffle(newDiscardPile, rng);
       newDiscardPile = [];
-      newLog.push('Discard pile reshuffled into draw pile.');
+      newLog.push({ t: 'reshuffle' });
     }
     const card = newDrawPile.pop();
     if (!card) break;
@@ -94,7 +99,7 @@ export function initCombat(opts: {
     discardPile: [],
     turn: 1,
     phase: 'playerTurn',
-    log: [`Contact: ${opts.enemy.name} (${opts.enemy.maxHull} hull).`],
+    log: [{ t: 'contact', enemyId: opts.enemy.id, hull: opts.enemy.maxHull }],
   };
 
   return startPlayerTurn(initial, opts.rng, config);
@@ -118,7 +123,7 @@ export function playCard(
   }
 
   if (state.player.power < def.cost) {
-    return { ...state, log: [...state.log, `Not enough reactor power to play ${def.name}.`] };
+    return { ...state, log: [...state.log, { t: 'notEnoughPower', cardId: def.id }] };
   }
 
   const player = { ...state.player, power: state.player.power - def.cost };
@@ -126,7 +131,7 @@ export function playCard(
   let hand = [...state.hand.slice(0, cardIndex), ...state.hand.slice(cardIndex + 1)];
   let drawPile = state.drawPile;
   let discardPile = [...state.discardPile, instance];
-  let log = [...state.log, `Played ${def.name}.`];
+  let log: CombatLogEntry[] = [...state.log, { t: 'played', cardId: def.id }];
 
   switch (def.effect.kind) {
     case 'damage': {
@@ -135,29 +140,30 @@ export function playCard(
       enemy.shield -= absorbed;
       const remaining = amount - absorbed;
       enemy.hull = Math.max(0, enemy.hull - remaining);
-      log.push(
-        `${def.name} deals ${amount} damage${absorbed > 0 ? ` (${absorbed} absorbed by enemy shields)` : ''}.`,
-      );
+      log.push({ t: 'damage', cardId: def.id, amount, absorbed });
       break;
     }
     case 'shield':
       player.shield += def.effect.amount;
-      log.push(`Shields raised by ${def.effect.amount}.`);
+      log.push({ t: 'shield', amount: def.effect.amount });
       break;
     case 'heal':
       player.hull = Math.min(player.maxHull, player.hull + def.effect.amount);
-      log.push(`Hull repaired by ${def.effect.amount}.`);
+      log.push({ t: 'heal', amount: def.effect.amount });
       break;
     case 'power':
       player.power += def.effect.amount;
-      log.push(`Reactor overcharged (+${def.effect.amount} power).`);
+      log.push({ t: 'power', amount: def.effect.amount });
       break;
     case 'weaken':
       enemy.weakenAmount = def.effect.amount;
       enemy.weakenTurnsRemaining = def.effect.duration;
-      log.push(
-        `${enemy.name} is weakened (-${def.effect.amount} damage for ${def.effect.duration} turns).`,
-      );
+      log.push({
+        t: 'weaken',
+        enemyId: enemy.id,
+        amount: def.effect.amount,
+        duration: def.effect.duration,
+      });
       break;
     case 'draw': {
       const result = drawCards(hand, drawPile, discardPile, def.effect.amount, rng, log);
@@ -165,7 +171,7 @@ export function playCard(
       drawPile = result.drawPile;
       discardPile = result.discardPile;
       log = result.log;
-      log.push(`Drew ${def.effect.amount} card(s).`);
+      log.push({ t: 'draw', amount: def.effect.amount });
       break;
     }
     default: {
@@ -175,7 +181,7 @@ export function playCard(
   }
 
   const phase = enemy.hull <= 0 ? 'won' : state.phase;
-  if (phase === 'won') log.push(`${enemy.name} destroyed!`);
+  if (phase === 'won') log.push({ t: 'enemyDestroyed', enemyId: enemy.id });
 
   return { ...state, player, enemy, hand, drawPile, discardPile, log, phase };
 }
@@ -188,7 +194,7 @@ export function endPlayerTurn(
   if (state.phase !== 'playerTurn') return state;
 
   const discardPile = [...state.discardPile, ...state.hand];
-  const log = [...state.log, '--- End of turn ---'];
+  const log: CombatLogEntry[] = [...state.log, { t: 'endTurn' }];
   const enemy = { ...state.enemy };
   let player = { ...state.player };
 
@@ -202,12 +208,10 @@ export function endPlayerTurn(
     player = { ...player, shield: player.shield - absorbed };
     const remaining = amount - absorbed;
     player = { ...player, hull: Math.max(0, player.hull - remaining) };
-    log.push(
-      `${enemy.name} attacks for ${amount} damage${absorbed > 0 ? ` (${absorbed} absorbed by shields)` : ''}.`,
-    );
+    log.push({ t: 'enemyAttack', enemyId: enemy.id, amount, absorbed });
   } else {
     enemy.shield += intent.amount;
-    log.push(`${enemy.name} raises shields (+${intent.amount}).`);
+    log.push({ t: 'enemyShield', enemyId: enemy.id, amount: intent.amount });
   }
 
   if (enemy.weakenTurnsRemaining > 0) {
