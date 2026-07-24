@@ -1,6 +1,7 @@
 import { useGameStore } from '../../state/gameStore';
 import { TOTAL_ACTS } from '../../engine/run/types';
 import { useTranslation } from '../../i18n';
+import { BattleLog } from '../components/BattleLog';
 import { BattleScreen } from './BattleScreen';
 import { CrewOfferScreen } from './CrewOfferScreen';
 import { DialogueScreen } from './DialogueScreen';
@@ -24,51 +25,66 @@ export function RunScreen() {
 
   const hullPct = run.maxHull > 0 ? Math.max(0, Math.min(100, (run.hull / run.maxHull) * 100)) : 0;
 
+  const statGrid = (
+    <div className="statgrid">
+      <div className="stat stat--wide">
+        <span className="stat__label">{t('stat.hull')}</span>
+        <span className="stat__value mono">
+          {run.hull}/{run.maxHull}
+        </span>
+        <span className="stat__bar">
+          <span className="stat__bar-fill" style={{ width: `${hullPct}%` }} />
+        </span>
+      </div>
+      <div className="stat">
+        <span className="stat__label">{t('stat.act')}</span>
+        <span className="stat__value mono">
+          {run.act}/{TOTAL_ACTS}
+        </span>
+      </div>
+      <div className="stat">
+        <span className="stat__label">{t('stat.salvage')}</span>
+        <span className="stat__value mono stat__value--salvage">{run.salvage}</span>
+      </div>
+      <div className="stat">
+        <span className="stat__label">{t('stat.deck')}</span>
+        <span className="stat__value mono">{run.deckCardIds.length}</span>
+      </div>
+      <div className="stat">
+        <span className="stat__label">{t('stat.systems')}</span>
+        <span className="stat__value mono">{run.shipSystemIds.length}</span>
+      </div>
+      <div className="stat">
+        <span className="stat__label">{t('stat.crew')}</span>
+        <span className="stat__value mono">{run.crewIds.length}</span>
+      </div>
+    </div>
+  );
+
+  // Combat gets a bespoke layout: the stat row + fight share the left column so the
+  // log rail on the right can run the full height, starting level with the stats.
+  if (run.phase === 'combat' && run.activeCombat) {
+    return (
+      <div className="run run--combat">
+        <div className="run__fight">
+          {statGrid}
+          <BattleScreen
+            combat={run.activeCombat}
+            onPlayCard={playCard}
+            onEndTurn={endTurn}
+            onContinue={acknowledgeCombat}
+          />
+        </div>
+        <BattleLog log={run.activeCombat.log} />
+      </div>
+    );
+  }
+
   return (
     <div className="run">
-      <div className="statgrid">
-        <div className="stat stat--wide">
-          <span className="stat__label">{t('stat.hull')}</span>
-          <span className="stat__value mono">
-            {run.hull}/{run.maxHull}
-          </span>
-          <span className="stat__bar">
-            <span className="stat__bar-fill" style={{ width: `${hullPct}%` }} />
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">{t('stat.act')}</span>
-          <span className="stat__value mono">
-            {run.act}/{TOTAL_ACTS}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">{t('stat.salvage')}</span>
-          <span className="stat__value mono stat__value--salvage">{run.salvage}</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">{t('stat.deck')}</span>
-          <span className="stat__value mono">{run.deckCardIds.length}</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">{t('stat.systems')}</span>
-          <span className="stat__value mono">{run.shipSystemIds.length}</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">{t('stat.crew')}</span>
-          <span className="stat__value mono">{run.crewIds.length}</span>
-        </div>
-      </div>
+      {statGrid}
 
       {run.phase === 'map' && <MapScreen run={run} />}
-      {run.phase === 'combat' && run.activeCombat && (
-        <BattleScreen
-          combat={run.activeCombat}
-          onPlayCard={playCard}
-          onEndTurn={endTurn}
-          onContinue={acknowledgeCombat}
-        />
-      )}
       {run.phase === 'event' && <EventScreen run={run} />}
       {run.phase === 'crewOffer' && <CrewOfferScreen run={run} />}
       {run.phase === 'dialogue' && <DialogueScreen run={run} />}
