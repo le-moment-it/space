@@ -1,4 +1,4 @@
-import type { CardDefinition } from '../cards/types';
+import type { CardDefinition, DeckCard } from '../cards/types';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
 import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
 import { generateMap } from '../map/generate';
@@ -19,7 +19,7 @@ function rewardMultiplierForAct(act: number): number {
 
 export function initRun(
   map: MapGraph,
-  startingDeckCardIds: readonly string[],
+  startingDeck: readonly DeckCard[],
   config: RunConfig = DEFAULT_RUN_CONFIG,
 ): RunState {
   return {
@@ -29,7 +29,7 @@ export function initRun(
     visitedNodeIds: [],
     hull: config.maxHull,
     maxHull: config.maxHull,
-    deckCardIds: [...startingDeckCardIds],
+    deckCards: [...startingDeck],
     salvage: config.startingSalvage,
     shipSystemIds: [],
     crewIds: [],
@@ -124,7 +124,7 @@ export function enterNode(
       );
       const combat = initCombat({
         cardDefinitions: content.cardDefinitions,
-        startingDeckCardIds: runState.deckCardIds,
+        startingDeck: runState.deckCards,
         enemy,
         rng,
         config: effectiveConfig,
@@ -187,7 +187,7 @@ export function enterNode(
         ...base,
         phase: 'treasure',
         salvage: runState.salvage + salvageGain,
-        deckCardIds: [...runState.deckCardIds, cardId],
+        deckCards: [...runState.deckCards, { cardId, level: 0 }],
         pendingReward: { salvage: salvageGain, cardId },
         log: [
           ...base.log,
@@ -298,12 +298,13 @@ export function chooseCardReward(
   const options = runState.cardRewardOptions ?? [];
   if (cardId !== null && !options.includes(cardId)) return runState;
 
-  const deckCardIds = cardId !== null ? [...runState.deckCardIds, cardId] : runState.deckCardIds;
+  const deckCards =
+    cardId !== null ? [...runState.deckCards, { cardId, level: 0 as const }] : runState.deckCards;
   const log =
     cardId !== null
       ? [...runState.log, `Added ${content.cardDefinitions[cardId]?.name ?? cardId} to the deck.`]
       : [...runState.log, 'Skipped the card reward.'];
-  return { ...runState, deckCardIds, cardRewardOptions: null, phase: 'map', log };
+  return { ...runState, deckCards, cardRewardOptions: null, phase: 'map', log };
 }
 
 /**
@@ -368,7 +369,7 @@ export function resolveEventChoice(
 
   let hull = runState.hull;
   let salvage = runState.salvage;
-  let deckCardIds = runState.deckCardIds;
+  let deckCards = runState.deckCards;
   const log = [...runState.log, `${def.title}: ${choice.label}.`];
 
   for (const effect of choice.effects) {
@@ -382,7 +383,7 @@ export function resolveEventChoice(
         log.push(`Salvage +${effect.amount}.`);
         break;
       case 'addCard':
-        deckCardIds = [...deckCardIds, effect.cardId];
+        deckCards = [...deckCards, { cardId: effect.cardId, level: 0 }];
         log.push(`Added ${content.cardDefinitions[effect.cardId].name} to the deck.`);
         break;
       case 'nothing':
@@ -399,13 +400,13 @@ export function resolveEventChoice(
       ...runState,
       hull: 0,
       salvage,
-      deckCardIds,
+      deckCards,
       activeEventId: null,
       phase: 'runLost',
       log: [...log, 'Your ship was destroyed.'],
     };
   }
-  return { ...runState, hull, salvage, deckCardIds, activeEventId: null, phase: 'map', log };
+  return { ...runState, hull, salvage, deckCards, activeEventId: null, phase: 'map', log };
 }
 
 export function buyShopItem(runState: RunState, index: number, content: RunContent): RunState {
@@ -419,7 +420,7 @@ export function buyShopItem(runState: RunState, index: number, content: RunConte
     ...runState,
     shopOffer,
     salvage: runState.salvage - item.price,
-    deckCardIds: [...runState.deckCardIds, item.cardId],
+    deckCards: [...runState.deckCards, { cardId: item.cardId, level: 0 }],
     log: [
       ...runState.log,
       `Bought ${content.cardDefinitions[item.cardId].name} for ${item.price} salvage.`,
@@ -460,7 +461,10 @@ export function resolveCrewOffer(
   return {
     ...runState,
     crewIds: [...runState.crewIds, crew.id],
-    deckCardIds: [...runState.deckCardIds, ...crew.cardIds],
+    deckCards: [
+      ...runState.deckCards,
+      ...crew.cardIds.map((cardId) => ({ cardId, level: 0 as const })),
+    ],
     phase: 'dialogue',
     log: [
       ...runState.log,

@@ -32,7 +32,7 @@ export function CardRewardScreen({ run, onViewDeck }: { run: RunState; onViewDec
           {t('reward.skip')}
         </button>
         <button onClick={onViewDeck}>
-          {t('reward.viewDeck', { count: run.deckCardIds.length })}
+          {t('reward.viewDeck', { count: run.deckCards.length })}
         </button>
       </div>
     </section>

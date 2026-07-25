@@ -10,12 +10,12 @@ export function StartScreen({ onEditDeck }: { onEditDeck: () => void }) {
   const meta = useGameStore((s) => s.meta);
   const startNewRun = useGameStore((s) => s.startNewRun);
   const { t, cardName } = useTranslation();
-  const loadout = meta.loadoutCardIds;
+  const loadout = meta.loadoutCards;
   const ready = loadout.length === LOADOUT_SIZE;
 
   // Group the loadout into "name ×n" manifest rows.
   const counts = new Map<string, number>();
-  for (const id of loadout) counts.set(id, (counts.get(id) ?? 0) + 1);
+  for (const slot of loadout) counts.set(slot.cardId, (counts.get(slot.cardId) ?? 0) + 1);
 
   return (
     <section className="screen start">

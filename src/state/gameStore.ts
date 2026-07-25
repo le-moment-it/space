@@ -32,9 +32,10 @@ import {
   resolveEventChoice,
 } from '../engine/run/resolve';
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
+import type { DeckCard } from '../engine/cards/types';
 import { createRng, type Rng } from '../engine/rng';
 import { loadSave, persistSave } from '../engine/save/serialize';
-import { LOADOUT_SIZE, type SaveDataV5, type SaveMetaV5 } from '../engine/save/types';
+import { LOADOUT_SIZE, type SaveDataV6, type SaveMetaV6 } from '../engine/save/types';
 import { loadLanguage, persistLanguage, type Language } from '../i18n/types';
 
 const SAVE_DEFAULTS = {
@@ -48,13 +49,28 @@ const SAVE_DEFAULTS = {
  * full deck of unlocked cards, otherwise the default (guards against a loadout left
  * incomplete, or referencing a card that no longer exists / isn't unlocked).
  */
-function resolveLoadout(meta: SaveMetaV5): string[] {
+function resolveLoadout(meta: SaveMetaV6): DeckCard[] {
   const unlocked = new Set(meta.unlockedCardIds);
-  const valid = meta.loadoutCardIds.filter((id) => cardDefinitions[id] && unlocked.has(id));
-  return valid.length === LOADOUT_SIZE ? valid : [...defaultLoadoutCardIds];
+  const allValid =
+    meta.loadoutCards.length === LOADOUT_SIZE &&
+    meta.loadoutCards.every((slot) => cardDefinitions[slot.cardId] && unlocked.has(slot.cardId));
+
+  if (allValid) {
+    // Tag each copy with the slot it was fielded from, so an act-end reward knows
+    // which loadout slot to upgrade permanently.
+    return meta.loadoutCards.map((slot, i) => ({
+      cardId: slot.cardId,
+      level: slot.level,
+      loadoutIndex: i,
+    }));
+  }
+
+  // Fallback deck: these copies are NOT the player's slots, so they carry no
+  // loadoutIndex — a permanent upgrade must never write into a slot they never fielded.
+  return defaultLoadoutCardIds.map((cardId) => ({ cardId, level: 0 as const }));
 }
 
-function buildRunContent(meta: SaveMetaV5): RunContent {
+function buildRunContent(meta: SaveMetaV6): RunContent {
   const unlockedCards = new Set(meta.unlockedCardIds);
   const unlockedShopPool = runCardPool.filter((id) => unlockedCards.has(id));
   const unlockedEliteRewards = eliteRewardCardIds.filter((id) => unlockedCards.has(id));
@@ -82,7 +98,7 @@ function buildRunContent(meta: SaveMetaV5): RunContent {
  * and updates lifetime stats + re-evaluates milestones accordingly. Works regardless
  * of which action caused the transition (combat, an event's hull effect, etc.).
  */
-function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV5): SaveMetaV5 {
+function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV6): SaveMetaV6 {
   let stats = meta.stats;
   let crew = meta.crew;
   let changed = false;
@@ -127,7 +143,7 @@ function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV5
 }
 
 interface GameStore {
-  meta: SaveMetaV5;
+  meta: SaveMetaV6;
   run: RunState | null;
   appPhase: 'hub' | 'run';
   /** UI language. App-level preference, persisted to localStorage separately from the save. */
@@ -172,11 +188,11 @@ function normalizeRun(run: RunState | null): RunState | null {
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
-  const loaded: SaveDataV5 = loadSave(SAVE_DEFAULTS);
-  const initialSave: SaveDataV5 = { ...loaded, currentRun: normalizeRun(loaded.currentRun) };
+  const loaded: SaveDataV6 = loadSave(SAVE_DEFAULTS);
+  const initialSave: SaveDataV6 = { ...loaded, currentRun: normalizeRun(loaded.currentRun) };
 
-  function persist(meta: SaveMetaV5, run: RunState | null): void {
-    persistSave({ version: 5, meta, currentRun: run });
+  function persist(meta: SaveMetaV6, run: RunState | null): void {
+    persistSave({ version: 6, meta, currentRun: run });
   }
 
   // Commit any migration immediately, so a session that never mutates state (loads
@@ -214,7 +230,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     startNewRun: () => {
       const map = generateMap(rng, DEFAULT_MAP_CONFIG);
       const newRun = initRun(map, resolveLoadout(get().meta), DEFAULT_RUN_CONFIG);
-      const meta: SaveMetaV5 = {
+      const meta: SaveMetaV6 = {
         ...get().meta,
         stats: { ...get().meta.stats, runsStarted: get().meta.stats.runsStarted + 1 },
       };
@@ -248,9 +264,12 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     addLoadoutCard: (cardId) => {
       const { meta, run } = get();
-      if (meta.loadoutCardIds.length >= LOADOUT_SIZE) return;
+      if (meta.loadoutCards.length >= LOADOUT_SIZE) return;
       if (!cardDefinitions[cardId] || !meta.unlockedCardIds.includes(cardId)) return;
-      const nextMeta = { ...meta, loadoutCardIds: [...meta.loadoutCardIds, cardId] };
+      const nextMeta = {
+        ...meta,
+        loadoutCards: [...meta.loadoutCards, { cardId, level: 0 as const }],
+      };
       persist(nextMeta, run);
       set({ meta: nextMeta });
     },
@@ -259,7 +278,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       const { meta, run } = get();
       const nextMeta = {
         ...meta,
-        loadoutCardIds: meta.loadoutCardIds.filter((_, i) => i !== index),
+        loadoutCards: meta.loadoutCards.filter((_, i) => i !== index),
       };
       persist(nextMeta, run);
       set({ meta: nextMeta });
@@ -267,7 +286,10 @@ export const useGameStore = create<GameStore>((set, get) => {
 
     resetLoadout: () => {
       const { meta, run } = get();
-      const nextMeta = { ...meta, loadoutCardIds: [...defaultLoadoutCardIds] };
+      const nextMeta = {
+        ...meta,
+        loadoutCards: defaultLoadoutCardIds.map((cardId) => ({ cardId, level: 0 as const })),
+      };
       persist(nextMeta, run);
       set({ meta: nextMeta });
     },

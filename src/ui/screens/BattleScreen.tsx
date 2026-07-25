@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { cardDefinitions } from '../../data/cards';
 import type { CombatState, Intent } from '../../engine/combat/types';
+import { resolveCard } from '../../engine/cards/types';
 import { useTranslation, type Translator } from '../../i18n';
 import { Card } from '../components/Card';
 import { CardListModal } from '../components/CardListModal';
@@ -59,11 +60,14 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
       <div className="battle__hand" role="list" aria-label={t('battle.yourHand')}>
         {combat.hand.map((instance) => {
           const def = cardDefinitions[instance.cardId];
-          const playable = isPlayerTurn && player.power >= def.cost;
+          // Cost must come from the *upgraded* card: a cost-reducing upgrade would
+          // otherwise grey out a card the engine would happily let you play.
+          const playable = isPlayerTurn && player.power >= resolveCard(def, instance.level).cost;
           return (
             <div role="listitem" key={instance.instanceId}>
               <Card
                 card={def}
+                level={instance.level}
                 playable={playable}
                 onClick={() => onPlayCard(instance.instanceId)}
               />
@@ -120,7 +124,7 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
       {openPile && (
         <CardListModal
           title={t(`pile.${openPile}`)}
-          cardIds={PILES[openPile](combat).map((c) => c.cardId)}
+          cards={PILES[openPile](combat)}
           note={
             openPile === 'draw'
               ? t('pile.drawNote')

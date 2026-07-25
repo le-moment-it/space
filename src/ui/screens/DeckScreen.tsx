@@ -17,10 +17,12 @@ export function DeckScreen() {
   const resetLoadout = useGameStore((s) => s.resetLoadout);
   const { t, cardName } = useTranslation();
 
-  const loadout = meta.loadoutCardIds;
+  const loadout = meta.loadoutCards;
   const full = loadout.length >= LOADOUT_SIZE;
-  // Sort by type, then cost, then the card's name in the active language.
-  const available = [...meta.unlockedCardIds].sort((a, b) => {
+  // Unlocks are a set: a card is either unlocked or not, so a repeated id is
+  // meaningless — and would collide as a React key in the grid below.
+  // Sorted by type, then cost, then the card's name in the active language.
+  const available = [...new Set(meta.unlockedCardIds)].sort((a, b) => {
     const ca = cardDefinitions[a];
     const cb = cardDefinitions[b];
     return (
@@ -60,10 +62,11 @@ export function DeckScreen() {
           <p className="screen__sub">{t('deck.empty')}</p>
         ) : (
           <div className="deck__cards">
-            {loadout.map((id, i) => (
+            {loadout.map((slot, i) => (
               <Card
-                key={`${id}-${i}`}
-                card={cardDefinitions[id]}
+                key={`${slot.cardId}-${i}`}
+                card={cardDefinitions[slot.cardId]}
+                level={slot.level}
                 playable
                 onClick={() => removeLoadoutCard(i)}
               />

@@ -8,7 +8,10 @@ describe('StartScreen', () => {
   beforeEach(() => {
     localStorage.clear();
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, loadoutCardIds: [...defaultLoadoutCardIds] },
+      meta: {
+        ...s.meta,
+        loadoutCards: defaultLoadoutCardIds.map((cardId) => ({ cardId, level: 0 as const })),
+      },
     }));
   });
 
@@ -19,7 +22,9 @@ describe('StartScreen', () => {
   });
 
   it('disables launch and warns when the deck is short', () => {
-    useGameStore.setState((s) => ({ meta: { ...s.meta, loadoutCardIds: ['kinetic-cannon'] } }));
+    useGameStore.setState((s) => ({
+      meta: { ...s.meta, loadoutCards: [{ cardId: 'kinetic-cannon', level: 0 }] },
+    }));
     render(<StartScreen onEditDeck={() => {}} />);
     expect(screen.getByRole('button', { name: /launch new run/i })).toBeDisabled();
     expect(screen.getByText(/needs 10 cards/i)).toBeInTheDocument();

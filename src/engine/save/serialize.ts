@@ -1,6 +1,6 @@
 import { createEmptySave, type SaveDefaults } from './schema';
 import { migrateSave } from './migrate';
-import type { SaveDataV5 } from './types';
+import type { SaveDataV6 } from './types';
 
 const STORAGE_KEY = 'space-roguelike:save';
 
@@ -18,7 +18,7 @@ const union = (owned: string[], defaults: string[]): string[] => [
  * every future addition without a save version bump, and is idempotent. Only ever
  * adds: milestone unlocks the player earned are untouched, as is their loadout.
  */
-function grantDefaultUnlocks(save: SaveDataV5, defaults: SaveDefaults): SaveDataV5 {
+function grantDefaultUnlocks(save: SaveDataV6, defaults: SaveDefaults): SaveDataV6 {
   const unlockedCardIds = union(save.meta.unlockedCardIds, defaults.unlockedCardIds);
   const unlockedShipSystemIds = union(
     save.meta.unlockedShipSystemIds,
@@ -33,7 +33,7 @@ function grantDefaultUnlocks(save: SaveDataV5, defaults: SaveDefaults): SaveData
   return { ...save, meta: { ...save.meta, unlockedCardIds, unlockedShipSystemIds } };
 }
 
-export function loadSave(defaults: SaveDefaults): SaveDataV5 {
+export function loadSave(defaults: SaveDefaults): SaveDataV6 {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const save = raw ? migrateSave(JSON.parse(raw), defaults) : createEmptySave(defaults);
@@ -43,7 +43,7 @@ export function loadSave(defaults: SaveDefaults): SaveDataV5 {
   }
 }
 
-export function persistSave(save: SaveDataV5): void {
+export function persistSave(save: SaveDataV6): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
   } catch {

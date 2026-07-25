@@ -1,5 +1,11 @@
-import type { CardDefinition, CardEffect, CardRarity, CardType } from '../../engine/cards/types';
-import { rarityOf } from '../../engine/cards/types';
+import type {
+  CardDefinition,
+  CardEffect,
+  CardRarity,
+  CardType,
+  UpgradeLevel,
+} from '../../engine/cards/types';
+import { rarityOf, resolveCard } from '../../engine/cards/types';
 import { useTranslation, type Translator, type UiKey } from '../../i18n';
 import { CardArt } from './CardArt';
 import { Keyword } from './Keyword';
@@ -94,13 +100,22 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
 
 interface CardProps {
   card: CardDefinition;
+  /** Upgrade level of this copy. Resolved here, so callers pass the base definition. */
+  level?: UpgradeLevel;
   playable?: boolean;
   dimmed?: boolean;
   onClick?: () => void;
 }
 
-export function Card({ card, playable = false, dimmed = false, onClick }: CardProps) {
+export function Card({
+  card: base,
+  level = 0,
+  playable = false,
+  dimmed = false,
+  onClick,
+}: CardProps) {
   const { t, cardName } = useTranslation();
+  const card = resolveCard(base, level);
   const interactive = Boolean(onClick);
   const className = [
     'card',
@@ -131,7 +146,10 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
         <span className="card__type">{t(TYPE_LABEL_KEY[card.type])}</span>
         <span className="card__cost mono">{card.cost}</span>
       </div>
-      <div className="card__name">{cardName(card.id)}</div>
+      <div className="card__name" data-level={level > 0 ? level : undefined}>
+        {cardName(card.id)}
+        {'+'.repeat(level)}
+      </div>
       <div className="card__viewport">
         <CardArt effect={card.effect} />
       </div>

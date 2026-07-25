@@ -80,7 +80,7 @@ describe('gameStore — loadout', () => {
       meta: {
         ...emptyMeta(),
         unlockedCardIds: ['kinetic-cannon', 'flak-burst'],
-        loadoutCardIds: [],
+        loadoutCards: [],
       },
       run: null,
       appPhase: 'hub',
@@ -90,33 +90,39 @@ describe('gameStore — loadout', () => {
   it('adds an unlocked card and refuses an unlocked-but-unknown or locked one', () => {
     const store = () => useGameStore.getState();
     store().addLoadoutCard('kinetic-cannon');
-    expect(store().meta.loadoutCardIds).toEqual(['kinetic-cannon']);
+    expect(store().meta.loadoutCards.map((c) => c.cardId)).toEqual(['kinetic-cannon']);
 
     store().addLoadoutCard('does-not-exist');
     store().addLoadoutCard('plasma-lance'); // real card, but not unlocked here
-    expect(store().meta.loadoutCardIds).toEqual(['kinetic-cannon']);
+    expect(store().meta.loadoutCards.map((c) => c.cardId)).toEqual(['kinetic-cannon']);
   });
 
   it('does not add past the loadout size cap', () => {
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, loadoutCardIds: Array(10).fill('kinetic-cannon') },
+      meta: { ...s.meta, loadoutCards: Array(10).fill({ cardId: 'kinetic-cannon', level: 0 }) },
     }));
     useGameStore.getState().addLoadoutCard('flak-burst');
-    expect(useGameStore.getState().meta.loadoutCardIds).toHaveLength(10);
+    expect(useGameStore.getState().meta.loadoutCards).toHaveLength(10);
   });
 
   it('removes a card by index and can reset to the default loadout', () => {
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, loadoutCardIds: ['kinetic-cannon', 'flak-burst', 'kinetic-cannon'] },
+      meta: {
+        ...s.meta,
+        loadoutCards: ['kinetic-cannon', 'flak-burst', 'kinetic-cannon'].map((cardId) => ({
+          cardId,
+          level: 0 as const,
+        })),
+      },
     }));
     useGameStore.getState().removeLoadoutCard(1);
-    expect(useGameStore.getState().meta.loadoutCardIds).toEqual([
+    expect(useGameStore.getState().meta.loadoutCards.map((c) => c.cardId)).toEqual([
       'kinetic-cannon',
       'kinetic-cannon',
     ]);
 
     useGameStore.getState().resetLoadout();
-    expect(useGameStore.getState().meta.loadoutCardIds).toHaveLength(10);
+    expect(useGameStore.getState().meta.loadoutCards).toHaveLength(10);
   });
 });
 
@@ -136,7 +142,7 @@ describe('gameStore — in-run cards stay in the run', () => {
       meta: {
         ...s.meta,
         unlockedCardIds: ['kinetic-cannon'],
-        loadoutCardIds: Array(10).fill('kinetic-cannon'),
+        loadoutCards: Array(10).fill({ cardId: 'kinetic-cannon', level: 0 }),
       },
     }));
     useGameStore.getState().startNewRun();
@@ -153,10 +159,10 @@ describe('gameStore — in-run cards stay in the run', () => {
     useGameStore.getState().chooseCardReward(reward);
 
     // It is in the run deck for the rest of this run...
-    expect(useGameStore.getState().run?.deckCardIds).toContain(reward);
+    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).toContain(reward);
     // ...but the permanent collection is untouched.
     expect(useGameStore.getState().meta.unlockedCardIds).toEqual(unlockedBefore);
-    expect(useGameStore.getState().meta.loadoutCardIds).not.toContain(reward);
+    expect(useGameStore.getState().meta.loadoutCards.map((c) => c.cardId)).not.toContain(reward);
   });
 
   it('the next run starts from the saved loadout, without last run’s pickups', () => {
@@ -164,7 +170,7 @@ describe('gameStore — in-run cards stay in the run', () => {
       meta: {
         ...s.meta,
         unlockedCardIds: ['kinetic-cannon'],
-        loadoutCardIds: Array(10).fill('kinetic-cannon'),
+        loadoutCards: Array(10).fill({ cardId: 'kinetic-cannon', level: 0 }),
       },
     }));
     useGameStore.getState().startNewRun();
@@ -175,12 +181,16 @@ describe('gameStore — in-run cards stay in the run', () => {
       run: { ...run, phase: 'cardReward', cardRewardOptions: ['plasma-lance'] },
     });
     useGameStore.getState().chooseCardReward('plasma-lance');
-    expect(useGameStore.getState().run?.deckCardIds).toContain('plasma-lance');
+    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).toContain('plasma-lance');
 
     useGameStore.getState().returnToHub();
     useGameStore.getState().startNewRun();
 
-    expect(useGameStore.getState().run?.deckCardIds).toEqual(Array(10).fill('kinetic-cannon'));
-    expect(useGameStore.getState().run?.deckCardIds).not.toContain('plasma-lance');
+    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).toEqual(
+      Array(10).fill('kinetic-cannon'),
+    );
+    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).not.toContain(
+      'plasma-lance',
+    );
   });
 });

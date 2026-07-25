@@ -87,14 +87,14 @@ const attackerEnemy: EnemyDefinition = {
   intentPattern: [{ kind: 'attack', amount: 10 }],
 };
 
-const deckOf = (...cardIds: string[]) => cardIds;
+const deckOf = (...cardIds: string[]) => cardIds.map((cardId) => ({ cardId, level: 0 as const }));
 
 describe('initCombat', () => {
   it('sets up player/enemy state and draws a hand', () => {
     const rng = createRng(1);
     const state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'shield', 'shield', 'heal', 'heal'),
+      startingDeck: deckOf('strike', 'strike', 'shield', 'shield', 'heal', 'heal'),
       enemy: passiveEnemy,
       rng,
     });
@@ -113,7 +113,7 @@ describe('initCombat', () => {
     const rng = createRng(11);
     const state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'shield', 'shield', 'heal', 'heal'),
+      startingDeck: deckOf('strike', 'strike', 'shield', 'shield', 'heal', 'heal'),
       enemy: passiveEnemy,
       rng,
       startingHull: 20,
@@ -127,7 +127,7 @@ describe('initCombat', () => {
     const rng = createRng(12);
     const over = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike'),
+      startingDeck: deckOf('strike'),
       enemy: passiveEnemy,
       rng,
       startingHull: 9999,
@@ -136,7 +136,7 @@ describe('initCombat', () => {
 
     const under = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike'),
+      startingDeck: deckOf('strike'),
       enemy: passiveEnemy,
       rng,
       startingHull: -5,
@@ -150,7 +150,7 @@ describe('playCard', () => {
     const rng = createRng(2);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      startingDeck: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
       enemy: passiveEnemy,
       rng,
     });
@@ -168,7 +168,7 @@ describe('playCard', () => {
     const rng = createRng(3);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf(
+      startingDeck: deckOf(
         'bigStrike',
         'bigStrike',
         'bigStrike',
@@ -198,7 +198,7 @@ describe('playCard', () => {
     };
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      startingDeck: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
       enemy: shieldedEnemy,
       rng,
     });
@@ -216,7 +216,7 @@ describe('playCard', () => {
     const weakEnemy: EnemyDefinition = { ...passiveEnemy, maxHull: 5 };
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      startingDeck: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
       enemy: weakEnemy,
       rng,
     });
@@ -232,7 +232,7 @@ describe('playCard', () => {
     const rng = createRng(6);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('weaken', 'weaken', 'weaken', 'weaken', 'weaken', 'weaken'),
+      startingDeck: deckOf('weaken', 'weaken', 'weaken', 'weaken', 'weaken', 'weaken'),
       enemy: attackerEnemy,
       rng,
     });
@@ -247,15 +247,7 @@ describe('playCard', () => {
     const rng = createRng(15);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf(
-        'scan',
-        'strike',
-        'strike',
-        'strike',
-        'strike',
-        'strike',
-        'strike',
-      ),
+      startingDeck: deckOf('scan', 'strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
       enemy: passiveEnemy,
       rng,
     });
@@ -276,7 +268,7 @@ describe('playCard', () => {
     const rng = createRng(16);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('scan', 'strike', 'strike'),
+      startingDeck: deckOf('scan', 'strike', 'strike'),
       enemy: passiveEnemy,
       rng,
     });
@@ -286,7 +278,7 @@ describe('playCard', () => {
     state = {
       ...state,
       drawPile: [],
-      discardPile: [{ instanceId: 'strike#99', cardId: 'strike' }],
+      discardPile: [{ instanceId: 'strike#99', cardId: 'strike', level: 0 }],
     };
     const scanInHand = state.hand.find((c) => c.cardId === 'scan');
     if (!scanInHand) throw new Error('scan not in opening hand for this seed');
@@ -299,7 +291,7 @@ describe('exhaust', () => {
   const startExhaustFight = (rng = createRng(11)) =>
     initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('oneShot', 'strike', 'strike', 'strike', 'strike'),
+      startingDeck: deckOf('oneShot', 'strike', 'strike', 'strike', 'strike'),
       enemy: passiveEnemy,
       rng,
     });
@@ -369,7 +361,7 @@ describe('endPlayerTurn', () => {
     const rng = createRng(7);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('shield', 'shield', 'shield', 'shield', 'shield', 'shield'),
+      startingDeck: deckOf('shield', 'shield', 'shield', 'shield', 'shield', 'shield'),
       enemy: attackerEnemy,
       rng,
     });
@@ -389,7 +381,7 @@ describe('endPlayerTurn', () => {
     const rng = createRng(20);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      startingDeck: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
       enemy: passiveEnemy,
       rng,
       config: { ...DEFAULT_COMBAT_CONFIG, baselineShield: 5 },
@@ -408,7 +400,7 @@ describe('endPlayerTurn', () => {
     };
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('heal', 'heal', 'heal', 'heal', 'heal', 'heal'),
+      startingDeck: deckOf('heal', 'heal', 'heal', 'heal', 'heal', 'heal'),
       enemy: bigAttacker,
       rng,
     });
@@ -423,7 +415,7 @@ describe('endPlayerTurn', () => {
     const rng = createRng(9);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      startingDeck: deckOf('strike', 'strike', 'strike', 'strike', 'strike', 'strike'),
       enemy: passiveEnemy,
       rng,
     });
@@ -443,7 +435,7 @@ describe('endPlayerTurn', () => {
     const rng = createRng(10);
     let state = initCombat({
       cardDefinitions,
-      startingDeckCardIds: [
+      startingDeck: deckOf(
         'strike',
         'strike',
         'strike',
@@ -454,7 +446,7 @@ describe('endPlayerTurn', () => {
         'strike',
         'strike',
         'strike',
-      ],
+      ),
       enemy: passiveEnemy, // 30 hull, never attacks
       rng,
     });

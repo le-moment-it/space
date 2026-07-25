@@ -170,13 +170,20 @@ function makeContent(overrides: Partial<RunContent> = {}): RunContent {
   };
 }
 
-const startingDeck = ['strike', 'strike', 'strike', 'strike', 'strike', 'strike'];
+const startingDeckIds = ['strike', 'strike', 'strike', 'strike', 'strike', 'strike'];
+/** Deck copies are tagged with their loadout slot, as a real run's opening deck is. */
+const startingDeck = startingDeckIds.map((cardId, i) => ({
+  cardId,
+  level: 0 as const,
+  loadoutIndex: i,
+}));
+const deckIds = (run: { deckCards: { cardId: string }[] }) => run.deckCards.map((c) => c.cardId);
 
 describe('initRun', () => {
   it('sets up initial run state', () => {
     const run = initRun(testMap, startingDeck);
     expect(run.hull).toBe(run.maxHull);
-    expect(run.deckCardIds).toEqual(startingDeck);
+    expect(deckIds(run)).toEqual(startingDeckIds);
     expect(run.salvage).toBe(0);
     expect(run.phase).toBe('map');
     expect(run.currentNodeId).toBeNull();
@@ -231,13 +238,13 @@ describe('combat within a run', () => {
       expect(content.shopCardPool).toContain(id);
     }
 
-    const before = run.deckCardIds.length;
+    const before = deckIds(run).length;
     const pick = run.cardRewardOptions![0];
     run = chooseCardReward(run, pick, content);
     expect(run.phase).toBe('map');
     expect(run.cardRewardOptions).toBeNull();
-    expect(run.deckCardIds).toHaveLength(before + 1);
-    expect(run.deckCardIds).toContain(pick);
+    expect(deckIds(run)).toHaveLength(before + 1);
+    expect(deckIds(run)).toContain(pick);
     expect(getAvailableNodeIds(run)).toEqual(['midEvent']);
   });
 
@@ -250,11 +257,11 @@ describe('combat within a run', () => {
     run = acknowledgeCombat(run, content, rng);
     expect(run.phase).toBe('cardReward');
 
-    const before = run.deckCardIds;
+    const before = deckIds(run);
     run = chooseCardReward(run, null, content);
     expect(run.phase).toBe('map');
     expect(run.cardRewardOptions).toBeNull();
-    expect(run.deckCardIds).toEqual(before);
+    expect(deckIds(run)).toEqual(before);
   });
 
   it('offers elite-pool cards as the reward after winning an elite node', () => {
@@ -274,7 +281,7 @@ describe('combat within a run', () => {
     expect(run.cardRewardOptions).toContain('eliteReward');
 
     run = chooseCardReward(run, 'eliteReward', content);
-    expect(run.deckCardIds).toContain('eliteReward');
+    expect(deckIds(run)).toContain('eliteReward');
   });
 
   it('goes to runLost (after acknowledge) when hull reaches 0', () => {
@@ -326,7 +333,7 @@ describe('combat within a run', () => {
 
     expect(run.act).toBe(1);
     const beforeMaxHull = run.maxHull;
-    const beforeDeck = run.deckCardIds;
+    const beforeDeck = deckIds(run);
     const beforeSalvage = run.salvage;
     run = chooseShipSystemReward(run, 'hullPlating', content, rng);
 
@@ -341,7 +348,7 @@ describe('combat within a run', () => {
     expect(run.currentNodeId).toBeNull();
     expect(run.visitedNodeIds).toEqual([]);
     // Everything else carries over between acts.
-    expect(run.deckCardIds).toEqual(beforeDeck);
+    expect(deckIds(run)).toEqual(beforeDeck);
     expect(run.salvage).toBe(beforeSalvage);
   });
 
@@ -423,7 +430,7 @@ describe('event nodes', () => {
     let run = initRun(testMap, startingDeck);
     run = { ...run, phase: 'event', activeEventId: 'test-event', currentNodeId: 'midEvent' };
     run = resolveEventChoice(run, 2, makeContent()); // "Take a card"
-    expect(run.deckCardIds.filter((id) => id === 'shieldCard')).toHaveLength(1);
+    expect(deckIds(run).filter((id) => id === 'shieldCard')).toHaveLength(1);
   });
 
   it('ends the run if the choice drops hull to 0 or below', () => {
@@ -458,10 +465,10 @@ describe('shop nodes', () => {
     run = enterNode(run, 'midShop', makeContent(), rng);
 
     expect(run.shopOffer).toHaveLength(2); // pool only has 2 cards in this fixture
-    const initialDeckSize = run.deckCardIds.length;
+    const initialDeckSize = deckIds(run).length;
 
     run = buyShopItem(run, 0, makeContent());
-    expect(run.deckCardIds.length).toBe(initialDeckSize + 1);
+    expect(deckIds(run).length).toBe(initialDeckSize + 1);
     expect(run.shopOffer?.[0].purchased).toBe(true);
     expect(run.salvage).toBeLessThan(100);
   });
@@ -518,13 +525,13 @@ describe('crew recruitment', () => {
     const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['medic'] });
     run = enterNode(run, 'midEvent', content, rng);
     expect(run.activeCrewId).toBe('medic');
-    const deckBefore = run.deckCardIds.length;
+    const deckBefore = deckIds(run).length;
 
     run = resolveCrewOffer(run, true, content);
 
     expect(run.crewIds).toEqual(['medic']);
-    expect(run.deckCardIds.length).toBe(deckBefore + 2);
-    expect(run.deckCardIds.filter((id) => id === 'crewHeal')).toHaveLength(2);
+    expect(deckIds(run).length).toBe(deckBefore + 2);
+    expect(deckIds(run).filter((id) => id === 'crewHeal')).toHaveLength(2);
     expect(run.phase).toBe('dialogue');
     expect(run.activeCrewId).toBe('medic'); // still set so the dialogue screen knows who speaks
 
@@ -539,19 +546,22 @@ describe('crew recruitment', () => {
     run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
     const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['medic'] });
     run = enterNode(run, 'midEvent', content, rng);
-    const deckBefore = run.deckCardIds;
+    const deckBefore = deckIds(run);
 
     run = resolveCrewOffer(run, false, content);
 
     expect(run.crewIds).toEqual([]);
-    expect(run.deckCardIds).toEqual(deckBefore);
+    expect(deckIds(run)).toEqual(deckBefore);
     expect(run.phase).toBe('map');
     expect(run.activeCrewId).toBeNull();
   });
 
   it('crew cards in the deck are playable in combat', () => {
     const rng = createRng(34);
-    let run = initRun(testMap, ['crewHeal', 'crewHeal', 'crewHeal']);
+    let run = initRun(
+      testMap,
+      ['crewHeal', 'crewHeal', 'crewHeal'].map((cardId) => ({ cardId, level: 0 as const })),
+    );
     run = { ...run, crewIds: ['medic'], hull: 30 };
     const content = makeContent();
     run = enterNode(run, 'entryCombat', content, rng);
@@ -590,7 +600,7 @@ describe('treasure nodes', () => {
 
     expect(run.phase).toBe('treasure');
     expect(run.salvage).toBe(15);
-    expect(run.deckCardIds).toContain('strike');
+    expect(deckIds(run)).toContain('strike');
     expect(run.pendingReward).toEqual({ salvage: 15, cardId: 'strike' });
 
     run = leaveNode(run);

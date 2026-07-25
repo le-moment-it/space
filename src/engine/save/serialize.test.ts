@@ -46,7 +46,7 @@ describe('loadSave / persistSave', () => {
     expect(loaded.meta.unlockedCardIds).toContain('earned-from-a-milestone');
     expect(loaded.meta.unlockedCardIds).toContain('a');
     // The player's chosen loadout is never touched.
-    expect(loaded.meta.loadoutCardIds).toEqual(save.meta.loadoutCardIds);
+    expect(loaded.meta.loadoutCards).toEqual(save.meta.loadoutCards);
   });
 
   it('grants newly default-unlocked ship systems too', () => {
@@ -77,10 +77,12 @@ describe('loadSave / persistSave', () => {
 
     const loaded = loadSave(defaults);
 
-    expect(loaded.version).toBe(5);
+    expect(loaded.version).toBe(6);
     expect(loaded.meta.crew).toEqual({});
     expect(loaded.meta.endingsUnlocked).toEqual([]);
-    expect(loaded.meta.loadoutCardIds).toEqual(defaults.loadoutCardIds);
+    expect(loaded.meta.loadoutCards).toEqual(
+      defaults.loadoutCardIds.map((cardId) => ({ cardId, level: 0 })),
+    );
     expect(loaded.meta.stats).toEqual({
       runsStarted: 2,
       runsWon: 0,

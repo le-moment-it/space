@@ -1,3 +1,4 @@
+import type { LoadoutCard } from '../cards/types';
 import type { CrewProgress } from '../crew/types';
 import type { RunState } from '../run/types';
 
@@ -69,7 +70,7 @@ export interface SaveDataV4 {
   currentRun: RunState | null;
 }
 
-// --- v5 (current) ---
+// --- v5 (historical — frozen shape, used only as the v5->v6 migration input) ---
 
 export interface SaveMetaV5 extends SaveMetaV4 {
   /** The player's chosen starting deck for the next run (exactly LOADOUT_SIZE card ids). */
@@ -82,7 +83,20 @@ export interface SaveDataV5 {
   currentRun: RunState | null;
 }
 
-export const CURRENT_SAVE_VERSION = 5;
+// --- v6 (current) ---
+
+export interface SaveMetaV6 extends Omit<SaveMetaV5, 'loadoutCardIds'> {
+  /** The player's starting deck: one entry per slot, each carrying its upgrade level. */
+  loadoutCards: LoadoutCard[];
+}
+
+export interface SaveDataV6 {
+  version: 6;
+  meta: SaveMetaV6;
+  currentRun: RunState | null;
+}
+
+export const CURRENT_SAVE_VERSION = 6;
 
 /** Number of cards in a starting loadout. */
 export const LOADOUT_SIZE = 10;

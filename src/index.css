@@ -45,6 +45,11 @@
      palette so a keyword never reads as damage/shield/repair. */
   --keyword: #e2eaf7;
 
+  /* Upgraded cards — a warm green that reads as "improved" and stays clear of
+     both the rarity tiers and the cyan/amber you-vs-threat axis. */
+  --upgrade: #6ee7a8;
+  --upgrade-hi: #a7f3c8;
+
   /* Card rarity. Deliberately offset from the type accents above (blue reads
      apart from maneuver cyan, purple from shipsystem violet, gold from crew). */
   --rarity-common: #93a1b8;

@@ -1,4 +1,4 @@
-import type { CardDefinition } from '../cards/types';
+import type { CardDefinition, DeckCard } from '../cards/types';
 import type { CombatConfig, CombatState, EnemyDefinition } from '../combat/types';
 import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
 import type { CrewDefinition } from '../crew/types';
@@ -41,7 +41,8 @@ export interface RunState {
   visitedNodeIds: string[];
   hull: number;
   maxHull: number;
-  deckCardIds: string[];
+  /** This run's deck, one entry per physical copy (each carries its own upgrade level). */
+  deckCards: DeckCard[];
   salvage: number;
   /** Ship systems installed this run — accumulate across all acts of a run; reset every new run. */
   shipSystemIds: string[];

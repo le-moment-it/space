@@ -1,11 +1,16 @@
-import type { CardDefinition, CardInstance } from '../cards/types';
+import type { CardDefinition, CardInstance, DeckCard } from '../cards/types';
+import { resolveCard } from '../cards/types';
 import { shuffle, type Rng } from '../rng';
 import { intentForTurn } from './enemyAI';
 import type { CombatConfig, CombatLogEntry, CombatState, EnemyDefinition } from './types';
 import { DEFAULT_COMBAT_CONFIG } from './types';
 
-function buildDeckInstances(cardIds: readonly string[]): CardInstance[] {
-  return cardIds.map((cardId, index) => ({ instanceId: `${cardId}#${index}`, cardId }));
+function buildDeckInstances(deck: readonly DeckCard[]): CardInstance[] {
+  return deck.map((card, index) => ({
+    instanceId: `${card.cardId}#${index}`,
+    cardId: card.cardId,
+    level: card.level,
+  }));
 }
 
 /** Draws up to `amount` cards from drawPile into hand, reshuffling discardPile in if needed. */
@@ -61,7 +66,7 @@ function startPlayerTurn(state: CombatState, rng: Rng, config: CombatConfig): Co
 
 export function initCombat(opts: {
   cardDefinitions: Record<string, CardDefinition>;
-  startingDeckCardIds: readonly string[];
+  startingDeck: readonly DeckCard[];
   enemy: EnemyDefinition;
   rng: Rng;
   config?: CombatConfig;
@@ -69,7 +74,7 @@ export function initCombat(opts: {
   startingHull?: number;
 }): CombatState {
   const config = opts.config ?? DEFAULT_COMBAT_CONFIG;
-  const drawPile = shuffle(buildDeckInstances(opts.startingDeckCardIds), opts.rng);
+  const drawPile = shuffle(buildDeckInstances(opts.startingDeck), opts.rng);
   const startingHull =
     opts.startingHull !== undefined
       ? Math.max(0, Math.min(opts.startingHull, config.playerMaxHull))
@@ -118,10 +123,13 @@ export function playCard(
   if (cardIndex === -1) return state;
 
   const instance = state.hand[cardIndex];
-  const def = cardDefinitions[instance.cardId];
-  if (!def) {
+  const baseDef = cardDefinitions[instance.cardId];
+  if (!baseDef) {
     throw new Error(`Unknown card id: ${instance.cardId}`);
   }
+  // Resolve the upgrade level once, here: everything below reads cost/effect/exhaust
+  // off `def` and so gets the upgraded values without knowing upgrades exist.
+  const def = resolveCard(baseDef, instance.level);
 
   if (state.player.power < def.cost) {
     return { ...state, log: [...state.log, { t: 'notEnoughPower', cardId: def.id }] };

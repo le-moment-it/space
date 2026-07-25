@@ -1,5 +1,5 @@
 import { createEmptySave, type SaveDefaults } from './schema';
-import { CURRENT_SAVE_VERSION, type SaveDataV5 } from './types';
+import { CURRENT_SAVE_VERSION, LOADOUT_SIZE, type SaveDataV6 } from './types';
 
 type Migration = (data: Record<string, unknown>, defaults: SaveDefaults) => Record<string, unknown>;
 type Validator = (data: Record<string, unknown>) => boolean;
@@ -50,14 +50,25 @@ function isValidSaveDataV4(data: Record<string, unknown>): boolean {
   return isPlainObject(meta.crew) && Array.isArray(meta.endingsUnlocked);
 }
 
-function isValidSaveDataV5(data: unknown): data is SaveDataV5 {
-  if (!isPlainObject(data) || data.version !== 5) return false;
+function isValidSaveDataV5(data: Record<string, unknown>): boolean {
+  if (data.version !== 5) return false;
   if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
   const meta = data.meta as Record<string, unknown>;
   return (
     isPlainObject(meta.crew) &&
     Array.isArray(meta.endingsUnlocked) &&
     Array.isArray(meta.loadoutCardIds)
+  );
+}
+
+function isValidSaveDataV6(data: unknown): data is SaveDataV6 {
+  if (!isPlainObject(data) || data.version !== 6) return false;
+  if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
+  const meta = data.meta as Record<string, unknown>;
+  return (
+    isPlainObject(meta.crew) &&
+    Array.isArray(meta.endingsUnlocked) &&
+    Array.isArray(meta.loadoutCards)
   );
 }
 
@@ -130,18 +141,72 @@ function migrateV4ToV5(
   };
 }
 
+/**
+ * v6 gives every card copy its own upgrade level, so flat id lists become entry
+ * objects: the loadout gains levels, and an in-progress run's deck does too.
+ *
+ * A migrated deck's first LOADOUT_SIZE entries are tagged with their loadout slot:
+ * a v5 deck was built from the loadout in order and only ever appended to, so the
+ * mapping holds. The store re-checks the card id before writing any permanent
+ * upgrade, so a wrong guess degrades to a run-only upgrade rather than corrupting
+ * a slot. Combat piles in flight are back-filled to level 0.
+ */
+function migrateV5ToV6(data: Record<string, unknown>): Record<string, unknown> {
+  const meta = data.meta as Record<string, unknown>;
+  const loadoutCardIds = (meta.loadoutCardIds as string[] | undefined) ?? [];
+  const { loadoutCardIds: _dropped, ...restMeta } = meta;
+
+  const currentRun = data.currentRun as Record<string, unknown> | null;
+  let migratedRun = currentRun;
+  if (currentRun) {
+    const deckCardIds = (currentRun.deckCardIds as string[] | undefined) ?? [];
+    const { deckCardIds: _oldDeck, ...restRun } = currentRun;
+    const combat = currentRun.activeCombat as Record<string, unknown> | null;
+    migratedRun = {
+      ...restRun,
+      deckCards: deckCardIds.map((cardId, i) => ({
+        cardId,
+        level: 0,
+        ...(i < LOADOUT_SIZE ? { loadoutIndex: i } : {}),
+      })),
+      activeCombat: combat ? withLeveledPiles(combat) : combat,
+    };
+  }
+
+  return {
+    version: 6,
+    meta: { ...restMeta, loadoutCards: loadoutCardIds.map((cardId) => ({ cardId, level: 0 })) },
+    currentRun: migratedRun,
+  };
+}
+
+/** Back-fills level 0 onto every CardInstance of an in-flight combat. */
+function withLeveledPiles(combat: Record<string, unknown>): Record<string, unknown> {
+  const piles = ['drawPile', 'hand', 'discardPile', 'exhaustPile'] as const;
+  const patched: Record<string, unknown> = { ...combat };
+  for (const pile of piles) {
+    const cards = combat[pile];
+    if (Array.isArray(cards)) {
+      patched[pile] = cards.map((c) => ({ ...(c as object), level: 0 }));
+    }
+  }
+  return patched;
+}
+
 // All keyed by the version being migrated FROM.
 const VALIDATORS: Record<number, Validator> = {
   1: isValidSaveDataV1,
   2: isValidSaveDataV2,
   3: isValidSaveDataV3,
   4: isValidSaveDataV4,
+  5: isValidSaveDataV5,
 };
 const MIGRATIONS: Record<number, Migration> = {
   1: migrateV1ToV2,
   2: migrateV2ToV3,
   3: migrateV3ToV4,
   4: migrateV4ToV5,
+  5: migrateV5ToV6,
 };
 
 /**
@@ -151,7 +216,7 @@ const MIGRATIONS: Record<number, Migration> = {
  * or an old version with no migration path — rather than crashing the app. Losing
  * progress is far better than a broken game.
  */
-export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV5 {
+export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6 {
   if (!isPlainObject(raw) || typeof raw.version !== 'number') {
     return createEmptySave(defaults);
   }
@@ -166,7 +231,7 @@ export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV5 {
     version = (data.version as number | undefined) ?? version + 1;
   }
 
-  if (!isValidSaveDataV5(data)) {
+  if (!isValidSaveDataV6(data)) {
     return createEmptySave(defaults);
   }
   return data;

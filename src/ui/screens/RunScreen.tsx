@@ -57,7 +57,7 @@ export function RunScreen() {
         title={t('run.viewDeckHint')}
       >
         <span className="stat__label">{t('stat.deck')}</span>
-        <span className="stat__value mono">{run.deckCardIds.length}</span>
+        <span className="stat__value mono">{run.deckCards.length}</span>
       </button>
       <div className="stat">
         <span className="stat__label">{t('stat.systems')}</span>
@@ -134,7 +134,7 @@ export function RunScreen() {
       {deckOpen && (
         <CardListModal
           title={t('deckView.title')}
-          cardIds={run.deckCardIds}
+          cards={run.deckCards}
           onClose={() => setDeckOpen(false)}
         />
       )}

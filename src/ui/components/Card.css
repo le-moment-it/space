@@ -100,6 +100,15 @@
   min-height: 2.4em; /* reserve two lines so viewports align across the hand */
   overflow-wrap: break-word;
 }
+/* Upgraded copies: the +/++ suffix carries the meaning, the tint makes it scannable
+   in a crowded hand. Brighter at tier 2 rather than a second hue. */
+.card__name[data-level='1'] {
+  color: var(--upgrade);
+}
+.card__name[data-level='2'] {
+  color: var(--upgrade-hi);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--upgrade-hi) 40%, transparent);
+}
 
 /* Viewport — the card "image": glyph on an inset screen */
 .card__viewport {
