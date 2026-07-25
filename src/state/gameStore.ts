@@ -37,11 +37,13 @@ import {
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
 import { MAX_UPGRADE_LEVEL, nextLevel, type DeckCard } from '../engine/cards/types';
 import { createRng, type Rng } from '../engine/rng';
-import { loadSave, persistSave } from '../engine/save/serialize';
+import { clearSave, loadSave, makeSave, persistSave } from '../engine/save/serialize';
+import { createEmptySave } from '../engine/save/schema';
 import { LOADOUT_SIZE, type SaveDataV6, type SaveMetaV6 } from '../engine/save/types';
 import { loadLanguage, persistLanguage, type Language } from '../i18n/types';
 
-const SAVE_DEFAULTS = {
+/** Exported so the settings panel can migrate an imported file the same way a load does. */
+export const SAVE_DEFAULTS = {
   unlockedCardIds: defaultUnlockedCardIds,
   unlockedShipSystemIds: defaultUnlockedShipSystemIds,
   loadoutCardIds: defaultLoadoutCardIds,
@@ -182,6 +184,10 @@ interface GameStore {
   removeLoadoutCard: (index: number) => void;
   /** Reset the loadout to the default starting deck. */
   resetLoadout: () => void;
+  /** Wipe all progress back to a new profile. Does not touch `language`. */
+  resetSave: () => void;
+  /** Replace all progress with a save the player imported. */
+  importSave: (save: SaveDataV6) => void;
 }
 
 /**
@@ -211,7 +217,7 @@ export const useGameStore = create<GameStore>((set, get) => {
   const initialSave: SaveDataV6 = { ...loaded, currentRun: normalizeRun(loaded.currentRun) };
 
   function persist(meta: SaveMetaV6, run: RunState | null): void {
-    persistSave({ version: 6, meta, currentRun: run });
+    persistSave(makeSave(meta, run));
   }
 
   // Commit any migration immediately, so a session that never mutates state (loads
@@ -354,6 +360,32 @@ export const useGameStore = create<GameStore>((set, get) => {
       };
       persist(nextMeta, run);
       set({ meta: nextMeta });
+    },
+
+    /**
+     * Clearing storage alone would not do it: every subsequent action re-persists from
+     * state, so the wiped key would be refilled by the next click. The reset has to
+     * happen in state, which is then written back out. `language` lives under its own
+     * key and is deliberately left alone — a reset shouldn't switch the UI to English.
+     */
+    resetSave: () => {
+      const fresh = createEmptySave(SAVE_DEFAULTS);
+      clearSave();
+      persist(fresh.meta, null);
+      set({ meta: fresh.meta, run: null, appPhase: 'hub', pendingEndingIds: [] });
+    },
+
+    importSave: (save) => {
+      const run = normalizeRun(save.currentRun);
+      persist(save.meta, run);
+      set({
+        meta: save.meta,
+        run,
+        appPhase: run ? 'run' : 'hub',
+        // Endings the imported profile already unlocked have been seen; replaying
+        // their cutscenes on import would be noise, not a reward.
+        pendingEndingIds: [],
+      });
     },
   };
 });

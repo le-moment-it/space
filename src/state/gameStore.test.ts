@@ -310,3 +310,108 @@ describe('gameStore — permanent card upgrades', () => {
     expect(useGameStore.getState().meta.loadoutCards[0].level).toBe(1);
   });
 });
+
+describe('gameStore — reset and import', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
+  });
+
+  it('wipes every kind of progress and returns to the hub', () => {
+    useGameStore.getState().startNewRun();
+    useGameStore.setState((s) => ({
+      meta: {
+        ...s.meta,
+        unlockedCardIds: [...s.meta.unlockedCardIds, 'earned-card'],
+        unlockedShipSystemIds: [...s.meta.unlockedShipSystemIds, 'earned-system'],
+        milestones: { 'defeat-a-boss': true },
+        stats: { ...s.meta.stats, runsWon: 4, bossesDefeated: 2 },
+        crew: { medic: { timesRecruited: 3 } },
+        endingsUnlocked: ['first-contact'],
+      },
+      pendingEndingIds: ['first-contact'],
+    }));
+
+    useGameStore.getState().resetSave();
+
+    const after = useGameStore.getState();
+    expect(after.run).toBeNull();
+    expect(after.appPhase).toBe('hub');
+    expect(after.pendingEndingIds).toEqual([]);
+    expect(after.meta.unlockedCardIds).not.toContain('earned-card');
+    expect(after.meta.unlockedShipSystemIds).not.toContain('earned-system');
+    expect(after.meta.milestones).toEqual({});
+    expect(after.meta.crew).toEqual({});
+    expect(after.meta.endingsUnlocked).toEqual([]);
+    expect(after.meta.stats.runsWon).toBe(0);
+    expect(after.meta.stats.runsStarted).toBe(0);
+  });
+
+  it('persists the reset, so it survives a reload', () => {
+    useGameStore.getState().startNewRun();
+
+    useGameStore.getState().resetSave();
+
+    const stored = JSON.parse(localStorage.getItem('space-roguelike:save') ?? '{}');
+    expect(stored.currentRun).toBeNull();
+    expect(stored.meta.stats.runsStarted).toBe(0);
+  });
+
+  it('leaves the language alone — a reset is not a preferences reset', () => {
+    useGameStore.getState().setLanguage('fr');
+
+    useGameStore.getState().resetSave();
+
+    expect(useGameStore.getState().language).toBe('fr');
+    expect(localStorage.getItem('space:lang')).toBe('fr');
+  });
+
+  it('imports a save with no run and lands in the hub', () => {
+    const imported = createEmptySave({
+      unlockedCardIds: ['a', 'b'],
+      unlockedShipSystemIds: ['x'],
+      loadoutCardIds: ['a'],
+    });
+    imported.meta.stats.runsWon = 7;
+
+    useGameStore.getState().importSave(imported);
+
+    const after = useGameStore.getState();
+    expect(after.meta.stats.runsWon).toBe(7);
+    expect(after.meta.unlockedCardIds).toEqual(['a', 'b']);
+    expect(after.run).toBeNull();
+    expect(after.appPhase).toBe('hub');
+    expect(
+      JSON.parse(localStorage.getItem('space-roguelike:save') ?? '{}').meta.stats.runsWon,
+    ).toBe(7);
+  });
+
+  it('resumes an imported run in progress', () => {
+    useGameStore.getState().startNewRun();
+    const exported = {
+      version: 6 as const,
+      meta: useGameStore.getState().meta,
+      currentRun: useGameStore.getState().run,
+    };
+    useGameStore.getState().resetSave();
+    expect(useGameStore.getState().appPhase).toBe('hub');
+
+    useGameStore.getState().importSave(exported);
+
+    expect(useGameStore.getState().appPhase).toBe('run');
+    expect(useGameStore.getState().run?.map.nodes).toEqual(exported.currentRun?.map.nodes);
+  });
+
+  it('does not replay endings the imported profile already unlocked', () => {
+    const imported = createEmptySave({
+      unlockedCardIds: [],
+      unlockedShipSystemIds: [],
+      loadoutCardIds: [],
+    });
+    imported.meta.endingsUnlocked = ['first-contact'];
+
+    useGameStore.getState().importSave(imported);
+
+    expect(useGameStore.getState().pendingEndingIds).toEqual([]);
+  });
+});

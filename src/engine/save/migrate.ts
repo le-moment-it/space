@@ -210,29 +210,36 @@ const MIGRATIONS: Record<number, Migration> = {
 };
 
 /**
- * Validates and migrates arbitrary persisted JSON into the current SaveData shape.
- * Falls back to a fresh save for anything unrecognized — corrupt data, a version
- * from the future, an old version that doesn't even match its own expected shape,
- * or an old version with no migration path — rather than crashing the app. Losing
- * progress is far better than a broken game.
+ * Validates and migrates arbitrary JSON into the current SaveData shape, or returns
+ * null if it isn't a save at all — corrupt data, a version from the future, an old
+ * version that doesn't match its own expected shape, or one with no migration path.
+ *
+ * Separate from `migrateSave` because the two callers want opposite things from a
+ * rejection. Loading from localStorage wants to shrug and carry on; importing a file
+ * the player picked must be able to say "that isn't a save", which it cannot do if a
+ * rejection is indistinguishable from successfully importing a brand-new profile.
  */
-export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6 {
-  if (!isPlainObject(raw) || typeof raw.version !== 'number') {
-    return createEmptySave(defaults);
-  }
+export function tryMigrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6 | null {
+  if (!isPlainObject(raw) || typeof raw.version !== 'number') return null;
 
   let data: Record<string, unknown> = raw;
   let version = raw.version;
   while (version < CURRENT_SAVE_VERSION) {
     const validate = VALIDATORS[version];
     const migrate = MIGRATIONS[version];
-    if (!validate || !migrate || !validate(data)) return createEmptySave(defaults);
+    if (!validate || !migrate || !validate(data)) return null;
     data = migrate(data, defaults);
     version = (data.version as number | undefined) ?? version + 1;
   }
 
-  if (!isValidSaveDataV6(data)) {
-    return createEmptySave(defaults);
-  }
-  return data;
+  return isValidSaveDataV6(data) ? data : null;
+}
+
+/**
+ * Validates and migrates arbitrary persisted JSON into the current SaveData shape.
+ * Falls back to a fresh save for anything unrecognized rather than crashing the app.
+ * Losing progress is far better than a broken game.
+ */
+export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6 {
+  return tryMigrateSave(raw, defaults) ?? createEmptySave(defaults);
 }

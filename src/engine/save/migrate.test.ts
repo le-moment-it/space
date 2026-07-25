@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { migrateSave } from './migrate';
+import { migrateSave, tryMigrateSave } from './migrate';
 import { createEmptySave } from './schema';
 import type { SaveDataV1, SaveDataV2, SaveDataV4, SaveDataV5, SaveDataV6 } from './types';
 
@@ -244,5 +244,46 @@ describe('migrateSave', () => {
     expect(result.meta.loadoutCards).toEqual(
       defaults.loadoutCardIds.map((cardId) => ({ cardId, level: 0 })),
     );
+  });
+});
+
+/**
+ * The same rejections as above, reported instead of swallowed. `migrateSave` cannot
+ * tell a caller "that wasn't a save" — it hands back a fresh one, which on the import
+ * path is indistinguishable from wiping the player's progress.
+ */
+describe('tryMigrateSave', () => {
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['a string', 'not an object'],
+    ['a number', 42],
+    ['an array', []],
+    ['an object with no version', { no: 'version field' }],
+    ['a version from the future', { version: 99, meta: {}, currentRun: null }],
+    [
+      'a v5 shape missing required meta fields',
+      { version: 5, meta: { unlockedCardIds: ['a'] }, currentRun: null },
+    ],
+  ])('returns null for %s', (_label, raw) => {
+    expect(tryMigrateSave(raw, defaults)).toBeNull();
+  });
+
+  it('returns the migrated save for a payload it does accept', () => {
+    const validV2: SaveDataV2 = {
+      version: 2,
+      meta: {
+        unlockedCardIds: ['a'],
+        unlockedShipSystemIds: ['x'],
+        milestones: {},
+        stats: fullStats,
+      },
+      currentRun: null,
+    };
+
+    const result = tryMigrateSave(validV2, defaults);
+
+    expect(result?.version).toBe(6);
+    expect(result?.meta.endingsUnlocked).toEqual([]);
   });
 });
