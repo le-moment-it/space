@@ -57,38 +57,60 @@
 }
 
 /*
- * The fan. Each tier pivots around a point well below the card, so a single
- * rotation produces the whole arc — outer cards swing down and outward on their
- * own, with no hand-tuned offsets to keep in sync.
+ * The fan.
+ *
+ * Rotation and lift are separate custom properties composed into one transform, all
+ * about the card's own centre. An earlier version pivoted from a point far below and
+ * un-rotated on hover, which slid the card ~68px sideways — out from under the cursor,
+ * so the hover dropped, the card re-tilted, and it flickered in a loop.
+ *
+ * The rule that keeps it stable: hover must never change the rotation. A hovered card
+ * grows and rises in place, the way a card does when you pull it out of a hand.
  */
 .upgrade__tier {
   --fan-angle: 0deg;
+  --fan-drop: 0px;
+  --fan-spread: 0px;
+  --fan-lift: 0px;
+  --fan-scale: 1;
 
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  margin: 0 -0.7rem;
+  margin: 0 -0.15rem;
   padding: 0.5rem;
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
-  transform: rotate(var(--fan-angle));
-  transform-origin: 50% 145%;
+  transform: translate(var(--fan-spread), calc(var(--fan-drop) + var(--fan-lift)))
+    rotate(var(--fan-angle)) scale(var(--fan-scale));
+  transform-origin: 50% 50%;
   transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease;
+  /* Cards deal out when the panel opens, left to right. */
+  animation: fan-deal 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
+
+/* The outer tiers tilt and sit lower, so the three read as an arc. */
 .upgrade__tier:nth-child(1) {
-  --fan-angle: -9deg;
+  --fan-angle: -7deg;
+  --fan-drop: 14px;
+  --fan-spread: -12px;
   z-index: 1;
+  animation-delay: 0s;
 }
 .upgrade__tier:nth-child(2) {
   z-index: 2;
+  animation-delay: 0.05s;
 }
 .upgrade__tier:nth-child(3) {
-  --fan-angle: 9deg;
+  --fan-angle: 7deg;
+  --fan-drop: 14px;
+  --fan-spread: 12px;
   z-index: 3;
+  animation-delay: 0.1s;
 }
 
 /* The tier this copy is actually at, so the path reads relative to what you own.
@@ -99,16 +121,25 @@
   background: color-mix(in srgb, var(--upgrade) 7%, transparent);
 }
 
-/* Straighten and lift the one you point at, so a fanned card is still readable. */
+/* Lift and enlarge in place — note the rotation is deliberately untouched. */
 .upgrade__tier:hover {
-  --fan-angle: 0deg;
+  --fan-lift: -14px;
+  --fan-scale: 1.06;
   z-index: 5;
-  transform: rotate(0deg) translateY(-12px);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes fan-deal {
+  from {
+    opacity: 0;
+    transform: translate(0, 30px) rotate(0deg) scale(0.92);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .upgrade__tier {
     transition: none;
+    animation: none;
   }
 }
 
