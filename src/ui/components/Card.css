@@ -139,7 +139,6 @@
 }
 
 .card__text {
-  flex: 1;
   margin: 0.5rem 0.6rem 0.3rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--line);
@@ -148,9 +147,11 @@
   color: var(--ink-dim);
 }
 
-/* Rarity — machine label, footer of the card, colored by tier */
+/* Rarity — machine label, footer of the card, colored by tier.
+   margin-top:auto pins it to the bottom and pushes the card's slack into the
+   gap above it, so keywords sit up with the effect text they modify. */
 .card__rarity {
-  margin: 0 0.5rem 0.5rem;
+  margin: auto 0.5rem 0.5rem;
   padding-top: 0.4rem;
   text-align: center;
   font-family: var(--mono);
@@ -193,7 +194,7 @@
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  margin: 0 0.5rem 0.1rem;
+  margin: 0.35rem 0.5rem 0.1rem;
 }
 
 /* States */
