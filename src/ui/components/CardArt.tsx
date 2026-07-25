@@ -78,7 +78,10 @@ function glyph(effect: CardEffect) {
           <circle cx="33" cy="18" r="2" fill="currentColor" stroke="none" />
         </>
       );
-    default:
-      return <circle cx="24" cy="24" r="12" opacity="0.5" />;
+    default: {
+      // Exhaustive: a new effect kind must get its own glyph rather than a blank disc.
+      const exhaustive: never = effect;
+      throw new Error(`Unhandled card effect art: ${JSON.stringify(exhaustive)}`);
+    }
   }
 }

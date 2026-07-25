@@ -1,5 +1,5 @@
 import type { CardDefinition, CardInstance, DeckCard } from '../cards/types';
-import { resolveCard } from '../cards/types';
+import { effectsOf, resolveCard } from '../cards/types';
 import { shuffle, type Rng } from '../rng';
 import { intentForTurn } from './enemyAI';
 import { applyStatus, decayStatuses, statusAmount, tickDamage } from './status';
@@ -147,49 +147,53 @@ export function playCard(
   const exhaustPile = exhausted ? [...state.exhaustPile, instance] : state.exhaustPile;
   let log: CombatLogEntry[] = [...state.log, { t: 'played', cardId: def.id }];
 
-  switch (def.effect.kind) {
-    case 'damage': {
-      const amount = def.effect.amount;
-      const absorbed = Math.min(enemy.shield, amount);
-      enemy.shield -= absorbed;
-      const remaining = amount - absorbed;
-      enemy.hull = Math.max(0, enemy.hull - remaining);
-      log.push({ t: 'damage', cardId: def.id, amount, absorbed });
-      break;
-    }
-    case 'shield':
-      player.shield += def.effect.amount;
-      log.push({ t: 'shield', amount: def.effect.amount });
-      break;
-    case 'heal':
-      player.hull = Math.min(player.maxHull, player.hull + def.effect.amount);
-      log.push({ t: 'heal', amount: def.effect.amount });
-      break;
-    case 'power':
-      player.power += def.effect.amount;
-      log.push({ t: 'power', amount: def.effect.amount });
-      break;
-    case 'weaken':
-      enemy.statuses = applyStatus(
-        enemy.statuses,
-        'weaken',
-        def.effect.amount,
-        def.effect.duration,
-      );
-      log.push({ t: 'status', target: 'enemy', status: 'weaken', amount: def.effect.amount });
-      break;
-    case 'draw': {
-      const result = drawCards(hand, drawPile, discardPile, def.effect.amount, rng, log);
-      hand = result.hand;
-      drawPile = result.drawPile;
-      discardPile = result.discardPile;
-      log = result.log;
-      log.push({ t: 'draw', amount: def.effect.amount });
-      break;
-    }
-    default: {
-      const exhaustive: never = def.effect;
-      throw new Error(`Unhandled card effect: ${JSON.stringify(exhaustive)}`);
+  // Resolve every effect in order. Locals are shared across the loop, so a card can
+  // draw and then strike with the cards it drew.
+  for (const effect of effectsOf(def)) {
+    switch (effect.kind) {
+      case 'damage': {
+        // Multi-hit lands as separate hits, so shields absorb from each one — worse
+        // into armour, better with per-attack bonuses.
+        const hits = Math.max(1, effect.times ?? 1);
+        for (let i = 0; i < hits; i++) {
+          if (enemy.hull <= 0) break;
+          const amount = effect.amount;
+          const absorbed = Math.min(enemy.shield, amount);
+          enemy.shield -= absorbed;
+          enemy.hull = Math.max(0, enemy.hull - (amount - absorbed));
+          log.push({ t: 'damage', cardId: def.id, amount, absorbed });
+        }
+        break;
+      }
+      case 'shield':
+        player.shield += effect.amount;
+        log.push({ t: 'shield', amount: effect.amount });
+        break;
+      case 'heal':
+        player.hull = Math.min(player.maxHull, player.hull + effect.amount);
+        log.push({ t: 'heal', amount: effect.amount });
+        break;
+      case 'power':
+        player.power += effect.amount;
+        log.push({ t: 'power', amount: effect.amount });
+        break;
+      case 'weaken':
+        enemy.statuses = applyStatus(enemy.statuses, 'weaken', effect.amount, effect.duration);
+        log.push({ t: 'status', target: 'enemy', status: 'weaken', amount: effect.amount });
+        break;
+      case 'draw': {
+        const result = drawCards(hand, drawPile, discardPile, effect.amount, rng, log);
+        hand = result.hand;
+        drawPile = result.drawPile;
+        discardPile = result.discardPile;
+        log = result.log;
+        log.push({ t: 'draw', amount: effect.amount });
+        break;
+      }
+      default: {
+        const exhaustive: never = effect;
+        throw new Error(`Unhandled card effect: ${JSON.stringify(exhaustive)}`);
+      }
     }
   }
 

@@ -62,6 +62,23 @@ const cardDefinitions: Record<string, CardDefinition> = {
     description: '',
     effect: { kind: 'draw', amount: 2 },
   },
+  siphon: {
+    id: 'siphon',
+    name: 'Siphon Beam',
+    type: 'weapon',
+    cost: 1,
+    description: '',
+    effect: { kind: 'damage', amount: 6 },
+    extraEffects: [{ kind: 'heal', amount: 4 }],
+  },
+  volley: {
+    id: 'volley',
+    name: 'Needle Volley',
+    type: 'weapon',
+    cost: 1,
+    description: '',
+    effect: { kind: 'damage', amount: 3, times: 3 },
+  },
   oneShot: {
     id: 'oneShot',
     name: 'One Shot',
@@ -516,5 +533,74 @@ describe('statuses in combat', () => {
     });
     expect(state.player.statuses).toEqual({});
     expect(state.enemy.statuses).toEqual({});
+  });
+});
+
+describe('multi-effect and multi-hit cards', () => {
+  it('resolves every effect of a card, in order', () => {
+    const rng = createRng(95);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('siphon', 'siphon', 'siphon', 'siphon', 'siphon', 'siphon'),
+      enemy: passiveEnemy,
+      rng,
+      startingHull: 20,
+    });
+
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 6);
+    expect(state.player.hull).toBe(24); // healed 4
+  });
+
+  it('lands a multi-hit as separate hits, each checked against shields', () => {
+    const rng = createRng(96);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('volley', 'volley', 'volley', 'volley', 'volley', 'volley'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    // 4 shield vs 3 hits of 3: hit 1 fully absorbed (1 shield left), hit 2 absorbs 1
+    // and lands 2, hit 3 lands 3. Total 5 through, versus 5 for a single 9-damage hit.
+    state = { ...state, enemy: { ...state.enemy, shield: 4 } };
+
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+
+    expect(state.enemy.shield).toBe(0);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 5);
+    expect(state.log.filter((e) => e.t === 'damage')).toHaveLength(3);
+  });
+
+  it('stops a multi-hit once the enemy is down', () => {
+    const rng = createRng(97);
+    const frail = { ...passiveEnemy, maxHull: 4 };
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('volley', 'volley', 'volley', 'volley', 'volley', 'volley'),
+      enemy: frail,
+      rng,
+    });
+
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+
+    expect(state.phase).toBe('won');
+    expect(state.log.filter((e) => e.t === 'damage')).toHaveLength(2); // not 3
+  });
+
+  it('upgrades only the headline effect, leaving the extras alone', () => {
+    const rng = createRng(98);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: [{ cardId: 'siphon', level: 1 as const }],
+      enemy: passiveEnemy,
+      rng,
+      startingHull: 20,
+    });
+
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 8); // 6 -> 8
+    expect(state.player.hull).toBe(24); // heal still 4
   });
 });

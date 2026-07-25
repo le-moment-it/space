@@ -5,7 +5,7 @@ import type {
   CardType,
   UpgradeLevel,
 } from '../../engine/cards/types';
-import { rarityOf, resolveCard } from '../../engine/cards/types';
+import { effectsOf, rarityOf, resolveCard } from '../../engine/cards/types';
 import { useTranslation, type Translator, type UiKey } from '../../i18n';
 import { CardArt } from './CardArt';
 import { Keyword } from './Keyword';
@@ -39,6 +39,12 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
           <b className="kw kw--damage">
             {effect.amount} {t('effect.damage')}
           </b>
+          {effect.times && effect.times > 1 ? (
+            <>
+              {' '}
+              <b className="kw kw--damage">×{effect.times}</b>
+            </>
+          ) : null}
           .
         </>
       );
@@ -93,8 +99,12 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
           {effect.amount === 1 ? t('effect.card') : t('effect.cards')}.
         </>
       );
-    default:
-      return null;
+    default: {
+      // Exhaustive: a new effect kind must print something, or it would silently
+      // render a blank card face.
+      const exhaustive: never = effect;
+      throw new Error(`Unhandled card effect: ${JSON.stringify(exhaustive)}`);
+    }
   }
 }
 
@@ -154,7 +164,12 @@ export function Card({
         <CardArt effect={card.effect} />
       </div>
       <div className="card__text">
-        <EffectText effect={card.effect} t={t} />
+        {effectsOf(card).map((effect, i) => (
+          <span key={i}>
+            {i > 0 && ' '}
+            <EffectText effect={effect} t={t} />
+          </span>
+        ))}
       </div>
       {card.exhaust && (
         <div className="card__keywords">
