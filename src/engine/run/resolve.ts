@@ -364,10 +364,35 @@ export function chooseCardReward(
 }
 
 /**
- * Installs the chosen ship system, then either advances to the next act's freshly
- * generated map (hull/deck/salvage/ship systems all carry over) or, after the final
- * act's boss, ends the run in victory.
+ * Closes out a boss reward: either the next act's freshly generated map (hull, deck,
+ * salvage and ship systems all carry over) or, after the final act, victory.
+ *
+ * Shared by every reward path, so a new one can never accidentally skip the act
+ * advance — or, worse, fail to end the run after the Act 3 boss.
  */
+function advanceAfterBossReward(runState: RunState, rng: Rng, log: string[]): RunState {
+  if (runState.act >= TOTAL_ACTS) {
+    return { ...runState, rewardOptions: null, phase: 'runWon', log };
+  }
+
+  // Clearing an act boss fully restores the hull for the next act — a breather
+  // between acts, so attrition is per-act rather than across the whole run.
+  const nextAct = runState.act + 1;
+  const map = generateMap(rng, DEFAULT_MAP_CONFIG);
+  return {
+    ...runState,
+    hull: runState.maxHull,
+    rewardOptions: null,
+    act: nextAct,
+    map,
+    currentNodeId: null,
+    visitedNodeIds: [],
+    phase: 'map',
+    log: [...log, 'Hull fully restored.', `Entering Act ${nextAct}.`],
+  };
+}
+
+/** Installs the chosen ship system, then closes out the boss reward. */
 export function chooseShipSystemReward(
   runState: RunState,
   shipSystemId: string,
@@ -386,30 +411,49 @@ export function chooseShipSystemReward(
     hull += def.effect.amount;
   }
 
-  const shipSystemIds = [...runState.shipSystemIds, shipSystemId];
-  const log = [...runState.log, `Installed ship system: ${def.name}.`];
-
-  if (runState.act >= TOTAL_ACTS) {
-    return { ...runState, hull, maxHull, shipSystemIds, rewardOptions: null, phase: 'runWon', log };
-  }
-
-  // Clearing an act boss fully restores the hull for the next act — a breather
-  // between acts, so attrition is per-act rather than across the whole run.
-  const nextAct = runState.act + 1;
-  const map = generateMap(rng, DEFAULT_MAP_CONFIG);
-  return {
+  const withSystem: RunState = {
     ...runState,
-    hull: maxHull,
+    hull,
     maxHull,
-    shipSystemIds,
-    rewardOptions: null,
-    act: nextAct,
-    map,
-    currentNodeId: null,
-    visitedNodeIds: [],
-    phase: 'map',
-    log: [...log, 'Hull fully restored.', `Entering Act ${nextAct}.`],
+    shipSystemIds: [...runState.shipSystemIds, shipSystemId],
   };
+  return advanceAfterBossReward(withSystem, rng, [
+    ...runState.log,
+    `Installed ship system: ${def.name}.`,
+  ]);
+}
+
+/**
+ * The other half of the boss reward: permanently upgrade one card instead of
+ * installing a ship system. Only copies fielded from a loadout slot are eligible,
+ * because only those have a slot for the store to make the upgrade permanent in.
+ * This raises the run copy too — a permanent upgrade obviously applies right away.
+ */
+export function chooseCardUpgradeReward(
+  runState: RunState,
+  deckIndex: number,
+  content: RunContent,
+  rng: Rng,
+): RunState {
+  if (runState.phase !== 'reward') return runState;
+  if (!upgradableDeckIndices(runState, true).includes(deckIndex)) return runState;
+
+  const card = runState.deckCards[deckIndex];
+  const name = content.cardDefinitions[card.cardId]?.name ?? card.cardId;
+  const upgraded: RunState = { ...runState, deckCards: withUpgradedCopy(runState, deckIndex) };
+  return advanceAfterBossReward(upgraded, rng, [
+    ...runState.log,
+    `Permanently upgraded ${name} (+${nextLevel(card.level)}).`,
+  ]);
+}
+
+/**
+ * Escape hatch when a boss reward has nothing to offer — no unowned ship systems
+ * and no upgradable loadout cards. Without it the reward phase would have no exit.
+ */
+export function skipBossReward(runState: RunState, rng: Rng): RunState {
+  if (runState.phase !== 'reward') return runState;
+  return advanceAfterBossReward(runState, rng, [...runState.log, 'Declined the boss reward.']);
 }
 
 export function resolveEventChoice(

@@ -48,15 +48,24 @@ Pokerogue (browser-only, freely hostable, updated over time).
   - **Event** (Anomaly / Distress Signal) — text-based choice event, may reward/cost hull,
     cards, crew, or ship systems; this is also where crew are recruited and where crew
     dialogue/lore triggers.
-  - **Rest** (Repair Bay) — heal hull or upgrade one card (STS-style rest-site choice).
+  - **Rest** (Repair Bay) — restore a chunk of hull.
   - **Shop** (Salvage Trader) — spend a run-currency (salvage/scrap) to buy cards, ship
     systems, or remove a card from the deck.
   - **Treasure** (Derelict Cache) — guaranteed free reward, no fight.
+  - **Garage** (Refit Bay) — upgrade one card a tier, for the current run only. Cannot
+    follow another Garage on the same path.
   - **Boss** — one per act, end of the layered graph.
-- Distribution is weighted and constrained by generation rules (e.g. no two Rest nodes
-  back-to-back reachable in a row, Elite nodes not reachable in the first 1–2 layers,
+- Distribution is weighted and constrained by generation rules (no two Rest nodes, nor two
+  Garage nodes, back-to-back reachable in a row; Elite nodes not reachable in the first 1–2 layers,
   every path from start to boss has a comparable total difficulty/reward budget so no
   path is a strictly "easy" or "trap" choice).
+- **Card upgrades**: every card has two upgrade tiers. Levels are **per copy** — upgrading
+  one Kinetic Cannon leaves your others alone. Default step per effect kind (+2
+  damage/shield/heal, +1 power/weaken/draw), overridable per card. Two sources:
+  a Garage node (this run only) and the act-boss reward, where you choose **either**
+  a ship system **or** a permanent upgrade. A permanent upgrade attaches to the
+  loadout slot the copy was fielded from, so it persists into every future run;
+  cards picked up mid-run have no slot and so are Garage-only.
 - Generation is driven by a **seeded PRNG** — every run has a seed; same seed + same
   unlock-state reproduces the same map. This is mainly for debugging/testing now, and
   keeps the door open for a "daily challenge seed" feature later.

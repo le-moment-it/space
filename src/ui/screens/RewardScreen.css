@@ -1,0 +1,25 @@
+.reward__lane + .reward__lane {
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.reward__lane-head {
+  margin-bottom: 0.75rem;
+}
+.reward__lane-hint {
+  margin-top: 0.15rem;
+  font-size: 0.76rem;
+  color: var(--ink-dim);
+}
+
+.reward__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+}
+
+.reward__actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.5rem;
+}

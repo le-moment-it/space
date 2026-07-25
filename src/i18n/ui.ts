@@ -214,10 +214,16 @@ const en = {
   'reward.skip': 'Skip',
   'reward.viewDeck': 'View deck ({count})',
 
-  // Reward screen
+  // Reward screen (boss: choose one)
   'reward.eyebrow': 'Boss reward',
-  'reward.title': 'Install a ship system',
-  'reward.sub': 'One upgrade, bolted on for the rest of the run.',
+  'reward.title': 'Choose one reward',
+  'reward.sub': 'A ship system for this run, or a card upgrade that lasts forever.',
+  'reward.systemLane': 'Install a ship system',
+  'reward.systemLaneHint': 'Bolted on for the rest of this run.',
+  'reward.upgradeLane': 'Upgrade a card forever',
+  'reward.upgradeLaneHint': 'Permanent — this loadout slot stays upgraded in every future run.',
+  'reward.noUpgrades': 'No starting-deck card can be upgraded further.',
+  'reward.continue': 'Continue without a reward',
 
   // Card list modal (run deck + combat piles)
   'deckView.title': 'Current deck',
@@ -466,10 +472,18 @@ const fr: Record<UiKey, string> = {
   'reward.skip': 'Passer',
   'reward.viewDeck': 'Voir le deck ({count})',
 
-  // Reward screen
+  // Reward screen (boss: choose one)
   'reward.eyebrow': 'Récompense de boss',
-  'reward.title': 'Installer un système de vaisseau',
-  'reward.sub': 'Une amélioration, montée pour le reste de la partie.',
+  'reward.title': 'Choisissez une récompense',
+  'reward.sub':
+    'Un système de vaisseau pour cette partie, ou une amélioration de carte définitive.',
+  'reward.systemLane': 'Installer un système de vaisseau',
+  'reward.systemLaneHint': 'Monté pour le reste de cette partie.',
+  'reward.upgradeLane': 'Améliorer une carte définitivement',
+  'reward.upgradeLaneHint':
+    'Définitif — cet emplacement de deck reste amélioré dans toutes vos prochaines parties.',
+  'reward.noUpgrades': 'Aucune carte de deck de départ ne peut être améliorée davantage.',
+  'reward.continue': 'Continuer sans récompense',
 
   // Card list modal (run deck + combat piles)
   'deckView.title': 'Deck actuel',

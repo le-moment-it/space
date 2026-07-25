@@ -20,6 +20,7 @@ import {
   acknowledgeCombat,
   buyShopItem,
   chooseCardReward,
+  chooseCardUpgradeReward,
   chooseShipSystemReward,
   dismissDialogue,
   endRunCombatTurn,
@@ -30,10 +31,11 @@ import {
   playRunCombatCard,
   resolveCrewOffer,
   resolveEventChoice,
+  skipBossReward,
   upgradeCardAtGarage,
 } from '../engine/run/resolve';
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
-import type { DeckCard } from '../engine/cards/types';
+import { MAX_UPGRADE_LEVEL, nextLevel, type DeckCard } from '../engine/cards/types';
 import { createRng, type Rng } from '../engine/rng';
 import { loadSave, persistSave } from '../engine/save/serialize';
 import { LOADOUT_SIZE, type SaveDataV6, type SaveMetaV6 } from '../engine/save/types';
@@ -160,6 +162,10 @@ interface GameStore {
   /** Pick a card (or null to skip) from the post-combat card reward. */
   chooseCardReward: (cardId: string | null) => void;
   chooseShipSystem: (shipSystemId: string) => void;
+  /** Boss reward: permanently upgrade a loadout-derived card instead of a ship system. */
+  chooseCardUpgradeReward: (deckIndex: number) => void;
+  /** Boss reward with nothing on offer — advance without taking anything. */
+  skipBossReward: () => void;
   resolveEvent: (choiceIndex: number) => void;
   resolveCrewOffer: (accept: boolean) => void;
   dismissDialogue: () => void;
@@ -202,12 +208,23 @@ export const useGameStore = create<GameStore>((set, get) => {
   // the Hub, closes the tab) doesn't leave a stale-version payload in localStorage.
   persist(initialSave.meta, initialSave.currentRun);
 
-  function withRun(mutate: (run: RunState, content: RunContent) => RunState): void {
+  /**
+   * `metaMutate` is for the rare action that also writes permanent progression.
+   * It is deliberately explicit rather than derived in applyBookkeeping: a diff
+   * of two runs cannot tell a permanent act-end upgrade from a run-only garage
+   * one, but the store always knows which action it invoked.
+   */
+  function withRun(
+    mutate: (run: RunState, content: RunContent) => RunState,
+    metaMutate?: (meta: SaveMetaV6, prevRun: RunState) => SaveMetaV6,
+  ): void {
     const { run, meta } = get();
     if (!run) return;
     const content = buildRunContent(meta);
     const nextRun = mutate(run, content);
-    const nextMeta = applyBookkeeping(run, nextRun, meta);
+    if (nextRun === run) return;
+    const bookkept = applyBookkeeping(run, nextRun, meta);
+    const nextMeta = metaMutate ? metaMutate(bookkept, run) : bookkept;
     const newEndings = nextMeta.endingsUnlocked.filter((id) => !meta.endingsUnlocked.includes(id));
     persist(nextMeta, nextRun);
     set((s) => ({
@@ -216,6 +233,30 @@ export const useGameStore = create<GameStore>((set, get) => {
       pendingEndingIds:
         newEndings.length > 0 ? [...s.pendingEndingIds, ...newEndings] : s.pendingEndingIds,
     }));
+  }
+
+  /**
+   * Writes a permanent upgrade into the loadout slot the chosen copy came from.
+   *
+   * Re-checks the card id at the slot before writing: the Deck screen is reachable
+   * mid-run, and removing a card there shifts every later slot. On a mismatch we
+   * keep the run-level upgrade and skip the permanent one, so a stale index can
+   * never silently upgrade the wrong card forever.
+   */
+  function upgradeLoadoutSlot(meta: SaveMetaV6, prevRun: RunState, deckIndex: number): SaveMetaV6 {
+    const card = prevRun.deckCards[deckIndex];
+    const slotIndex = card?.loadoutIndex;
+    if (card === undefined || slotIndex === undefined) return meta;
+
+    const slot = meta.loadoutCards[slotIndex];
+    if (!slot || slot.cardId !== card.cardId || slot.level >= MAX_UPGRADE_LEVEL) return meta;
+
+    return {
+      ...meta,
+      loadoutCards: meta.loadoutCards.map((s, i) =>
+        i === slotIndex ? { ...s, level: nextLevel(s.level) } : s,
+      ),
+    };
   }
 
   return {
@@ -249,6 +290,12 @@ export const useGameStore = create<GameStore>((set, get) => {
     chooseCardReward: (cardId) => withRun((run, content) => chooseCardReward(run, cardId, content)),
     chooseShipSystem: (shipSystemId) =>
       withRun((run, content) => chooseShipSystemReward(run, shipSystemId, content, rng)),
+    chooseCardUpgradeReward: (deckIndex) =>
+      withRun(
+        (run, content) => chooseCardUpgradeReward(run, deckIndex, content, rng),
+        (meta, prevRun) => upgradeLoadoutSlot(meta, prevRun, deckIndex),
+      ),
+    skipBossReward: () => withRun((run) => skipBossReward(run, rng)),
     resolveEvent: (choiceIndex) =>
       withRun((run, content) => resolveEventChoice(run, choiceIndex, content)),
     resolveCrewOffer: (accept) => withRun((run, content) => resolveCrewOffer(run, accept, content)),

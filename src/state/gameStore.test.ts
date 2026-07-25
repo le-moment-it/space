@@ -194,3 +194,119 @@ describe('gameStore — in-run cards stay in the run', () => {
     );
   });
 });
+
+describe('gameStore — permanent card upgrades', () => {
+  const tenCannons = () =>
+    Array.from({ length: 10 }, () => ({ cardId: 'kinetic-cannon', level: 0 as const }));
+
+  const startAtBossReward = () => {
+    useGameStore.setState((s) => ({
+      meta: { ...s.meta, unlockedCardIds: ['kinetic-cannon'], loadoutCards: tenCannons() },
+    }));
+    useGameStore.getState().startNewRun();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run should exist after startNewRun');
+    useGameStore.setState({
+      run: { ...run, currentNodeId: run.map.bossNodeId, phase: 'reward', rewardOptions: [] },
+    });
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
+  });
+
+  it('writes the upgrade to both the run deck and the loadout slot', () => {
+    startAtBossReward();
+    expect(useGameStore.getState().run?.deckCards[3].loadoutIndex).toBe(3);
+
+    useGameStore.getState().chooseCardUpgradeReward(3);
+
+    // Permanent: the loadout slot it came from is upgraded forever...
+    const loadout = useGameStore.getState().meta.loadoutCards;
+    expect(loadout[3].level).toBe(1);
+    // ...and only that slot.
+    expect(loadout.filter((s) => s.level > 0)).toHaveLength(1);
+    // The act advanced, as taking any boss reward does.
+    expect(useGameStore.getState().run?.act).toBe(2);
+  });
+
+  it('carries the permanent upgrade into the next run', () => {
+    startAtBossReward();
+    useGameStore.getState().chooseCardUpgradeReward(3);
+    useGameStore.getState().returnToHub();
+
+    useGameStore.getState().startNewRun();
+
+    const deck = useGameStore.getState().run?.deckCards ?? [];
+    expect(deck[3].level).toBe(1);
+    expect(deck.filter((c) => c.level > 0)).toHaveLength(1);
+  });
+
+  it('refuses to permanently upgrade a card picked up mid-run', () => {
+    startAtBossReward();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run');
+    // A shop/reward pickup: no loadout slot.
+    useGameStore.setState({
+      run: { ...run, deckCards: [...run.deckCards, { cardId: 'kinetic-cannon', level: 0 }] },
+    });
+
+    useGameStore.getState().chooseCardUpgradeReward(10);
+
+    // Rejected outright — still on the reward screen, nothing upgraded.
+    expect(useGameStore.getState().run?.phase).toBe('reward');
+    expect(useGameStore.getState().meta.loadoutCards.every((s) => s.level === 0)).toBe(true);
+  });
+
+  it('a garage upgrade never touches the loadout', () => {
+    useGameStore.setState((s) => ({
+      meta: { ...s.meta, unlockedCardIds: ['kinetic-cannon'], loadoutCards: tenCannons() },
+    }));
+    useGameStore.getState().startNewRun();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run');
+    useGameStore.setState({ run: { ...run, phase: 'garage' } });
+
+    useGameStore.getState().upgradeCardAtGarage(2);
+
+    expect(useGameStore.getState().run?.deckCards[2].level).toBe(1);
+    // Run-only: the permanent loadout is untouched.
+    expect(useGameStore.getState().meta.loadoutCards.every((s) => s.level === 0)).toBe(true);
+  });
+
+  it('keeps the run upgrade but skips the permanent write when the slot no longer matches', () => {
+    startAtBossReward();
+    // The Deck screen is reachable mid-run; swap the slot's card out from under us.
+    useGameStore.setState((s) => ({
+      meta: {
+        ...s.meta,
+        unlockedCardIds: ['kinetic-cannon', 'flak-burst'],
+        loadoutCards: s.meta.loadoutCards.map((slot, i) =>
+          i === 3 ? { cardId: 'flak-burst', level: 0 as const } : slot,
+        ),
+      },
+    }));
+
+    useGameStore.getState().chooseCardUpgradeReward(3);
+
+    // The run copy is upgraded...
+    expect(useGameStore.getState().run?.deckCards[3].level).toBe(1);
+    // ...but no slot was permanently upgraded, because the id no longer matched.
+    expect(useGameStore.getState().meta.loadoutCards.every((s) => s.level === 0)).toBe(true);
+  });
+
+  it('ends the run in victory when the upgrade is taken after the final act boss', () => {
+    startAtBossReward();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run');
+    useGameStore.setState({ run: { ...run, act: TOTAL_ACTS } });
+
+    useGameStore.getState().chooseCardUpgradeReward(0);
+
+    expect(useGameStore.getState().run?.phase).toBe('runWon');
+    expect(useGameStore.getState().meta.stats.runsWon).toBe(1);
+    // Still permanent, even though the run ended.
+    expect(useGameStore.getState().meta.loadoutCards[0].level).toBe(1);
+  });
+});
