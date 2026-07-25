@@ -5,7 +5,7 @@ import { useTranslation } from '../../i18n';
 import { Card } from './Card';
 import './CardListModal.css';
 
-const TYPE_ORDER: Record<CardType, number> = { weapon: 0, maneuver: 1, shipSystem: 2, crew: 3 };
+const TYPE_ORDER: Record<CardType, number> = { weapon: 0, maneuver: 1, shipSystem: 2 };
 
 /** A card in a list view: the definition id plus this copy's upgrade level. */
 export interface CardListEntry {

@@ -27,16 +27,91 @@
   line-height: 1.55;
   font-style: italic;
 }
-.crew__joins {
+/* The passive is the whole offer now, so it gets the weight the card row used to. */
+.crew__grant {
   display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--card-crew) 35%, var(--line-2));
+  border-radius: var(--radius);
+  background: rgba(236, 200, 121, 0.06);
 }
-.crew__passive {
-  font-size: 0.82rem;
-  color: var(--ink-dim);
+.crew__grant-text {
+  font-size: 1.05rem;
+  line-height: 1.5;
   text-align: center;
+  color: var(--ink);
+}
+
+.crew__replace {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.crew__replace-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hazard);
+  text-align: center;
+}
+.crew__roster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* One person aboard: portrait, who they are, what they do. Shared by the roster. */
+.crew__member {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--hull-2);
+}
+.crew__member--action:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--card-crew) 55%, transparent);
+  background: rgba(236, 200, 121, 0.08);
+}
+.crew__member-portrait {
+  flex: 0 0 auto;
+  font-size: 1.5rem;
+}
+.crew__member-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1 1 auto;
+}
+.crew__member-name {
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+.crew__member-role {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-crew);
+}
+.crew__member-passive {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+.crew__member-cta {
+  flex: 0 0 auto;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hazard);
 }
 .crew__line {
   margin: 0;

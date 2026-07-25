@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptySave } from '../engine/save/schema';
+import { makeSave } from '../engine/save/serialize';
 import { LOADOUT_SIZE } from '../engine/save/types';
 import { defaultUnlockedCardIds } from '../data/cards';
 import { milestoneDefinitions } from '../data/milestones';
-import { TOTAL_ACTS } from '../engine/run/types';
+import { TOTAL_ACTS, type RunState } from '../engine/run/types';
 import { SAVE_DEFAULTS, useGameStore } from './gameStore';
 
 const emptyMeta = () =>
@@ -483,5 +484,87 @@ describe('gameStore — unearned unlocks are revoked on import', () => {
     // Refilled from the default deck: a short loadout would leave Launch disabled.
     expect(loadout).toHaveLength(LOADOUT_SIZE);
     expect(loadout[0]).toBe('flak-burst');
+  });
+});
+
+describe('gameStore — runs holding cards that no longer exist', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
+  });
+
+  /**
+   * Crew cards were deleted outright. A run saved by the previous build still names
+   * them in its deck and combat piles, where playCard throws `Unknown card id`.
+   */
+  const withGhostCards = (run: RunState): RunState => ({
+    ...run,
+    deckCards: [...run.deckCards, { cardId: 'crew-penance', level: 0 }],
+    activeCombat: run.activeCombat && {
+      ...run.activeCombat,
+      hand: [
+        ...run.activeCombat.hand,
+        { instanceId: 'ghost#1', cardId: 'crew-penance', level: 0 as const },
+      ],
+      drawPile: [
+        ...run.activeCombat.drawPile,
+        { instanceId: 'ghost#2', cardId: 'crew-deep-scan', level: 0 as const },
+      ],
+      discardPile: [
+        ...run.activeCombat.discardPile,
+        { instanceId: 'ghost#3', cardId: 'crew-jury-rig', level: 0 as const },
+      ],
+      exhaustPile: [
+        ...run.activeCombat.exhaustPile,
+        { instanceId: 'ghost#4', cardId: 'crew-overload-shot', level: 0 as const },
+      ],
+    },
+  });
+
+  it('strips deleted cards from the deck and every combat pile on load', () => {
+    useGameStore.getState().startNewRun();
+    const first = useGameStore.getState().run;
+    if (!first) throw new Error('run');
+    // Walk into the first node so there is a live combat with real piles to pollute.
+    const combatNode = first.map.entryNodeIds.find((id) => first.map.nodes[id]?.type === 'combat');
+    if (!combatNode) throw new Error('expected a combat entry node');
+    useGameStore.getState().enterNode(combatNode);
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run');
+    const inCombat = useGameStore.getState().run;
+    if (!inCombat?.activeCombat) throw new Error('expected a combat in progress');
+    const polluted = withGhostCards(inCombat);
+
+    useGameStore.getState().importSave(makeSave(useGameStore.getState().meta, polluted));
+
+    const after = useGameStore.getState().run;
+    const ids = [
+      ...(after?.deckCards ?? []).map((c) => c.cardId),
+      ...(after?.activeCombat?.hand ?? []).map((c) => c.cardId),
+      ...(after?.activeCombat?.drawPile ?? []).map((c) => c.cardId),
+      ...(after?.activeCombat?.discardPile ?? []).map((c) => c.cardId),
+      ...(after?.activeCombat?.exhaustPile ?? []).map((c) => c.cardId),
+    ];
+    expect(ids.filter((id) => id.startsWith('crew-'))).toEqual([]);
+    // Real cards survive untouched.
+    expect(after?.deckCards.length).toBe(run.deckCards.length);
+  });
+
+  it('cleans a run that has no combat in progress', () => {
+    useGameStore.getState().startNewRun();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run');
+
+    useGameStore.getState().importSave(
+      makeSave(useGameStore.getState().meta, {
+        ...run,
+        activeCombat: null,
+        deckCards: [...run.deckCards, { cardId: 'crew-penance', level: 0 }],
+      }),
+    );
+
+    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).not.toContain(
+      'crew-penance',
+    );
   });
 });

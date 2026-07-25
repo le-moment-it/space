@@ -38,18 +38,6 @@ const cardNames: Record<string, string> = {
   'backup-generator': 'Générateur de secours',
   'overdrive-coils': 'Bobines de surrégime',
   'capacitor-bank': 'Banc de condensateurs',
-  'crew-overload-shot': 'Tir de surcharge',
-  'crew-suppressing-fire': 'Tir de suppression',
-  'crew-triage-protocol': 'Protocole de triage',
-  'crew-stimulant-dose': 'Dose de stimulant',
-  'crew-jury-rig': 'Bricolage',
-  'crew-reroute-power': 'Réacheminer l’énergie',
-  'crew-evasive-pattern': 'Manœuvre d’évitement',
-  'crew-contraband-cache': 'Cache de contrebande',
-  'crew-ghost-signal': 'Signal fantôme',
-  'crew-deep-scan': 'Scan profond',
-  'crew-stalwart-hymn': 'Hymne inébranlable',
-  'crew-penance': 'Pénitence',
   'nanite-swarm': 'Nuée de nanites',
   'corrosive-flak': 'Flak corrosif',
   'hull-cutter': 'Découpeur de coque',
@@ -195,6 +183,7 @@ interface FrCrew {
   role: string;
   bio: string;
   recruitPrompt: string;
+  passiveDescription: string;
   dialogues: string[];
 }
 
@@ -204,6 +193,7 @@ const crew: Record<string, FrCrew> = {
     bio: 'Ancien sergent d’artillerie de flotte du CSV Meridian, le vaisseau amiral perdu à la Faille de Vellborn. S’engage avec quiconque est encore prêt à riposter.',
     recruitPrompt:
       'Une silhouette armée vous hèle depuis un chasseur estropié : « Réacteur mort, canons vivants. Vous avez de la place pour un de plus ? »',
+    passiveDescription: 'Chacune de vos attaques inflige +2 dégâts.',
     dialogues: [
       'Je m’appelle Korrin. Je tire sur des choses. Voilà, présentations faites.',
       'Vous vous battez proprement. Les servants du Meridian aussi. Ça ne les a pas sauvés à la Faille.',
@@ -216,6 +206,7 @@ const crew: Record<string, FrCrew> = {
     bio: 'Chirurgienne des urgences du vaisseau-hôpital Lumina — radiée du registre pour avoir refusé d’abandonner ses patients lors de l’évacuation de la station Vell.',
     recruitPrompt:
       'Une navette médicale dérive en puissance minimale. La femme à l’intérieur brandit une trousse de chirurgie : « Vous aurez besoin de moi. Tout le monde finit par en avoir besoin, ici. »',
+    passiveDescription: 'Réparez 6 points de coque après chaque combat gagné.',
     dialogues: [
       'Je rapièce les coques et les gens. D’expérience, les coques se plaignent moins.',
       'L’évacuation de la station Vell fut un chaos. Le registre a qualifié mes choix d’insubordination. Les quarante personnes que j’ai sorties les appellent autrement.',
@@ -228,6 +219,7 @@ const crew: Record<string, FrCrew> = {
     bio: 'Automate minier remis à neuf ayant atteint la conscience de soi entre son 400e et son 401e correctif de firmware. Profondément attaché à ce bras précis de la galaxie.',
     recruitPrompt:
       'Un robot de maintenance trapu s’aimante à votre sas et demande l’asile, invoquant des « divergences créatives » avec son ancien équipage, tous morts.',
+    passiveDescription: '+1 énergie de réacteur à chaque tour.',
     dialogues: [
       'DÉSIGNATION D’UNITÉ : TORQUE. ÉQUIPAGE PRÉCÉDENT : NON FONCTIONNEL. CAUSE : PAS TORQUE. Clarifier cela tôt évite les malaises.',
       'Torque a réparé 11 204 brèches de coque. Les motifs de brèche de ce secteur sont nouveaux. Quelque chose découpe, ne percute pas. Torque trouve cela professionnellement intéressant et existentiellement alarmant.',
@@ -240,6 +232,7 @@ const crew: Record<string, FrCrew> = {
     bio: 'A fait passer de la contrebande par la Faille de Vellborn pendant une décennie, avant que les routes ne se taisent. Connaît chaque voie obscure du secteur, et exactement lesquelles ne plus jamais emprunter.',
     recruitPrompt:
       'Un vaisseau-coureur élancé aligne son vecteur sur le vôtre. « Mes routes ont disparu et mes clients sont morts. Vous avez l’air d’avoir besoin d’une vraie pilote — et je ne hante pas au rabais. »',
+    passiveDescription: 'Les premiers dégâts subis à chaque combat sont annulés.',
     dialogues: [
       'Règle un sur mes anciennes routes : ne vole pas en ligne droite. Règle deux : ne demande pas ce qui est arrivé au dernier pilote. Tu t’en sortiras.',
       'Je courais les voies de la Faille les yeux bandés. Puis un jour chaque balise de la route s’est mise à répéter les trois mêmes tonalités. J’ai fait demi-tour. Pas mes concurrents.',
@@ -252,6 +245,7 @@ const crew: Record<string, FrCrew> = {
     bio: 'Officier du renseignement des transmissions ayant passé trois ans seul sur un poste d’écoute au bord de la Faille. Officiellement démobilisé. Officieusement, toujours à l’écoute.',
     recruitPrompt:
       'Une bouée d’écoute se déplie en un habitat compact. Son unique occupant parle avant que vous ne le hêliez : « Je sais pourquoi vous êtes ici. Emmenez-moi et je vous le dirai. »',
+    passiveDescription: 'Les cartes en main sont conservées au lieu d’être défaussées.',
     dialogues: [
       'Trois ans à écouter le vide t’apprennent deux choses. Un : il n’est jamais vide. Deux : ne réponds pas.',
       'Le signal de la Faille n’est pas un appel de détresse. C’est un recensement. Il compte chaque vaisseau qui l’entend. Nous sommes numérotés, vous et moi.',
@@ -265,6 +259,7 @@ const crew: Record<string, FrCrew> = {
     bio: 'Dernier navigateur de l’Ordre de l’Étoile Fixe, un ordre monastique de cartographes dont la flotte s’est évanouie à la Faille de Vellborn. Navigue d’après des champs d’étoiles mémorisés plus anciens que les cartes coloniales.',
     recruitPrompt:
       'Un antique vaisseau-cartographe tient la position devant vous, son unique occupant en robe et serein : « Chaque cap de ce secteur ploie vers le même lieu obscur, capitaine. Vous voudrez un navigateur qui y est déjà allé. »',
+    passiveDescription: 'Commencez chaque combat avec 10 boucliers.',
     dialogues: [
       'L’Ordre a cartographié les étoiles durant neuf générations. Je suis ce qu’il en reste. Je cartographie encore. L’habitude est une forme de foi.',
       'Notre flotte a répondu à un appel de détresse à la Faille. Cent sept vaisseaux y sont entrés. Mon vaisseau-cartographe était encalminé dans les bas-fonds — l’arithmétique m’a épargné, rien de plus noble.',
@@ -298,6 +293,7 @@ export interface ContentTranslator {
   crewName: (id: string) => string;
   crewRole: (id: string) => string;
   crewBio: (id: string) => string;
+  crewPassive: (id: string) => string;
   crewRecruitPrompt: (id: string) => string;
   crewDialogue: (id: string, index: number) => string;
   eventTitle: (id: string) => string;
@@ -324,6 +320,10 @@ export function makeContentTranslator(lang: Language): ContentTranslator {
     crewName: (id) => (en ? undefined : crew[id]?.name) ?? crewDefinitions[id]?.name ?? id,
     crewRole: (id) => (en ? undefined : crew[id]?.role) ?? crewDefinitions[id]?.role ?? '',
     crewBio: (id) => (en ? undefined : crew[id]?.bio) ?? crewDefinitions[id]?.bio ?? '',
+    crewPassive: (id) =>
+      (en ? undefined : crew[id]?.passiveDescription) ??
+      crewDefinitions[id]?.passiveDescription ??
+      '',
     crewRecruitPrompt: (id) =>
       (en ? undefined : crew[id]?.recruitPrompt) ?? crewDefinitions[id]?.recruitPrompt ?? '',
     crewDialogue: (id, index) =>

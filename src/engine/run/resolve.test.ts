@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { CardDefinition } from '../cards/types';
 import { createRng } from '../rng';
-import type { EnemyDefinition } from '../combat/types';
-import type { CrewDefinition } from '../crew/types';
+import { DEFAULT_COMBAT_CONFIG, type EnemyDefinition } from '../combat/types';
+import type { CrewDefinition, CrewPassive } from '../crew/types';
 import type { EventDefinition } from '../events/types';
 import type { MapGraph } from '../map/types';
 import type { ShipSystemDefinition } from '../shipSystems/types';
@@ -77,10 +77,10 @@ const cardDefinitions: Record<string, CardDefinition> = {
     description: '',
     effect: { kind: 'damage', amount: 15 },
   },
-  crewHeal: {
-    id: 'crewHeal',
-    name: 'Crew Heal',
-    type: 'crew',
+  healCard: {
+    id: 'healCard',
+    name: 'Heal Card',
+    type: 'maneuver',
     cost: 1,
     description: '',
     effect: { kind: 'heal', amount: 6 },
@@ -92,6 +92,14 @@ const weakEnemy: EnemyDefinition = {
   name: 'Weak Ship',
   maxHull: 5,
   intentPattern: [{ kind: 'defend', amount: 0 }],
+};
+
+/** Attacks for 10 every turn and outlives the fight, for testing damage mitigation. */
+const attacker: EnemyDefinition = {
+  id: 'attacker',
+  name: 'Attacker',
+  maxHull: 500,
+  intentPattern: [{ kind: 'attack', amount: 10 }],
 };
 
 const lethalEnemy: EnemyDefinition = {
@@ -136,29 +144,25 @@ const shipSystemDefinitions: Record<string, ShipSystemDefinition> = {
   },
 };
 
+const makeCrew = (id: string, passive: CrewPassive): CrewDefinition => ({
+  id,
+  name: `Test ${id}`,
+  role: 'Crew',
+  portrait: '🧑‍🚀',
+  bio: `A ${id}.`,
+  recruitPrompt: `A ${id} drifts by.`,
+  passiveDescription: `Test passive for ${id}.`,
+  passive,
+  dialogues: ['First meeting.', 'Second meeting.', 'Third meeting.'],
+});
+
 const crewDefinitions: Record<string, CrewDefinition> = {
-  medic: {
-    id: 'medic',
-    name: 'Test Medic',
-    role: 'Medic',
-    portrait: '🧑‍⚕️',
-    bio: 'A medic.',
-    recruitPrompt: 'A medic drifts by.',
-    cardIds: ['crewHeal', 'crewHeal'],
-    passive: { kind: 'maxHull', amount: 10 },
-    dialogues: ['First meeting.', 'Second meeting.', 'Third meeting.'],
-  },
-  gunner: {
-    id: 'gunner',
-    name: 'Test Gunner',
-    role: 'Gunner',
-    portrait: '🔫',
-    bio: 'A gunner.',
-    recruitPrompt: 'A gunner drifts by.',
-    cardIds: ['strike'],
-    passive: null,
-    dialogues: ['Hello.'],
-  },
+  medic: makeCrew('medic', { kind: 'repairAfterCombat', amount: 6 }),
+  gunner: makeCrew('gunner', { kind: 'calibration', amount: 2 }),
+  engineer: makeCrew('engineer', { kind: 'power', amount: 1 }),
+  pilot: makeCrew('pilot', { kind: 'evasion' }),
+  analyst: makeCrew('analyst', { kind: 'retainHand' }),
+  navigator: makeCrew('navigator', { kind: 'startingShield', amount: 10 }),
 };
 
 function makeContent(overrides: Partial<RunContent> = {}): RunContent {
@@ -177,6 +181,7 @@ function makeContent(overrides: Partial<RunContent> = {}): RunContent {
     recruitableCrewIds: ['medic', 'gunner'],
     // 0 by default so pre-existing event-node tests stay deterministic; crew tests override.
     crewOfferChance: 0,
+    crewCap: 3,
     ...overrides,
   };
 }
@@ -503,46 +508,39 @@ describe('shop nodes', () => {
 });
 
 describe('crew recruitment', () => {
-  it('offers a crew member at an event node when the chance roll passes', () => {
-    const rng = createRng(30);
-    let run = initRun(testMap, startingDeck);
-    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
-    const content = makeContent({ crewOfferChance: 1 });
-    run = enterNode(run, 'midEvent', content, rng);
+  const ALL_CREW = Object.keys(crewDefinitions);
 
+  /** Puts a run at an event node with a guaranteed offer from `recruitable`. */
+  function offerFrom(recruitable: string[], seed: number, crewIds: string[] = []) {
+    const rng = createRng(seed);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'], crewIds };
+    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: recruitable });
+    run = enterNode(run, 'midEvent', content, rng);
+    return { run, content, rng };
+  }
+
+  it('offers a crew member at an event node when the chance roll passes', () => {
+    const { run, content } = offerFrom(ALL_CREW, 30);
     expect(run.phase).toBe('crewOffer');
-    expect(run.activeCrewId).not.toBeNull();
     expect(content.recruitableCrewIds).toContain(run.activeCrewId);
   });
 
   it('never offers crew when the chance is 0 or everyone is already aboard', () => {
-    const rng = createRng(31);
-    let run = initRun(testMap, startingDeck);
-    run = {
-      ...run,
-      currentNodeId: 'entryCombat',
-      visitedNodeIds: ['entryCombat'],
-      crewIds: ['medic', 'gunner'],
-    };
-    const content = makeContent({ crewOfferChance: 1 }); // chance would pass, but no one left
-    run = enterNode(run, 'midEvent', content, rng);
+    const { run } = offerFrom(['medic', 'gunner'], 31, ['medic', 'gunner']);
     expect(run.phase).toBe('event');
   });
 
-  it('accepting adds the crew member, their cards, and moves to dialogue then map', () => {
-    const rng = createRng(32);
-    let run = initRun(testMap, startingDeck);
-    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
-    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['medic'] });
-    run = enterNode(run, 'midEvent', content, rng);
+  it('accepting grants the passive and adds no cards to the deck', () => {
+    let { run, content } = offerFrom(['medic'], 32);
     expect(run.activeCrewId).toBe('medic');
-    const deckBefore = deckIds(run).length;
+    const deckBefore = deckIds(run);
 
     run = resolveCrewOffer(run, true, content);
 
     expect(run.crewIds).toEqual(['medic']);
-    expect(deckIds(run).length).toBe(deckBefore + 2);
-    expect(deckIds(run).filter((id) => id === 'crewHeal')).toHaveLength(2);
+    // Crew are a rule-change, not a deck-stuffing: the deck must be untouched.
+    expect(deckIds(run)).toEqual(deckBefore);
     expect(run.phase).toBe('dialogue');
     expect(run.activeCrewId).toBe('medic'); // still set so the dialogue screen knows who speaks
 
@@ -552,11 +550,7 @@ describe('crew recruitment', () => {
   });
 
   it('declining leaves the deck and crew untouched', () => {
-    const rng = createRng(33);
-    let run = initRun(testMap, startingDeck);
-    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'] };
-    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['medic'] });
-    run = enterNode(run, 'midEvent', content, rng);
+    let { run, content } = offerFrom(['medic'], 33);
     const deckBefore = deckIds(run);
 
     run = resolveCrewOffer(run, false, content);
@@ -566,39 +560,226 @@ describe('crew recruitment', () => {
     expect(run.phase).toBe('map');
     expect(run.activeCrewId).toBeNull();
   });
+});
 
-  it('crew cards in the deck are playable in combat', () => {
-    const rng = createRng(34);
-    let run = initRun(
-      testMap,
-      ['crewHeal', 'crewHeal', 'crewHeal'].map((cardId) => ({ cardId, level: 0 as const })),
-    );
-    run = { ...run, crewIds: ['medic'], hull: 30 };
-    const content = makeContent();
-    run = enterNode(run, 'entryCombat', content, rng);
+describe('crew capacity', () => {
+  const full = ['medic', 'gunner', 'engineer'];
 
-    const crewCard = run.activeCombat!.hand.find((c) => c.cardId === 'crewHeal');
-    expect(crewCard).toBeDefined();
-    run = playRunCombatCard(run, crewCard!.instanceId, content, rng);
-    expect(run.activeCombat?.player.hull).toBe(36); // 30 + 6 heal
+  function offerWithFullBerth(seed: number) {
+    const rng = createRng(seed);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'entryCombat', visitedNodeIds: ['entryCombat'], crewIds: full };
+    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['pilot'] });
+    run = enterNode(run, 'midEvent', content, rng);
+    return { run, content };
+  }
+
+  it('recruits normally while there is room', () => {
+    const rng = createRng(60);
+    let run = initRun(testMap, startingDeck);
+    run = {
+      ...run,
+      currentNodeId: 'entryCombat',
+      visitedNodeIds: ['entryCombat'],
+      crewIds: ['medic', 'gunner'],
+    };
+    const content = makeContent({ crewOfferChance: 1, recruitableCrewIds: ['pilot'] });
+    run = enterNode(run, 'midEvent', content, rng);
+
+    run = resolveCrewOffer(run, true, content);
+
+    expect(run.crewIds).toEqual(['medic', 'gunner', 'pilot']);
   });
 
-  it('applies a baselineShield crew passive to combat', () => {
-    const rng = createRng(35);
-    const shieldCrew: CrewDefinition = {
-      ...crewDefinitions.medic,
-      id: 'shieldCrew',
-      passive: { kind: 'baselineShield', amount: 4 },
-    };
+  it('refuses to exceed the cap when no one is named to stand down', () => {
+    const { run, content } = offerWithFullBerth(61);
+
+    const after = resolveCrewOffer(run, true, content);
+
+    // A no-op, not a silent eviction: the player has not chosen yet.
+    expect(after).toBe(run);
+    expect(after.crewIds).toEqual(full);
+  });
+
+  it('refuses a replacement who is not actually aboard', () => {
+    const { run, content } = offerWithFullBerth(62);
+    expect(resolveCrewOffer(run, true, content, 'navigator')).toBe(run);
+  });
+
+  it('swaps the named crew member out, keeping the cap', () => {
+    const { run, content } = offerWithFullBerth(63);
+
+    const after = resolveCrewOffer(run, true, content, 'gunner');
+
+    expect(after.crewIds).toEqual(['medic', 'engineer', 'pilot']);
+    expect(after.crewIds).toHaveLength(3);
+    expect(after.phase).toBe('dialogue');
+  });
+
+  it('stops applying the passive of a crew member who stood down', () => {
+    const { run, content } = offerWithFullBerth(64);
+    const swapped = resolveCrewOffer(run, true, content, 'engineer'); // engineer = +1 power
+
+    const rng = createRng(65);
+    const inCombat = enterNode(
+      { ...swapped, phase: 'map', currentNodeId: null, visitedNodeIds: [] },
+      'entryCombat',
+      content,
+      rng,
+    );
+
+    expect(inCombat.activeCombat?.player.maxPower).toBe(DEFAULT_COMBAT_CONFIG.playerMaxPower);
+  });
+
+  it('offers a crew member again after they have stood down', () => {
+    const { run, content } = offerWithFullBerth(66);
+    const swapped = resolveCrewOffer(run, true, content, 'gunner');
+
+    const rng = createRng(67);
+    const offered = enterNode(
+      { ...swapped, phase: 'map', currentNodeId: 'entryCombat', visitedNodeIds: [] },
+      'midEvent',
+      makeContent({ crewOfferChance: 1, recruitableCrewIds: ['gunner'] }),
+      rng,
+    );
+
+    expect(offered.phase).toBe('crewOffer');
+    expect(offered.activeCrewId).toBe('gunner');
+  });
+});
+
+describe('crew passives', () => {
+  function fightWith(crewIds: string[], seed: number, deck = startingDeck, hull?: number) {
+    const rng = createRng(seed);
+    let run = initRun(testMap, deck);
+    run = { ...run, crewIds, ...(hull === undefined ? {} : { hull }) };
+    const content = makeContent();
+    run = enterNode(run, 'entryCombat', content, rng);
+    return { run, content, rng };
+  }
+
+  it('power: grants an extra reactor point every turn', () => {
+    const { run } = fightWith(['engineer'], 40);
+    expect(run.activeCombat?.player.power).toBe(DEFAULT_COMBAT_CONFIG.playerMaxPower + 1);
+  });
+
+  it('calibration: adds its bonus to every attack', () => {
+    const { run, content, rng } = fightWith(['gunner'], 41);
+    const strike = run.activeCombat!.hand.find((c) => c.cardId === 'strike');
+    const enemyHullBefore = run.activeCombat!.enemy.hull;
+
+    const after = playRunCombatCard(run, strike!.instanceId, content, rng);
+
+    // strike deals 3; gunner adds 2.
+    expect(enemyHullBefore - (after.activeCombat?.enemy.hull ?? 0)).toBe(5);
+  });
+
+  it('startingShield: shields the first turn only, not every turn', () => {
+    const { run, content, rng } = fightWith(['navigator'], 42);
+    expect(run.activeCombat?.player.shield).toBe(10);
+
+    const nextTurn = endRunCombatTurn(run, content, rng);
+
+    // Turn 2 falls back to the per-turn baseline, which is 0 here.
+    expect(nextTurn.activeCombat?.player.shield).toBe(0);
+  });
+
+  it('evasion: nullifies the first hit that reaches the hull, then stops', () => {
+    const rng = createRng(43);
     let run = initRun(testMap, startingDeck);
-    run = { ...run, crewIds: ['shieldCrew'] };
+    run = { ...run, crewIds: ['pilot'], hull: 50 };
     const content = makeContent({
-      crewDefinitions: { ...crewDefinitions, shieldCrew },
-      recruitableCrewIds: ['shieldCrew'],
+      combatEnemiesByAct: { 1: [attacker], 2: [attacker], 3: [attacker] },
+    });
+    run = enterNode(run, 'entryCombat', content, rng);
+    expect(run.activeCombat?.player.hull).toBe(50);
+
+    run = endRunCombatTurn(run, content, rng);
+    expect(run.activeCombat?.player.hull).toBe(50); // first hit evaded
+
+    run = endRunCombatTurn(run, content, rng);
+    expect(run.activeCombat?.player.hull).toBe(40); // second lands
+  });
+
+  it('evasion: is not spent by a hit the shields fully absorb', () => {
+    const rng = createRng(44);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, crewIds: ['pilot', 'navigator'], hull: 50 };
+    const content = makeContent({
+      combatEnemiesByAct: { 1: [attacker], 2: [attacker], 3: [attacker] },
     });
     run = enterNode(run, 'entryCombat', content, rng);
 
-    expect(run.activeCombat?.player.shield).toBe(4);
+    run = endRunCombatTurn(run, content, rng); // 10 shields soak the 10 damage
+    expect(run.activeCombat?.player.hull).toBe(50);
+
+    run = endRunCombatTurn(run, content, rng); // no shields left; evasion pays here
+    expect(run.activeCombat?.player.hull).toBe(50);
+
+    run = endRunCombatTurn(run, content, rng);
+    expect(run.activeCombat?.player.hull).toBe(40);
+  });
+
+  it('retainHand: keeps unplayed cards instead of discarding them', () => {
+    const { run, content, rng } = fightWith(['analyst'], 45);
+    const handBefore = run.activeCombat!.hand.map((c) => c.instanceId);
+    expect(handBefore.length).toBeGreaterThan(0);
+
+    const next = endRunCombatTurn(run, content, rng);
+
+    // Every card is still in hand, and none of them reached the discard pile.
+    expect(next.activeCombat?.hand.map((c) => c.instanceId)).toEqual(
+      expect.arrayContaining(handBefore),
+    );
+    expect(next.activeCombat?.discardPile).toEqual([]);
+  });
+
+  it('retainHand: refills to the draw amount rather than growing the hand', () => {
+    const { run, content, rng } = fightWith(['analyst'], 46);
+    const size = run.activeCombat!.hand.length;
+
+    let next = endRunCombatTurn(run, content, rng);
+    next = endRunCombatTurn(next, content, rng);
+
+    expect(next.activeCombat?.hand.length).toBe(size);
+  });
+
+  it('repairAfterCombat: restores hull once the fight is won, capped at max', () => {
+    const { run, content, rng } = fightWith(['medic'], 47, startingDeck, 30);
+    const strike = run.activeCombat!.hand.find((c) => c.cardId === 'strike');
+
+    // weakEnemy has 5 hull; one strike ends it.
+    const after = playRunCombatCard(run, strike!.instanceId, content, rng);
+
+    expect(after.activeCombat?.phase).toBe('won');
+    expect(after.hull).toBe(36); // 30 + 6
+  });
+
+  it('repairAfterCombat: never heals past max hull', () => {
+    const { run, content, rng } = fightWith(['medic'], 48);
+    const strike = run.activeCombat!.hand.find((c) => c.cardId === 'strike');
+
+    const after = playRunCombatCard(run, strike!.instanceId, content, rng);
+
+    expect(after.hull).toBe(after.maxHull);
+  });
+
+  it('stacks passives from several crew at once', () => {
+    const { run } = fightWith(['engineer', 'navigator', 'gunner'], 49);
+
+    expect(run.activeCombat?.player.power).toBe(DEFAULT_COMBAT_CONFIG.playerMaxPower + 1);
+    expect(run.activeCombat?.player.shield).toBe(10);
+    expect(run.activeCombat?.player.statuses.calibration?.amount).toBe(2);
+  });
+
+  it('keeps applying per-turn passives after turn 1', () => {
+    // Sibling of the ship-system regression: endRunCombatTurn must rebuild the config
+    // every turn, or a crew passive silently lapses from turn 2 onward.
+    const { run, content, rng } = fightWith(['engineer'], 50);
+
+    const next = endRunCombatTurn(run, content, rng);
+
+    expect(next.activeCombat?.player.power).toBe(DEFAULT_COMBAT_CONFIG.playerMaxPower + 1);
   });
 });
 

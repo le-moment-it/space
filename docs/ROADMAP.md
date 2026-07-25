@@ -86,7 +86,7 @@ run-to-run variety (paths, unlocks, rewards) feels meaningfully different each t
 Goal: add the Hades-style hook that makes players want to keep playing to see more
 story, per GAME_DESIGN.md §6.
 
-- 5–8 recruitable crew, each with unique card(s) and a passive.
+- 5–8 recruitable crew, each granting a run-long passive (no crew cards).
 - Dialogue system: portrait + text, gated by simple milestone/flag checks (crew met
   before, runs completed, etc.), triggered at Event/Rest nodes and the Hub.
 - Codex/bio entries readable from the Hub.

@@ -7,7 +7,7 @@ import { Card } from '../components/Card';
 import { HeroShip } from '../components/HeroShip';
 import './DeckScreen.css';
 
-const TYPE_ORDER: Record<CardType, number> = { weapon: 0, maneuver: 1, shipSystem: 2, crew: 3 };
+const TYPE_ORDER: Record<CardType, number> = { weapon: 0, maneuver: 1, shipSystem: 2 };
 
 export function DeckScreen() {
   const meta = useGameStore((s) => s.meta);

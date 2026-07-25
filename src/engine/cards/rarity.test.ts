@@ -113,16 +113,14 @@ describe('unlock curve', () => {
       ...milestoneDefinitions.flatMap((m) => m.unlocksCardIds),
     ]);
     const stranded = Object.values(cardDefinitions)
-      .filter((c) => rarityOf(c) !== 'common' && c.type !== 'crew')
+      .filter((c) => rarityOf(c) !== 'common')
       .map((c) => c.id)
       .filter((id) => !reachable.has(id));
     expect(stranded).toEqual([]);
   });
 
   it('offers no card that is strictly worse than another at the same cost', () => {
-    // Crew cards are exempt: they arrive bundled with the crew member you recruited,
-    // so two of them are never alternatives the player picks between.
-    const comparable = Object.values(cardDefinitions).filter((c) => c.type !== 'crew');
+    const comparable = Object.values(cardDefinitions);
 
     const dominated: string[] = [];
     for (const a of comparable) {

@@ -92,5 +92,7 @@ export interface RunContent {
   recruitableCrewIds: string[];
   /** Probability an event node offers an unrecruited crew member instead of a regular event. */
   crewOfferChance: number;
+  /** How many crew may be aboard at once; recruiting past it requires replacing someone. */
+  crewCap: number;
   combatConfig?: CombatConfig;
 }

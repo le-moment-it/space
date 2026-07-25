@@ -17,7 +17,9 @@ export type StatusId =
   // On the player, spent on the next matching card
   | 'chargeDamage'
   | 'chargeShield'
-  | 'chargeHeal';
+  | 'chargeHeal'
+  // On the player, spent by the first damage that would land
+  | 'evasion';
 
 /** `turns` is only meaningful for 'duration' statuses; the others ignore it. */
 export interface StatusState {
@@ -52,6 +54,7 @@ export const STATUS_DEFINITIONS: Record<StatusId, StatusDefinition> = {
   chargeDamage: { decay: 'consumed' },
   chargeShield: { decay: 'consumed' },
   chargeHeal: { decay: 'consumed' },
+  evasion: { decay: 'consumed' },
 };
 
 /** How much extra damage a Breached target takes. */
@@ -99,6 +102,21 @@ export function consumeStatus(
   if (remaining > 0) next[id] = { amount: remaining };
   else delete next[id];
   return { multiplier: CHARGE_MULTIPLIER, statuses: next };
+}
+
+/**
+ * Spends one stack of a status, returning the bag without it.
+ *
+ * `consumeStatus` reports a CHARGE_MULTIPLIER, which is meaningless for a status that
+ * cancels rather than doubles — this is the plain "use one up" version.
+ */
+export function spendStatus(statuses: Statuses, id: StatusId): Statuses {
+  if (!hasStatus(statuses, id)) return statuses;
+  const remaining = statusAmount(statuses, id) - 1;
+  const next = { ...statuses };
+  if (remaining > 0) next[id] = { amount: remaining };
+  else delete next[id];
+  return next;
 }
 
 /** Total damage a status tick deals to its bearer this turn (currently just Corrosion). */

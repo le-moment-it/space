@@ -196,102 +196,6 @@ const cardList: CardDefinition[] = [
 
   // --- Crew cards (enter the deck only when their crew member is recruited; ---
   // --- never appear in shops, treasure, elite rewards, or the unlock pool)  ---
-  {
-    id: 'crew-overload-shot',
-    name: 'Overload Shot',
-    type: 'crew',
-    cost: 2,
-    description: 'Jax: Deal 13 damage.',
-    effect: { kind: 'damage', amount: 13 },
-  },
-  {
-    id: 'crew-suppressing-fire',
-    name: 'Suppressing Fire',
-    type: 'crew',
-    cost: 1,
-    description: 'Jax: Weaken the enemy: -2 damage for 2 turns.',
-    effect: { kind: 'weaken', amount: 2, duration: 2 },
-  },
-  {
-    id: 'crew-triage-protocol',
-    name: 'Triage Protocol',
-    type: 'crew',
-    cost: 1,
-    description: 'Dr. Voss: Repair 8 hull.',
-    effect: { kind: 'heal', amount: 8 },
-  },
-  {
-    id: 'crew-stimulant-dose',
-    name: 'Stimulant Dose',
-    type: 'crew',
-    cost: 0,
-    description: 'Dr. Voss: Draw 1 card.',
-    effect: { kind: 'draw', amount: 1 },
-  },
-  {
-    id: 'crew-jury-rig',
-    name: 'Jury-Rig',
-    type: 'crew',
-    cost: 0,
-    description: 'Torque: Gain 5 shields.',
-    effect: { kind: 'shield', amount: 5 },
-  },
-  {
-    id: 'crew-reroute-power',
-    name: 'Reroute Power',
-    type: 'crew',
-    cost: 0,
-    description: 'Torque: Gain 1 power this turn.',
-    effect: { kind: 'power', amount: 1 },
-  },
-  {
-    id: 'crew-evasive-pattern',
-    name: 'Evasive Pattern',
-    type: 'crew',
-    cost: 1,
-    description: 'Sable: Gain 9 shields.',
-    effect: { kind: 'shield', amount: 9 },
-  },
-  {
-    id: 'crew-contraband-cache',
-    name: 'Contraband Cache',
-    type: 'crew',
-    cost: 1,
-    description: 'Sable: Draw 2 cards.',
-    effect: { kind: 'draw', amount: 2 },
-  },
-  {
-    id: 'crew-ghost-signal',
-    name: 'Ghost Signal',
-    type: 'crew',
-    cost: 1,
-    description: 'Whisper: Weaken the enemy: -3 damage for 3 turns.',
-    effect: { kind: 'weaken', amount: 3, duration: 3 },
-  },
-  {
-    id: 'crew-deep-scan',
-    name: 'Deep Scan',
-    type: 'crew',
-    cost: 0,
-    description: 'Whisper: Draw 2 cards.',
-    effect: { kind: 'draw', amount: 2 },
-  },
-  {
-    id: 'crew-stalwart-hymn',
-    name: 'Stalwart Hymn',
-    type: 'crew',
-    cost: 1,
-    description: 'Anchor: Gain 8 shields.',
-    effect: { kind: 'shield', amount: 8 },
-  },
-  {
-    id: 'crew-penance',
-    name: 'Penance',
-    type: 'crew',
-    cost: 2,
-    description: 'Anchor: Deal 15 damage.',
-    effect: { kind: 'damage', amount: 15 },
-  },
   // --- Status & buff cards (the new mechanic families) ---
   {
     // Corrosion is front-loaded then fades, so it pays off most when applied early.
@@ -432,9 +336,7 @@ export const defaultLoadoutCardIds: string[] = [
 ];
 
 /** Card ids purchasable at Salvage Trader nodes / offerable at Derelict Cache nodes. */
-export const runCardPool: string[] = Object.keys(cardDefinitions).filter(
-  (id) => cardDefinitions[id].type !== 'crew',
-);
+export const runCardPool: string[] = Object.keys(cardDefinitions);
 
 /** Stronger cards awarded for clearing an Elite Hostile encounter. */
 export const eliteRewardCardIds: string[] = [

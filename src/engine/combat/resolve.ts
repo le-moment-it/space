@@ -8,8 +8,10 @@ import {
   consumeStatus,
   decayStatuses,
   hasStatus,
+  spendStatus,
   statusAmount,
   tickDamage,
+  type Statuses,
 } from './status';
 import type { CombatConfig, CombatLogEntry, CombatState, EnemyDefinition } from './types';
 import { DEFAULT_COMBAT_CONFIG } from './types';
@@ -62,15 +64,33 @@ function startPlayerTurn(state: CombatState, rng: Rng, config: CombatConfig): Co
     shield: config.baselineShield ?? 0,
     power: config.playerMaxPower,
   };
+  // Retaining refills the hand to drawAmount rather than drawing a fresh drawAmount on
+  // top of it — `drawCards` appends to the existing hand, so drawing the full amount
+  // every turn would grow the hand without bound.
+  const toDraw = config.retainHand
+    ? Math.max(0, config.drawAmount - state.hand.length)
+    : config.drawAmount;
   const { hand, drawPile, discardPile, log } = drawCards(
     state.hand,
     state.drawPile,
     state.discardPile,
-    config.drawAmount,
+    toDraw,
     rng,
     state.log,
   );
   return { ...state, player, hand, drawPile, discardPile, phase: 'playerTurn', log };
+}
+
+/** Statuses the player begins a fight already carrying, from run-long crew passives. */
+function startingStatuses(config: CombatConfig): Statuses {
+  let statuses: Statuses = {};
+  if (config.startingCalibration) {
+    statuses = applyStatus(statuses, 'calibration', config.startingCalibration);
+  }
+  if (config.nullifyFirstHit) {
+    statuses = applyStatus(statuses, 'evasion', 1);
+  }
+  return statuses;
 }
 
 export function initCombat(opts: {
@@ -96,7 +116,7 @@ export function initCombat(opts: {
       shield: 0,
       power: config.playerMaxPower,
       maxPower: config.playerMaxPower,
-      statuses: {},
+      statuses: startingStatuses(config),
     },
     enemy: {
       id: opts.enemy.id,
@@ -117,7 +137,16 @@ export function initCombat(opts: {
     log: [{ t: 'contact', enemyId: opts.enemy.id, hull: opts.enemy.maxHull }],
   };
 
-  return startPlayerTurn(initial, opts.rng, config);
+  const started = startPlayerTurn(initial, opts.rng, config);
+
+  // Added after startPlayerTurn, which overwrites shield with the per-turn baseline.
+  // This one is per *fight*, so it stacks on top of turn 1's baseline and never returns.
+  const startingShield = config.startingShield ?? 0;
+  if (startingShield === 0) return started;
+  return {
+    ...started,
+    player: { ...started.player, shield: started.player.shield + startingShield },
+  };
 }
 
 export function playCard(
@@ -267,7 +296,9 @@ export function endPlayerTurn(
 ): CombatState {
   if (state.phase !== 'playerTurn') return state;
 
-  const discardPile = [...state.discardPile, ...state.hand];
+  // Retained hands stay put; the discard pile only takes them on a normal turn.
+  const retain = config.retainHand === true;
+  const discardPile = retain ? state.discardPile : [...state.discardPile, ...state.hand];
   const log: CombatLogEntry[] = [...state.log, { t: 'endTurn' }];
   const enemy = { ...state.enemy };
   let player = { ...state.player };
@@ -290,7 +321,14 @@ export function endPlayerTurn(
     const amount = Math.max(0, intent.amount - statusAmount(enemy.statuses, 'weaken'));
     const absorbed = Math.min(player.shield, amount);
     player = { ...player, shield: player.shield - absorbed };
-    const remaining = amount - absorbed;
+    let remaining = amount - absorbed;
+    // Evasion cancels the first hit that would actually reach the hull — a hit fully
+    // soaked by shields costs nothing, so it must not spend the charge.
+    if (remaining > 0 && hasStatus(player.statuses, 'evasion')) {
+      player = { ...player, statuses: spendStatus(player.statuses, 'evasion') };
+      log.push({ t: 'statusTick', target: 'player', status: 'evasion', amount: remaining });
+      remaining = 0;
+    }
     player = { ...player, hull: Math.max(0, player.hull - remaining) };
     log.push({ t: 'enemyAttack', enemyId: enemy.id, amount, absorbed });
   } else {
@@ -313,7 +351,7 @@ export function endPlayerTurn(
     player,
     enemy,
     discardPile,
-    hand: [],
+    hand: retain ? state.hand : [],
     turn: nextTurn,
     log,
     phase: 'playerTurn',

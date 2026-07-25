@@ -87,9 +87,10 @@ Pokerogue (browser-only, freely hostable, updated over time).
   - **Maneuver** (Skill) — shields, evasion, draw, repair, debuffs on enemy, buffs on self.
   - **Ship System** (Power) — played once per turn or has a persistent passive effect for
     the rest of combat (mirrors STS "Power" cards).
-  - **Crew** — cards tied to a specific recruited crew member; only enter the deck pool
-    once that crew member has been recruited in the current run (or permanently unlocked
-    into the pool via meta-progression — see §5).
+
+  There is deliberately no Crew card type: crew contribute a run-long passive rather
+  than cards (see §6).
+
 - Enemies telegraph their next action ("intent" — attack + amount, defend, buff, etc.)
   before the player acts, same convention as Slay the Spire, so decisions are informed
   rather than guessing.
@@ -125,8 +126,12 @@ Pokerogue (browser-only, freely hostable, updated over time).
 - Crew are recruited through **Event** nodes (a distress signal, a derelict escape pod,
   a defector from a hostile faction, etc.).
 - Once recruited for the run, a crew member:
-  - Contributes 1–2 unique cards to the deck for the rest of the run.
-  - May grant a small passive effect.
+  - Grants a **run-long passive** that changes how fights work — extra reactor power
+    each turn, retaining your hand, nullifying the first hit of every fight, and so on.
+    This is their entire mechanical contribution; crew add no cards to the deck.
+  - At most **3 crew** are aboard at once. Offers keep coming when full — the player
+    chooses who stands down, which makes a late recruit a real decision rather than a
+    free pickup.
   - Becomes available for **dialogue** at subsequent Event/Rest nodes and at the Hub
     screen between runs — short portrait + text exchanges, similar in spirit to Hades'
     character barks, gated by flags (has this crew been met before across any run, are

@@ -4,6 +4,7 @@ import { TOTAL_ACTS } from '../../engine/run/types';
 import { useTranslation } from '../../i18n';
 import { BattleLog } from '../components/BattleLog';
 import { CardListModal } from '../components/CardListModal';
+import { CrewRoster } from '../components/CrewRoster';
 import { BattleScreen } from './BattleScreen';
 import { CardRewardScreen } from './CardRewardScreen';
 import { CrewOfferScreen } from './CrewOfferScreen';
@@ -25,6 +26,7 @@ export function RunScreen() {
   const returnToHub = useGameStore((s) => s.returnToHub);
   const { t } = useTranslation();
   const [deckOpen, setDeckOpen] = useState(false);
+  const [crewOpen, setCrewOpen] = useState(false);
 
   if (!run) return null;
 
@@ -64,10 +66,15 @@ export function RunScreen() {
         <span className="stat__label">{t('stat.systems')}</span>
         <span className="stat__value mono">{run.shipSystemIds.length}</span>
       </div>
-      <div className="stat">
+      <button
+        type="button"
+        className="stat stat--action"
+        onClick={() => setCrewOpen(true)}
+        title={t('crew.roster')}
+      >
         <span className="stat__label">{t('stat.crew')}</span>
         <span className="stat__value mono">{run.crewIds.length}</span>
-      </div>
+      </button>
     </div>
   );
 
@@ -140,6 +147,8 @@ export function RunScreen() {
           onClose={() => setDeckOpen(false)}
         />
       )}
+
+      {crewOpen && <CrewRoster crewIds={run.crewIds} onClose={() => setCrewOpen(false)} />}
     </>
   );
 }

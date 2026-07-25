@@ -6,7 +6,7 @@ import { Card } from '../components/Card';
 import { useGameStore } from '../../state/gameStore';
 import './GarageScreen.css';
 
-const TYPE_ORDER: Record<CardType, number> = { weapon: 0, maneuver: 1, shipSystem: 2, crew: 3 };
+const TYPE_ORDER: Record<CardType, number> = { weapon: 0, maneuver: 1, shipSystem: 2 };
 
 /** Garage node: upgrade one card for the rest of this run. */
 export function GarageScreen({ run }: { run: RunState }) {

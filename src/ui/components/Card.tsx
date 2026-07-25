@@ -20,7 +20,6 @@ const TYPE_LABEL_KEY: Record<CardType, UiKey> = {
   weapon: 'card.type.weapon',
   maneuver: 'card.type.maneuver',
   shipSystem: 'card.type.shipSystem',
-  crew: 'card.type.crew',
 };
 
 const RARITY_LABEL_KEY: Record<CardRarity, UiKey> = {

@@ -1,0 +1,64 @@
+/* Shares .crew__member* with CrewScreen.css — one person renders the same everywhere. */
+@import './../screens/CrewScreen.css';
+
+.roster-overlay {
+  position: fixed;
+  inset: 0;
+  /* Same band as the deck viewer: above the run UI, below keyword explainers (60). */
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(5, 7, 14, 0.74);
+  backdrop-filter: blur(4px);
+}
+
+.roster {
+  width: min(480px, 100%);
+  max-height: min(85vh, 720px);
+  overflow-y: auto;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent), var(--hull);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.roster__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.3rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--hull-2);
+}
+.roster__count {
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.roster__close {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  padding: 0.2rem 0.55rem;
+  color: var(--ink-dim);
+  background: transparent;
+}
+.roster__close:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.roster__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.1rem 1.3rem 1.3rem;
+  list-style: none;
+}
+
+.roster__empty {
+  padding: 1.6rem 1.3rem;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}

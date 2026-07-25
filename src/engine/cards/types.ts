@@ -1,4 +1,4 @@
-export type CardType = 'weapon' | 'maneuver' | 'shipSystem' | 'crew';
+export type CardType = 'weapon' | 'maneuver' | 'shipSystem';
 
 export type CardRarity = 'common' | 'rare' | 'epic' | 'legendary';
 

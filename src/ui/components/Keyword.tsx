@@ -16,6 +16,7 @@ export const KEYWORDS = {
   calibration: { label: 'keyword.calibration', desc: 'keyword.calibration.desc' },
   deflector: { label: 'keyword.deflector', desc: 'keyword.deflector.desc' },
   charge: { label: 'keyword.charge', desc: 'keyword.charge.desc' },
+  evasion: { label: 'keyword.evasion', desc: 'keyword.evasion.desc' },
 } as const satisfies Record<string, { label: UiKey; desc: UiKey }>;
 
 export type KeywordId = keyof typeof KEYWORDS;

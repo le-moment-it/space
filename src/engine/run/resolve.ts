@@ -6,7 +6,7 @@ import { DEFAULT_COMBAT_CONFIG, type CombatConfig } from '../combat/types';
 import { generateMap } from '../map/generate';
 import { DEFAULT_MAP_CONFIG } from '../map/types';
 import { applyShipSystems } from '../shipSystems/apply';
-import type { ShipSystemDefinition } from '../shipSystems/types';
+import { applyCrewPassives, crewRepairAfterCombat } from '../crew/apply';
 import { shuffle, weightedSample, type Rng } from '../rng';
 import type { MapGraph } from '../map/types';
 import type { RunConfig, RunContent, RunState, ShopOfferItem } from './types';
@@ -68,27 +68,11 @@ function offerCards(
 }
 
 /**
- * Crew passives share the ship-system effect shape, so combats apply them through
- * the same applyShipSystems pipeline by treating each crew member with a passive
- * as a synthetic ship system.
- */
-function crewPassiveDefinitions(
-  crewIds: readonly string[],
-  content: RunContent,
-): Record<string, ShipSystemDefinition> {
-  const definitions: Record<string, ShipSystemDefinition> = {};
-  for (const id of crewIds) {
-    const crew = content.crewDefinitions[id];
-    if (crew?.passive) {
-      definitions[id] = { id, name: crew.name, description: '', effect: crew.passive };
-    }
-  }
-  return definitions;
-}
-
-/**
  * The combat rules this run actually fights under: the base config plus every owned
  * ship system and crew passive.
+ *
+ * Ship systems and crew fold separately — ship systems are stat bumps, crew are
+ * rule-changers, and each union has its own exhaustive switch.
  *
  * Derived on demand rather than stored, so it can never drift from the run's systems.
  * It must be recomputed for *every* turn, not just when combat starts — see
@@ -100,10 +84,12 @@ function effectiveCombatConfig(runState: RunState, content: RunContent): CombatC
     ...(content.combatConfig ?? DEFAULT_COMBAT_CONFIG),
     playerMaxHull: runState.maxHull,
   };
-  return applyShipSystems(baseConfig, [...runState.shipSystemIds, ...runState.crewIds], {
-    ...content.shipSystemDefinitions,
-    ...crewPassiveDefinitions(runState.crewIds, content),
-  });
+  const withSystems = applyShipSystems(
+    baseConfig,
+    runState.shipSystemIds,
+    content.shipSystemDefinitions,
+  );
+  return applyCrewPassives(withSystems, runState.crewIds, content.crewDefinitions);
 }
 
 /** Node ids the player may currently pick on the star chart. */
@@ -290,7 +276,7 @@ export function upgradeCardAtGarage(
   };
 }
 
-function resolveCombatOutcome(runState: RunState): RunState {
+function resolveCombatOutcome(runState: RunState, content: RunContent): RunState {
   const combat = runState.activeCombat;
   if (!combat) return runState;
 
@@ -303,12 +289,18 @@ function resolveCombatOutcome(runState: RunState): RunState {
   }
 
   if (combat.phase === 'won') {
+    // Between-fight crew repair. Not part of the combat config fold: it happens after
+    // the fight is over, so it can never be undone by the enemy's last hit.
+    const repair = crewRepairAfterCombat(runState.crewIds, content.crewDefinitions);
+    const hull = Math.min(runState.maxHull, combat.player.hull + repair);
+    const repairLog = repair > 0 ? [`Crew repaired ${hull - combat.player.hull} hull.`] : [];
+
     const node = runState.map.nodes[runState.currentNodeId ?? ''];
     if (!node || node.type === 'boss') {
       return {
         ...runState,
-        hull: combat.player.hull,
-        log: [...runState.log, 'The boss has been defeated.'],
+        hull,
+        log: [...runState.log, 'The boss has been defeated.', ...repairLog],
       };
     }
     // Card choice (if any) is offered on acknowledge; here we just bank the salvage.
@@ -316,9 +308,9 @@ function resolveCombatOutcome(runState: RunState): RunState {
     const salvageGain = Math.round(baseSalvage * rewardMultiplierForAct(runState.act));
     return {
       ...runState,
-      hull: combat.player.hull,
+      hull,
       salvage: runState.salvage + salvageGain,
-      log: [...runState.log, `Salvaged ${salvageGain} scrap.`],
+      log: [...runState.log, `Salvaged ${salvageGain} scrap.`, ...repairLog],
     };
   }
 
@@ -333,7 +325,7 @@ export function playRunCombatCard(
 ): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
   const combat = playCard(runState.activeCombat, instanceId, content.cardDefinitions, rng);
-  return resolveCombatOutcome({ ...runState, activeCombat: combat });
+  return resolveCombatOutcome({ ...runState, activeCombat: combat }, content);
 }
 
 export function endRunCombatTurn(runState: RunState, content: RunContent, rng: Rng): RunState {
@@ -343,7 +335,7 @@ export function endRunCombatTurn(runState: RunState, content: RunContent, rng: R
     rng,
     effectiveCombatConfig(runState, content),
   );
-  return resolveCombatOutcome({ ...runState, activeCombat: combat });
+  return resolveCombatOutcome({ ...runState, activeCombat: combat }, content);
 }
 
 /**
@@ -581,14 +573,20 @@ export function leaveNode(runState: RunState): RunState {
 }
 
 /**
- * Accept or decline a crew recruitment offer. Accepting adds the crew member and
- * their cards, then moves to the 'dialogue' phase (their lore line for this meeting —
- * which line is the UI's concern, since lifetime meet counts live in the save, not here).
+ * Accept or decline a crew recruitment offer. Accepting grants that crew member's
+ * passive for the rest of the run, then moves to the 'dialogue' phase (their lore line
+ * for this meeting — which line is the UI's concern, since lifetime meet counts live
+ * in the save, not here).
+ *
+ * With a full berth, `replacingCrewId` names who stands down. It is required rather
+ * than defaulted: silently dropping whoever happens to be first would spend a passive
+ * the player chose, and a caller that forgets it should visibly do nothing instead.
  */
 export function resolveCrewOffer(
   runState: RunState,
   accept: boolean,
   content: RunContent,
+  replacingCrewId?: string,
 ): RunState {
   if (runState.phase !== 'crewOffer' || !runState.activeCrewId) return runState;
   const crew = content.crewDefinitions[runState.activeCrewId];
@@ -603,17 +601,23 @@ export function resolveCrewOffer(
     };
   }
 
+  const atCapacity = runState.crewIds.length >= content.crewCap;
+  if (atCapacity && !runState.crewIds.includes(replacingCrewId ?? '')) return runState;
+
+  const replaced = atCapacity ? content.crewDefinitions[replacingCrewId ?? ''] : undefined;
+  const crewIds = atCapacity
+    ? [...runState.crewIds.filter((id) => id !== replacingCrewId), crew.id]
+    : [...runState.crewIds, crew.id];
+
   return {
     ...runState,
-    crewIds: [...runState.crewIds, crew.id],
-    deckCards: [
-      ...runState.deckCards,
-      ...crew.cardIds.map((cardId) => ({ cardId, level: 0 as const })),
-    ],
+    crewIds,
     phase: 'dialogue',
     log: [
       ...runState.log,
-      `${crew.name} joined the crew.${crew.cardIds.length > 0 ? ` Added ${crew.cardIds.length} card(s) to the deck.` : ''}`,
+      replaced
+        ? `${crew.name} joined the crew; ${replaced.name} stood down.`
+        : `${crew.name} joined the crew.`,
     ],
   };
 }

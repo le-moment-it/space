@@ -76,6 +76,14 @@ export interface CombatConfig {
   drawAmount: number;
   /** Shield the player resets to at the start of each turn, instead of 0 (a ship system effect). */
   baselineShield?: number;
+  /** Shield granted once, at the start of the fight — unlike baselineShield, not per turn. */
+  startingShield?: number;
+  /** Calibration the player starts the fight with: every attack deals this much more. */
+  startingCalibration?: number;
+  /** Cards left in hand carry over to the next turn instead of being discarded. */
+  retainHand?: boolean;
+  /** The first damage the player would take this fight is prevented instead. */
+  nullifyFirstHit?: boolean;
 }
 
 export const DEFAULT_COMBAT_CONFIG: CombatConfig = {

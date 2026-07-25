@@ -6,7 +6,7 @@ import {
   eliteRewardCardIds,
   runCardPool,
 } from '../data/cards';
-import { CREW_OFFER_CHANCE, crewDefinitions, recruitableCrewIds } from '../data/crew';
+import { CREW_CAP, CREW_OFFER_CHANCE, crewDefinitions, recruitableCrewIds } from '../data/crew';
 import { endingDefinitions } from '../data/endings';
 import { bossEnemyByAct, combatEnemiesByAct, eliteEnemiesByAct } from '../data/enemies';
 import { eventDefinitions } from '../data/events';
@@ -95,6 +95,7 @@ function buildRunContent(meta: SaveMetaV6): RunContent {
     crewDefinitions,
     recruitableCrewIds,
     crewOfferChance: CREW_OFFER_CHANCE,
+    crewCap: CREW_CAP,
   };
 }
 
@@ -169,7 +170,8 @@ interface GameStore {
   /** Boss reward with nothing on offer — advance without taking anything. */
   skipBossReward: () => void;
   resolveEvent: (choiceIndex: number) => void;
-  resolveCrewOffer: (accept: boolean) => void;
+  /** Accept or decline a crew offer; `replacing` names who stands down when full. */
+  resolveCrewOffer: (accept: boolean, replacing?: string) => void;
   dismissDialogue: () => void;
   buyItem: (index: number) => void;
   /** Garage: upgrade one deck copy for the rest of this run. */
@@ -191,16 +193,50 @@ interface GameStore {
 }
 
 /**
+ * Drops cards a saved run holds that no longer exist.
+ *
+ * A card removed from the game — as the whole crew-card set was — leaves its id behind
+ * in an in-flight run's deck and combat piles, where `playCard` throws `Unknown card id`
+ * and the UI renders undefined. Filtering on load is cheaper than a save version bump,
+ * and self-healing for any future deletion.
+ */
+function dropDeletedCards(run: RunState): RunState {
+  const known = <T extends { cardId: string }>(cards: T[]) =>
+    cards.filter((c) => cardDefinitions[c.cardId]);
+
+  const deckCards = known(run.deckCards);
+  const combat = run.activeCombat;
+  if (!combat) {
+    return deckCards.length === run.deckCards.length ? run : { ...run, deckCards };
+  }
+  return {
+    ...run,
+    deckCards,
+    activeCombat: {
+      ...combat,
+      drawPile: known(combat.drawPile),
+      hand: known(combat.hand),
+      discardPile: known(combat.discardPile),
+      exhaustPile: known(combat.exhaustPile ?? []),
+    },
+  };
+}
+
+/**
  * Back-fills fields added to an in-flight combat after a save was written. A player
  * mid-fight when a new build ships would otherwise load a CombatState missing the
  * newer piles — cheaper and safer than a save version bump for an additive field.
  */
 function normalizeRun(run: RunState | null): RunState | null {
-  const combat = run?.activeCombat;
-  if (!run || !combat) return run;
-  if (combat.exhaustPile && combat.player.statuses && combat.enemy.statuses) return run;
+  if (!run) return run;
+  // Runs at hub/map phase have no combat but can still hold deleted cards in the deck,
+  // so this runs before the activeCombat guard below.
+  const cleaned = dropDeletedCards(run);
+  const combat = cleaned.activeCombat;
+  if (!combat) return cleaned;
+  if (combat.exhaustPile && combat.player.statuses && combat.enemy.statuses) return cleaned;
   return {
-    ...run,
+    ...cleaned,
     activeCombat: {
       ...combat,
       exhaustPile: combat.exhaustPile ?? [],
@@ -363,7 +399,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     skipBossReward: () => withRun((run) => skipBossReward(run, rng)),
     resolveEvent: (choiceIndex) =>
       withRun((run, content) => resolveEventChoice(run, choiceIndex, content)),
-    resolveCrewOffer: (accept) => withRun((run, content) => resolveCrewOffer(run, accept, content)),
+    resolveCrewOffer: (accept, replacing) =>
+      withRun((run, content) => resolveCrewOffer(run, accept, content, replacing)),
     dismissDialogue: () => withRun((run) => dismissDialogue(run)),
     buyItem: (index) => withRun((run, content) => buyShopItem(run, index, content)),
     upgradeCardAtGarage: (deckIndex) =>

@@ -18,6 +18,7 @@ export const STATUS_LABEL_KEY: Record<StatusId, UiKey> = {
   chargeDamage: 'status.chargeDamage',
   chargeShield: 'status.chargeShield',
   chargeHeal: 'status.chargeHeal',
+  evasion: 'status.evasion',
 };
 
 export const STATUS_APPLIED_KEY: Record<StatusId, UiKey> = {
@@ -29,6 +30,7 @@ export const STATUS_APPLIED_KEY: Record<StatusId, UiKey> = {
   chargeDamage: 'status.chargeDamage.applied',
   chargeShield: 'status.chargeShield.applied',
   chargeHeal: 'status.chargeHeal.applied',
+  evasion: 'status.evasion.applied',
 };
 
 /** Only damage-over-time statuses ever tick, but the map keeps lookups total. */
@@ -41,6 +43,7 @@ export const STATUS_TICK_KEY: Record<StatusId, UiKey> = {
   chargeDamage: 'status.chargeDamage',
   chargeShield: 'status.chargeShield',
   chargeHeal: 'status.chargeHeal',
+  evasion: 'status.evasion.tick',
 };
 
 /** Whether the status helps its bearer — drives the chip colour. */
@@ -53,6 +56,7 @@ export const STATUS_IS_BUFF: Record<StatusId, boolean> = {
   chargeDamage: true,
   chargeShield: true,
   chargeHeal: true,
+  evasion: true,
 };
 
 /**
@@ -68,4 +72,5 @@ export const STATUS_KEYWORD: Record<StatusId, KeywordId> = {
   chargeDamage: 'charge',
   chargeShield: 'charge',
   chargeHeal: 'charge',
+  evasion: 'evasion',
 };

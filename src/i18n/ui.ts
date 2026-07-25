@@ -102,7 +102,6 @@ const en = {
   'card.type.weapon': 'Weapon',
   'card.type.maneuver': 'Maneuver',
   'card.type.shipSystem': 'System',
-  'card.type.crew': 'Crew',
 
   // Upgrade preview (right-click a card)
   'upgrade.title': 'Upgrade path',
@@ -169,6 +168,9 @@ const en = {
   'keyword.charge': 'Charge',
   'keyword.charge.desc':
     'Your next effect of the matching kind is doubled, then the charge is spent. A charge is used once per card, not once per hit of a multi-hit attack.',
+  'keyword.evasion': 'Evasion',
+  'keyword.evasion.desc':
+    'The first damage that would reach your hull this fight is cancelled instead. A hit fully absorbed by shields does not spend it, and it refreshes every fight.',
 
   // Battle screen
   'battle.hostileContact': 'Hostile contact',
@@ -206,6 +208,9 @@ const en = {
   'status.chargeShield.applied': 'Capacitors braced — your next shield gain is doubled.',
   'status.chargeHeal': 'Primed',
   'status.chargeHeal.applied': 'Repair bay primed — your next repair is doubled.',
+  'status.evasion': 'Evasion',
+  'status.evasion.applied': 'Evasive pattern running — the first hit that lands is nullified.',
+  'status.evasion.tick': 'Evaded the attack — {amount} damage nullified.',
 
   // Combat log
   'battlelog.title': 'Combat log',
@@ -269,7 +274,12 @@ const en = {
   // Crew screens
   'crew.distressSignal': 'Distress signal',
   'crew.comms': 'Comms',
-  'crew.grantsPassive': 'Grants a passive bonus while aboard.',
+  'crew.grantsPassive': 'While aboard',
+  'crew.roster': 'Crew aboard',
+  'crew.rosterEmpty': 'No crew aboard yet. You meet them at signal nodes.',
+  'crew.full': 'Your berth is full ({count}/{cap}). Choose who stands down.',
+  'crew.replaceWith': 'Replace',
+  'crew.standDown': '{name} stands down',
   'crew.welcomeAboard': 'Welcome aboard',
   'crew.leaveThem': 'Leave them',
 
@@ -438,7 +448,6 @@ const fr: Record<UiKey, string> = {
   'card.type.weapon': 'Arme',
   'card.type.maneuver': 'Manœuvre',
   'card.type.shipSystem': 'Système',
-  'card.type.crew': 'Équipage',
 
   // Upgrade preview (right-click a card)
   'upgrade.title': 'Progression d’amélioration',
@@ -505,6 +514,9 @@ const fr: Record<UiKey, string> = {
   'keyword.charge': 'Charge',
   'keyword.charge.desc':
     'Votre prochain effet du type correspondant est doublé, puis la charge est consommée. Une charge s’utilise une fois par carte, pas une fois par coup d’une attaque à coups multiples.',
+  'keyword.evasion': 'Esquive',
+  'keyword.evasion.desc':
+    'Les premiers dégâts qui atteindraient votre coque ce combat sont annulés. Une attaque entièrement absorbée par les boucliers ne la consomme pas, et elle se réarme à chaque combat.',
 
   // Battle screen
   'battle.hostileContact': 'Contact hostile',
@@ -541,6 +553,10 @@ const fr: Record<UiKey, string> = {
   'status.chargeShield': 'Paré',
   'status.chargeShield.applied':
     'Condensateurs parés — votre prochain gain de boucliers est doublé.',
+  'status.evasion': 'Esquive',
+  'status.evasion.applied':
+    'Manœuvre d’esquive active — les premiers dégâts qui passent sont annulés.',
+  'status.evasion.tick': 'Attaque esquivée — {amount} dégâts annulés.',
   'status.chargeHeal': 'Amorcé',
   'status.chargeHeal.applied':
     'Baie de réparation amorcée — votre prochaine réparation est doublée.',
@@ -610,7 +626,12 @@ const fr: Record<UiKey, string> = {
   // Crew screens
   'crew.distressSignal': 'Signal de détresse',
   'crew.comms': 'Comms',
-  'crew.grantsPassive': 'Confère un bonus passif tant qu’il est à bord.',
+  'crew.grantsPassive': 'À bord',
+  'crew.roster': 'Équipage à bord',
+  'crew.rosterEmpty': 'Aucun équipier à bord. Vous les rencontrez aux nœuds de signal.',
+  'crew.full': 'Votre bord est complet ({count}/{cap}). Choisissez qui se retire.',
+  'crew.replaceWith': 'Remplacer',
+  'crew.standDown': '{name} se retire',
   'crew.welcomeAboard': 'Bienvenue à bord',
   'crew.leaveThem': 'Les laisser',
 
