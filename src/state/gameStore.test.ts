@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptySave } from '../engine/save/schema';
+import { defaultUnlockedCardIds } from '../data/cards';
+import { milestoneDefinitions } from '../data/milestones';
 import { TOTAL_ACTS } from '../engine/run/types';
-import { useGameStore } from './gameStore';
+import { SAVE_DEFAULTS, useGameStore } from './gameStore';
 
 const emptyMeta = () =>
   createEmptySave({ unlockedCardIds: [], unlockedShipSystemIds: [], loadoutCardIds: [] }).meta;
@@ -367,18 +369,14 @@ describe('gameStore — reset and import', () => {
   });
 
   it('imports a save with no run and lands in the hub', () => {
-    const imported = createEmptySave({
-      unlockedCardIds: ['a', 'b'],
-      unlockedShipSystemIds: ['x'],
-      loadoutCardIds: ['a'],
-    });
+    const imported = createEmptySave(SAVE_DEFAULTS);
     imported.meta.stats.runsWon = 7;
 
     useGameStore.getState().importSave(imported);
 
     const after = useGameStore.getState();
     expect(after.meta.stats.runsWon).toBe(7);
-    expect(after.meta.unlockedCardIds).toEqual(['a', 'b']);
+    expect(after.meta.unlockedCardIds).toEqual(defaultUnlockedCardIds);
     expect(after.run).toBeNull();
     expect(after.appPhase).toBe('hub');
     expect(
@@ -413,5 +411,73 @@ describe('gameStore — reset and import', () => {
     useGameStore.getState().importSave(imported);
 
     expect(useGameStore.getState().pendingEndingIds).toEqual([]);
+  });
+});
+
+describe('gameStore — unearned unlocks are revoked on import', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
+  });
+
+  const saveWith = (meta: Partial<ReturnType<typeof emptyMeta>>) => {
+    const save = createEmptySave(SAVE_DEFAULTS);
+    return { ...save, meta: { ...save.meta, ...meta } };
+  };
+
+  it('drops a card no default or completed milestone ever granted', () => {
+    // 'overwhelming-barrage' is legendary and gated behind the last milestone.
+    useGameStore.getState().importSave(
+      saveWith({
+        unlockedCardIds: [...defaultUnlockedCardIds, 'overwhelming-barrage'],
+      }),
+    );
+
+    expect(useGameStore.getState().meta.unlockedCardIds).not.toContain('overwhelming-barrage');
+    // The legitimate defaults are untouched.
+    expect(useGameStore.getState().meta.unlockedCardIds).toEqual(defaultUnlockedCardIds);
+  });
+
+  it('keeps a card the player earned, even one above common', () => {
+    const milestone = milestoneDefinitions.find((m) =>
+      m.unlocksCardIds.includes('overwhelming-barrage'),
+    );
+    if (!milestone) throw new Error('expected a milestone to grant overwhelming-barrage');
+
+    useGameStore.getState().importSave(
+      saveWith({
+        unlockedCardIds: [...defaultUnlockedCardIds, 'overwhelming-barrage'],
+        milestones: { [milestone.id]: true },
+      }),
+    );
+
+    expect(useGameStore.getState().meta.unlockedCardIds).toContain('overwhelming-barrage');
+  });
+
+  it('keeps a card whose milestone the stats already satisfy but was never flagged', () => {
+    useGameStore.getState().importSave(
+      saveWith({
+        unlockedCardIds: [...defaultUnlockedCardIds, 'nanite-swarm'],
+        milestones: {},
+        stats: { ...emptyMeta().stats, elitesDefeated: 99, runsStarted: 99, bossesDefeated: 99 },
+      }),
+    );
+
+    expect(useGameStore.getState().meta.unlockedCardIds).toContain('nanite-swarm');
+  });
+
+  it('drops a revoked card from the loadout so the deck stays buildable', () => {
+    useGameStore.getState().importSave(
+      saveWith({
+        unlockedCardIds: [...defaultUnlockedCardIds, 'master-gunner'],
+        loadoutCards: [
+          { cardId: 'kinetic-cannon', level: 0 },
+          { cardId: 'master-gunner', level: 0 },
+        ],
+      }),
+    );
+
+    const loadout = useGameStore.getState().meta.loadoutCards.map((c) => c.cardId);
+    expect(loadout).toEqual(['kinetic-cannon']);
   });
 });

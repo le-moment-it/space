@@ -637,6 +637,10 @@ export const eliteRewardCardIds: string[] = [
 /**
  * Unlocked from the very first run (the 8 unique cards in the starting deck already
  * unlocked trivially). The remaining cards unlock via milestones — see data/milestones.ts.
+ *
+ * Every card here must be Common: a fresh profile builds its first deck from this
+ * list, and handing a new player Epics and Legendaries flattens the whole unlock
+ * curve. `cards.test.ts` enforces it.
  */
 export const defaultUnlockedCardIds: string[] = [
   'kinetic-cannon',
@@ -648,16 +652,4 @@ export const defaultUnlockedCardIds: string[] = [
   'heavy-railgun',
   'plasma-lance',
   'failsafe-screen',
-  'nanite-swarm',
-  'corrosive-flak',
-  'hull-cutter',
-  'targeting-lock',
-  'capacitor-brace',
-  'triage-primer',
-  'gunnery-calibration',
-  'deflector-tuning',
-  'needle-volley',
-  'siphon-beam',
-  'overwhelming-barrage',
-  'master-gunner',
 ];

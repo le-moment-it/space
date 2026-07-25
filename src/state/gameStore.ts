@@ -210,11 +210,48 @@ function normalizeRun(run: RunState | null): RunState | null {
   };
 }
 
+/**
+ * Revokes permanently-unlocked cards that have no source.
+ *
+ * A card can only ever enter `unlockedCardIds` two ways: it is default-unlocked, or a
+ * completed milestone granted it. Cards picked up during a run are explicitly run-only.
+ * Anything else in the list was put there by a build that got its unlock tables wrong —
+ * as one did, by default-unlocking every Rare, Epic and Legendary — and `grantDefaultUnlocks`
+ * has no way to take those back, since it only ever adds.
+ *
+ * So the invariant is enforced on load instead. Milestones count as earned if their flag
+ * is set *or* the stats already satisfy them, so this can only ever remove a grant that
+ * was never justified. Any future way to unlock a card must be accounted for here, or it
+ * will be quietly revoked on the next load.
+ */
+function pruneUnearnedCards(meta: SaveMetaV6): SaveMetaV6 {
+  const earned = new Set(SAVE_DEFAULTS.unlockedCardIds);
+  for (const milestone of milestoneDefinitions) {
+    if (!meta.milestones[milestone.id] && !milestone.isComplete(meta.stats)) continue;
+    for (const id of milestone.unlocksCardIds) earned.add(id);
+  }
+
+  const unlockedCardIds = meta.unlockedCardIds.filter((id) => earned.has(id));
+  if (unlockedCardIds.length === meta.unlockedCardIds.length) return meta;
+
+  // A loadout slot holding a revoked card would be unbuildable and unremovable-by-adding;
+  // dropping it leaves a short loadout, which resolveLoadout already falls back from.
+  return {
+    ...meta,
+    unlockedCardIds,
+    loadoutCards: meta.loadoutCards.filter((slot) => earned.has(slot.cardId)),
+  };
+}
+
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
   const loaded: SaveDataV6 = loadSave(SAVE_DEFAULTS);
-  const initialSave: SaveDataV6 = { ...loaded, currentRun: normalizeRun(loaded.currentRun) };
+  const initialSave: SaveDataV6 = {
+    ...loaded,
+    meta: pruneUnearnedCards(loaded.meta),
+    currentRun: normalizeRun(loaded.currentRun),
+  };
 
   function persist(meta: SaveMetaV6, run: RunState | null): void {
     persistSave(makeSave(meta, run));
@@ -376,10 +413,13 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
 
     importSave: (save) => {
+      // Same treatment as a load: the file may have been exported by a build whose
+      // unlock tables were wrong.
+      const meta = pruneUnearnedCards(save.meta);
       const run = normalizeRun(save.currentRun);
-      persist(save.meta, run);
+      persist(meta, run);
       set({
-        meta: save.meta,
+        meta,
         run,
         appPhase: run ? 'run' : 'hub',
         // Endings the imported profile already unlocked have been seen; replaying

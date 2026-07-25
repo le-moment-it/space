@@ -1,5 +1,11 @@
 import type { MilestoneDefinition } from '../engine/progression/types';
 
+/**
+ * Roughly ordered by how long each takes to reach. Card rarity tracks that order:
+ * Rares appear from the early milestones, Epics from the mid-game ones, and the two
+ * Legendaries sit on the last. Nothing above Common is unlocked by default — see
+ * `defaultUnlockedCardIds`.
+ */
 export const milestoneDefinitions: MilestoneDefinition[] = [
   {
     id: 'defeat-a-boss',
@@ -12,14 +18,14 @@ export const milestoneDefinitions: MilestoneDefinition[] = [
     id: 'defeat-5-elites',
     description: 'Defeat 5 elite hostiles (across all runs).',
     isComplete: (stats) => stats.elitesDefeated >= 5,
-    unlocksCardIds: ['ion-torpedo', 'nanite-repair'],
+    unlocksCardIds: ['ion-torpedo', 'nanite-repair', 'nanite-swarm'],
     unlocksShipSystemIds: ['expanded-cargo-bay'],
   },
   {
     id: 'complete-10-runs',
     description: 'Complete 10 runs, win or lose.',
     isComplete: (stats) => stats.runsStarted >= 10,
-    unlocksCardIds: ['sensor-jam', 'reactor-surge', 'emergency-shield-boost'],
+    unlocksCardIds: ['sensor-jam', 'reactor-surge', 'emergency-shield-boost', 'triage-primer'],
     unlocksShipSystemIds: ['redundant-systems'],
   },
   {
@@ -33,6 +39,8 @@ export const milestoneDefinitions: MilestoneDefinition[] = [
       'shield-capacitor',
       'combat-medic',
       'recon-scan',
+      'targeting-lock',
+      'capacitor-brace',
     ],
     unlocksShipSystemIds: ['shield-capacitor-array', 'overcharged-reactor', 'nano-repair-matrix'],
   },
@@ -47,6 +55,8 @@ export const milestoneDefinitions: MilestoneDefinition[] = [
       'emergency-nanites',
       'data-uplink',
       'adrenaline-shot',
+      'siphon-beam',
+      'corrosive-flak',
     ],
     unlocksShipSystemIds: ['rapid-deployment-bay', 'ablative-plating', 'secondary-reactor'],
   },
@@ -61,6 +71,8 @@ export const milestoneDefinitions: MilestoneDefinition[] = [
       'jamming-pulse',
       'full-repair-kit',
       'aegis-shield',
+      'hull-cutter',
+      'gunnery-calibration',
     ],
     unlocksShipSystemIds: ['point-defense-grid', 'hardened-bulkheads', 'tertiary-capacitors'],
   },
@@ -75,6 +87,8 @@ export const milestoneDefinitions: MilestoneDefinition[] = [
       'last-stand',
       'emp-burst',
       'fusion-core',
+      'deflector-tuning',
+      'needle-volley',
     ],
     unlocksShipSystemIds: ['auxiliary-databanks', 'emergency-cutoff', 'quantum-buffer'],
   },
@@ -89,6 +103,8 @@ export const milestoneDefinitions: MilestoneDefinition[] = [
       'backup-generator',
       'overdrive-coils',
       'capacitor-bank',
+      'overwhelming-barrage',
+      'master-gunner',
     ],
     unlocksShipSystemIds: ['overclocked-thrusters'],
   },
