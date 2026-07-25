@@ -285,7 +285,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     enterNode: (nodeId) => withRun((run, content) => enterNode(run, nodeId, content, rng)),
     playCard: (instanceId) =>
       withRun((run, content) => playRunCombatCard(run, instanceId, content, rng)),
-    endTurn: () => withRun((run) => endRunCombatTurn(run, rng)),
+    endTurn: () => withRun((run, content) => endRunCombatTurn(run, content, rng)),
     acknowledgeCombat: () => withRun((run, content) => acknowledgeCombat(run, content, rng)),
     chooseCardReward: (cardId) => withRun((run, content) => chooseCardReward(run, cardId, content)),
     chooseShipSystem: (shipSystemId) =>

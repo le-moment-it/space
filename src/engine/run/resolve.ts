@@ -1,7 +1,7 @@
 import type { CardDefinition, DeckCard } from '../cards/types';
 import { MAX_UPGRADE_LEVEL, nextLevel } from '../cards/types';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
-import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
+import { DEFAULT_COMBAT_CONFIG, type CombatConfig } from '../combat/types';
 import { generateMap } from '../map/generate';
 import { DEFAULT_MAP_CONFIG } from '../map/types';
 import { applyShipSystems } from '../shipSystems/apply';
@@ -71,6 +71,26 @@ function crewPassiveDefinitions(
   return definitions;
 }
 
+/**
+ * The combat rules this run actually fights under: the base config plus every owned
+ * ship system and crew passive.
+ *
+ * Derived on demand rather than stored, so it can never drift from the run's systems.
+ * It must be recomputed for *every* turn, not just when combat starts — see
+ * endRunCombatTurn, where omitting it silently reverted shields/power/draw to the
+ * defaults from turn 2 onward.
+ */
+function effectiveCombatConfig(runState: RunState, content: RunContent): CombatConfig {
+  const baseConfig: CombatConfig = {
+    ...(content.combatConfig ?? DEFAULT_COMBAT_CONFIG),
+    playerMaxHull: runState.maxHull,
+  };
+  return applyShipSystems(baseConfig, [...runState.shipSystemIds, ...runState.crewIds], {
+    ...content.shipSystemDefinitions,
+    ...crewPassiveDefinitions(runState.crewIds, content),
+  });
+}
+
 /** Node ids the player may currently pick on the star chart. */
 export function getAvailableNodeIds(runState: RunState): string[] {
   if (runState.currentNodeId === null) return runState.map.entryNodeIds;
@@ -114,21 +134,12 @@ export function enterNode(
           : node.type === 'elite'
             ? rng.pick(content.eliteEnemiesByAct[runState.act] ?? [])
             : content.bossEnemyByAct[runState.act];
-      const baseConfig = {
-        ...(content.combatConfig ?? DEFAULT_COMBAT_CONFIG),
-        playerMaxHull: runState.maxHull,
-      };
-      const effectiveConfig = applyShipSystems(
-        baseConfig,
-        [...runState.shipSystemIds, ...runState.crewIds],
-        { ...content.shipSystemDefinitions, ...crewPassiveDefinitions(runState.crewIds, content) },
-      );
       const combat = initCombat({
         cardDefinitions: content.cardDefinitions,
         startingDeck: runState.deckCards,
         enemy,
         rng,
-        config: effectiveConfig,
+        config: effectiveCombatConfig(runState, content),
         startingHull: runState.hull,
       });
       return {
@@ -302,9 +313,13 @@ export function playRunCombatCard(
   return resolveCombatOutcome({ ...runState, activeCombat: combat });
 }
 
-export function endRunCombatTurn(runState: RunState, rng: Rng): RunState {
+export function endRunCombatTurn(runState: RunState, content: RunContent, rng: Rng): RunState {
   if (runState.phase !== 'combat' || !runState.activeCombat) return runState;
-  const combat = endPlayerTurn(runState.activeCombat, rng);
+  const combat = endPlayerTurn(
+    runState.activeCombat,
+    rng,
+    effectiveCombatConfig(runState, content),
+  );
   return resolveCombatOutcome({ ...runState, activeCombat: combat });
 }
 

@@ -303,7 +303,7 @@ describe('combat within a run', () => {
     });
     run = enterNode(run, 'entryCombat', content, rng);
 
-    run = endRunCombatTurn(run, rng);
+    run = endRunCombatTurn(run, content, rng);
 
     expect(run.activeCombat?.phase).toBe('lost');
     expect(run.phase).toBe('combat');
@@ -705,5 +705,53 @@ describe('upgradableDeckIndices', () => {
       deckCards: run.deckCards.map((c, i) => (i === 0 ? { ...c, level: 2 as const } : c)),
     };
     expect(upgradableDeckIndices(run, false)).not.toContain(0);
+  });
+});
+
+describe('effective combat config persists across turns', () => {
+  /**
+   * Regression: endRunCombatTurn used to call endPlayerTurn without a config, so
+   * every ship-system and crew-passive effect silently reverted to the defaults
+   * from turn 2 onward — baseline shields vanished, extra power and draw died.
+   */
+  const deflectorContent = () =>
+    makeContent({
+      shipSystemDefinitions: {
+        ...shipSystemDefinitions,
+        deflector: {
+          id: 'deflector',
+          name: 'Deflector',
+          description: 'baseline shield',
+          effect: { kind: 'baselineShield', amount: 5 },
+        },
+      },
+      combatEnemiesByAct: { 1: [weakEnemy], 2: [weakEnemy], 3: [weakEnemy] },
+    });
+
+  it('keeps a baselineShield ship system working past the first turn', () => {
+    const rng = createRng(80);
+    const content = deflectorContent();
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, shipSystemIds: ['deflector'] };
+    run = enterNode(run, 'entryCombat', content, rng);
+
+    expect(run.activeCombat?.player.shield).toBe(5); // turn 1
+
+    run = endRunCombatTurn(run, content, rng);
+
+    expect(run.activeCombat?.player.shield).toBe(5); // turn 2 — used to be 0
+  });
+
+  it('keeps a maxPower ship system working past the first turn', () => {
+    const rng = createRng(81);
+    const content = deflectorContent();
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, shipSystemIds: ['powerCore'] }; // +1 max power
+    run = enterNode(run, 'entryCombat', content, rng);
+
+    const turn1Power = run.activeCombat?.player.power;
+    run = endRunCombatTurn(run, content, rng);
+
+    expect(run.activeCombat?.player.power).toBe(turn1Power); // used to drop to 3
   });
 });
