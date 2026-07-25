@@ -35,6 +35,7 @@ const cardNames: Record<string, string> = {
   'boarding-charge': 'Charge d’abordage',
   'raise-shields': 'Lever les boucliers',
   'emergency-shield-boost': 'Renfort d’urgence des boucliers',
+  'failsafe-screen': 'Écran de secours',
   'hull-patch': 'Rustine de coque',
   'target-scanners': 'Scanners de visée',
   'brace-for-impact': 'Parer au choc',

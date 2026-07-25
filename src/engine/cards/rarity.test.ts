@@ -14,8 +14,16 @@ describe('card rarity', () => {
     }
   });
 
-  it('treats every launch card as common', () => {
+  it('resolves every shipped card to a known rarity', () => {
     for (const card of Object.values(cardDefinitions)) {
+      expect(CARD_RARITIES).toContain(rarityOf(card));
+    }
+  });
+
+  it('treats cards that declare no rarity as common', () => {
+    const undeclared = Object.values(cardDefinitions).filter((c) => c.rarity === undefined);
+    expect(undeclared.length).toBeGreaterThan(0);
+    for (const card of undeclared) {
       expect(rarityOf(card)).toBe('common');
     }
   });

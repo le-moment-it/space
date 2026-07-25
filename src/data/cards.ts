@@ -165,6 +165,18 @@ const cardList: CardDefinition[] = [
     effect: { kind: 'shield', amount: 12 },
   },
   {
+    // Free and stronger than Raise Shields, but only once per fight — the trade
+    // is burst on the turn you need it against having it every reshuffle.
+    id: 'failsafe-screen',
+    name: 'Failsafe Screen',
+    type: 'maneuver',
+    cost: 0,
+    description: 'Gain 10 shields. Exhaust.',
+    effect: { kind: 'shield', amount: 10 },
+    rarity: 'rare',
+    exhaust: true,
+  },
+  {
     id: 'hull-patch',
     name: 'Hull Patch',
     type: 'maneuver',
@@ -521,4 +533,5 @@ export const defaultUnlockedCardIds: string[] = [
   'overcharge-reactor',
   'heavy-railgun',
   'plasma-lance',
+  'failsafe-screen',
 ];
