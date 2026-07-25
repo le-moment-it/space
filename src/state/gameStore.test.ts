@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptySave } from '../engine/save/schema';
 import { makeSave } from '../engine/save/serialize';
 import { defaultUnlockedCardIds } from '../data/cards';
-import { cardDefinitions } from '../data/cards';
 import {
   levelFor,
   MAX_LEVEL,
@@ -12,6 +11,7 @@ import {
   xpForLevel,
 } from '../engine/progression/level';
 import { TOTAL_ACTS, type RunState } from '../engine/run/types';
+import { LOADOUT_SIZE } from '../engine/save/types';
 import { SAVE_DEFAULTS, useGameStore } from './gameStore';
 
 const emptyMeta = () =>
@@ -486,6 +486,9 @@ describe('gameStore — level unlocks are additive', () => {
   });
 });
 
+/** A default-unlocked attack, so a deck built from it guarantees a killing blow. */
+const ATTACK = 'flak-burst';
+
 describe('gameStore — XP awards', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -495,16 +498,39 @@ describe('gameStore — XP awards', () => {
   /**
    * Enters a node of `type` and lands a killing blow, so the store sees the real
    * transition into 'won' rather than a hand-built one.
+   *
+   * The deck is all attacks on purpose. `startNewRun` seeds its RNG from Date.now(),
+   * so the opening hand is genuinely random — with the default deck's 5 attacks in 10,
+   * a 5-card hand holds none about once in 252 draws, which CI duly rolled.
    */
   const winFightOn = (type: 'combat' | 'elite' | 'boss') => {
+    useGameStore.setState((s) => ({
+      meta: {
+        ...s.meta,
+        unlockedCardIds: [ATTACK],
+        loadoutCards: Array.from({ length: LOADOUT_SIZE }, () => ({
+          cardId: ATTACK,
+          level: 0 as const,
+        })),
+      },
+    }));
     useGameStore.getState().startNewRun();
     const start = useGameStore.getState().run!;
 
-    // Reach any node of the wanted type by pretending it is the next available step.
-    const nodeId = Object.keys(start.map.nodes).find((id) => start.map.nodes[id].type === type);
-    if (!nodeId) throw new Error(`no ${type} node on this map`);
+    // Retype an entry node rather than searching the map for one: node types are rolled
+    // per layer, so a generated map is not guaranteed to contain an elite at all, and
+    // searching made the test depend on the map roll.
+    const nodeId = start.map.entryNodeIds[0];
     useGameStore.setState({
-      run: { ...start, map: { ...start.map, entryNodeIds: [nodeId] }, currentNodeId: null },
+      run: {
+        ...start,
+        map: {
+          ...start.map,
+          entryNodeIds: [nodeId],
+          nodes: { ...start.map.nodes, [nodeId]: { ...start.map.nodes[nodeId], type } },
+        },
+        currentNodeId: null,
+      },
     });
     useGameStore.getState().enterNode(nodeId);
 
@@ -520,9 +546,7 @@ describe('gameStore — XP awards', () => {
       },
     });
 
-    const hand = useGameStore.getState().run!.activeCombat!.hand;
-    const attack = hand.find((c) => cardDefinitions[c.cardId].effect.kind === 'damage');
-    if (!attack) throw new Error('expected an attack in the opening hand');
+    const [attack] = useGameStore.getState().run!.activeCombat!.hand;
     useGameStore.getState().playCard(attack.instanceId);
   };
 
@@ -530,7 +554,7 @@ describe('gameStore — XP awards', () => {
     ['combat', XP_AWARDS.combat],
     ['elite', XP_AWARDS.elite],
     ['boss', XP_AWARDS.boss],
-  ] as const)('pays %s XP for winning on a %s node', (type, award) => {
+  ] as const)('pays the right XP for winning on a %s node', (type, award) => {
     winFightOn(type);
 
     expect(useGameStore.getState().run?.activeCombat?.phase).toBe('won');
