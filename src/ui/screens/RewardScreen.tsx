@@ -57,6 +57,7 @@ export function RewardScreen({ run }: { run: RunState }) {
             {t('reward.upgradeLane')}
           </p>
           <p className="reward__lane-hint">{t('reward.upgradeLaneHint')}</p>
+          <p className="reward__lane-hint">{t('upgrade.hint')}</p>
         </div>
         {upgradable.length === 0 ? (
           <p className="screen__sub">{t('reward.noUpgrades')}</p>
@@ -69,6 +70,9 @@ export function RewardScreen({ run }: { run: RunState }) {
                   key={deckIndex}
                   card={cardDefinitions[card.cardId]}
                   level={nextLevel(card.level)}
+                  // Shown at the tier it would BECOME, so the preview needs the tier
+                  // it actually is or it would mark an unowned tier as current.
+                  ownedLevel={card.level}
                   playable
                   onClick={() => chooseCardUpgradeReward(deckIndex)}
                 />

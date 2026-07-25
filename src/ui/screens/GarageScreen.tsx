@@ -39,6 +39,7 @@ export function GarageScreen({ run }: { run: RunState }) {
         </p>
         <h2>{t('garage.title')}</h2>
         <p className="screen__sub">{anyUpgradable ? t('garage.sub') : t('garage.maxed')}</p>
+        <p className="screen__sub">{t('upgrade.hint')}</p>
       </header>
 
       <div className="garage__cards">

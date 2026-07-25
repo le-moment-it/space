@@ -82,6 +82,14 @@ const en = {
   'card.type.shipSystem': 'System',
   'card.type.crew': 'Crew',
 
+  // Upgrade preview (right-click a card)
+  'upgrade.title': 'Upgrade path',
+  'upgrade.tierBase': 'Base',
+  'upgrade.current': 'Current',
+  'upgrade.next': 'Next',
+  'upgrade.maxed': 'Fully upgraded — no further tiers.',
+  'upgrade.hint': 'Right-click a card to see its upgrade path.',
+
   // Card rarity
   'card.rarity.common': 'Common',
   'card.rarity.rare': 'Rare',
@@ -99,6 +107,7 @@ const en = {
   'effect.thisTurn': 'this turn',
   'effect.weaken': 'Weaken',
   'effect.for': 'for',
+  'effect.turn': 'turn',
   'effect.turns': 'turns',
   'effect.draw': 'Draw',
   'effect.card': 'card',
@@ -385,6 +394,14 @@ const fr: Record<UiKey, string> = {
   'card.type.shipSystem': 'Système',
   'card.type.crew': 'Équipage',
 
+  // Upgrade preview (right-click a card)
+  'upgrade.title': 'Progression d’amélioration',
+  'upgrade.tierBase': 'Base',
+  'upgrade.current': 'Actuel',
+  'upgrade.next': 'Suivant',
+  'upgrade.maxed': 'Entièrement améliorée — plus aucun palier.',
+  'upgrade.hint': 'Clic droit sur une carte pour voir sa progression d’amélioration.',
+
   // Card rarity
   'card.rarity.common': 'Commune',
   'card.rarity.rare': 'Rare',
@@ -402,6 +419,7 @@ const fr: Record<UiKey, string> = {
   'effect.thisTurn': 'ce tour-ci',
   'effect.weaken': 'Affaiblir',
   'effect.for': 'pendant',
+  'effect.turn': 'tour',
   'effect.turns': 'tours',
   'effect.draw': 'Piocher',
   'effect.card': 'carte',

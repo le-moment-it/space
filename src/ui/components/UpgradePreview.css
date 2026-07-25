@@ -1,0 +1,93 @@
+.upgrade-overlay {
+  position: fixed;
+  inset: 0;
+  /* Above .cardlist-overlay (45) so it works inside the deck viewer, below
+     .kwcard (60) so a keyword explainer opened from inside still sits on top. */
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(5, 7, 14, 0.74);
+  backdrop-filter: blur(4px);
+}
+
+.upgrade {
+  width: min(720px, 100%);
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent), var(--hull);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+.upgrade__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.3rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--hull-2);
+}
+.upgrade__name {
+  margin-top: 0.15rem;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.upgrade__close {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  padding: 0.2rem 0.55rem;
+  color: var(--ink-dim);
+  background: transparent;
+}
+.upgrade__close:hover:not(:disabled) {
+  color: var(--ink);
+}
+
+.upgrade__tiers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 1.3rem;
+}
+
+.upgrade__tier {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+}
+/* The tier this copy is actually at, so the path reads relative to what you own. */
+.upgrade__tier--current {
+  border-color: color-mix(in srgb, var(--upgrade) 45%, transparent);
+  background: color-mix(in srgb, var(--upgrade) 7%, transparent);
+}
+
+.upgrade__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--ink-dim);
+}
+.upgrade__marker {
+  font-size: 0.56rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--upgrade);
+}
+.upgrade__marker--next {
+  color: var(--ink-faint);
+}
+
+.upgrade__maxed {
+  padding: 0 1.3rem 1.3rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}

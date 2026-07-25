@@ -87,6 +87,9 @@ export function Keyword({
           open(e.clientX, e.clientY);
         }}
         onTouchStart={(e) => {
+          // Cards long-press to open their upgrade path; stop here so a long press
+          // on a keyword shows the rule instead, matching the right-click split.
+          e.stopPropagation();
           const touch = e.touches[0];
           if (!touch) return;
           // Read the coordinates now: the Touch object is not guaranteed to
@@ -99,11 +102,15 @@ export function Keyword({
           }, LONG_PRESS_MS);
         }}
         onTouchEnd={(e) => {
+          e.stopPropagation();
           cancelLongPress();
           // A long press opened the explainer — don't also play the card.
           if (suppressClick.current) e.preventDefault();
         }}
-        onTouchMove={cancelLongPress}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+          cancelLongPress();
+        }}
       >
         {children ?? label}
       </span>
