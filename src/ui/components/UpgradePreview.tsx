@@ -79,11 +79,14 @@ export function UpgradePreview({
                 <p className="upgrade__label mono">
                   {tier === 0 ? t('upgrade.tierBase') : '+'.repeat(tier)}
                 </p>
-                {(isCurrent || isNext) && (
-                  <p className={`upgrade__marker mono${isNext ? ' upgrade__marker--next' : ''}`}>
-                    {isCurrent ? t('upgrade.current') : t('upgrade.next')}
-                  </p>
-                )}
+                {/* Always rendered, blank when neither: equal tier heights are what
+                    let the fan arc symmetrically instead of stepping down. */}
+                <p
+                  className={`upgrade__marker mono${isNext ? ' upgrade__marker--next' : ''}`}
+                  aria-hidden={!isCurrent && !isNext}
+                >
+                  {isCurrent ? t('upgrade.current') : isNext ? t('upgrade.next') : '\u00A0'}
+                </p>
               </div>
             );
           })}
