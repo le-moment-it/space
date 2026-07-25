@@ -1,4 +1,5 @@
-import type { CardDefinition, CardEffect, CardType } from '../../engine/cards/types';
+import type { CardDefinition, CardEffect, CardRarity, CardType } from '../../engine/cards/types';
+import { rarityOf } from '../../engine/cards/types';
 import { useTranslation, type Translator, type UiKey } from '../../i18n';
 import { CardArt } from './CardArt';
 import './Card.css';
@@ -8,6 +9,13 @@ const TYPE_LABEL_KEY: Record<CardType, UiKey> = {
   maneuver: 'card.type.maneuver',
   shipSystem: 'card.type.shipSystem',
   crew: 'card.type.crew',
+};
+
+const RARITY_LABEL_KEY: Record<CardRarity, UiKey> = {
+  common: 'card.rarity.common',
+  rare: 'card.rarity.rare',
+  epic: 'card.rarity.epic',
+  legendary: 'card.rarity.legendary',
 };
 
 /**
@@ -102,11 +110,14 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
     .filter(Boolean)
     .join(' ');
 
+  const rarity = rarityOf(card);
+
   return (
     <button
       type="button"
       className={className}
       data-type={card.type}
+      data-rarity={rarity}
       disabled={interactive && !playable}
       onClick={onClick}
     >
@@ -121,6 +132,7 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
       <div className="card__text">
         <EffectText effect={card.effect} t={t} />
       </div>
+      <div className="card__rarity">{t(RARITY_LABEL_KEY[rarity])}</div>
     </button>
   );
 }

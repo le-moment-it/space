@@ -80,6 +80,12 @@ const en = {
   'card.type.shipSystem': 'System',
   'card.type.crew': 'Crew',
 
+  // Card rarity
+  'card.rarity.common': 'Common',
+  'card.rarity.rare': 'Rare',
+  'card.rarity.epic': 'Epic',
+  'card.rarity.legendary': 'Legendary',
+
   // Card effect fragments (reassembled with emphasis in <EffectText>)
   'effect.deal': 'Deal',
   'effect.damage': 'damage',
@@ -305,6 +311,12 @@ const fr: Record<UiKey, string> = {
   'card.type.maneuver': 'Manœuvre',
   'card.type.shipSystem': 'Système',
   'card.type.crew': 'Équipage',
+
+  // Card rarity
+  'card.rarity.common': 'Commune',
+  'card.rarity.rare': 'Rare',
+  'card.rarity.epic': 'Épique',
+  'card.rarity.legendary': 'Légendaire',
 
   // Card effect fragments
   'effect.deal': 'Infliger',
