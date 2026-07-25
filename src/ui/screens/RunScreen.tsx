@@ -3,7 +3,7 @@ import { useGameStore } from '../../state/gameStore';
 import { TOTAL_ACTS } from '../../engine/run/types';
 import { useTranslation } from '../../i18n';
 import { BattleLog } from '../components/BattleLog';
-import { DeckViewer } from '../components/DeckViewer';
+import { CardListModal } from '../components/CardListModal';
 import { BattleScreen } from './BattleScreen';
 import { CardRewardScreen } from './CardRewardScreen';
 import { CrewOfferScreen } from './CrewOfferScreen';
@@ -131,7 +131,13 @@ export function RunScreen() {
         </div>
       )}
 
-      {deckOpen && <DeckViewer deckCardIds={run.deckCardIds} onClose={() => setDeckOpen(false)} />}
+      {deckOpen && (
+        <CardListModal
+          title={t('deckView.title')}
+          cardIds={run.deckCardIds}
+          onClose={() => setDeckOpen(false)}
+        />
+      )}
     </>
   );
 }

@@ -1,4 +1,4 @@
-.deckview-overlay {
+.cardlist-overlay {
   position: fixed;
   inset: 0;
   z-index: 45;
@@ -9,7 +9,7 @@
   backdrop-filter: blur(4px);
 }
 
-.deckview {
+.cardlist {
   display: flex;
   flex-direction: column;
   width: min(920px, 100%);
@@ -21,7 +21,7 @@
   overflow: hidden;
 }
 
-.deckview__head {
+.cardlist__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -30,27 +30,42 @@
   border-bottom: 1px solid var(--line);
   background: var(--hull-2);
 }
-.deckview__sub {
+.cardlist__sub {
   margin-top: 0.15rem;
   font-size: 0.8rem;
   color: var(--ink-dim);
 }
-.deckview__close {
+.cardlist__note {
+  margin-top: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+.cardlist__close {
   font-family: var(--mono);
   font-size: 0.9rem;
   padding: 0.2rem 0.55rem;
   color: var(--ink-dim);
   background: transparent;
 }
-.deckview__close:hover:not(:disabled) {
+.cardlist__close:hover:not(:disabled) {
   color: var(--ink);
 }
 
-.deckview__cards {
+.cardlist__cards {
   overflow-y: auto;
   padding: 1.1rem 1.3rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   justify-content: center;
+}
+
+.cardlist__empty {
+  padding: 2.5rem 1.3rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }

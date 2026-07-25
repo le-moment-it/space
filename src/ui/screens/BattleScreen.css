@@ -191,6 +191,52 @@
   color: var(--ink);
 }
 
+/* Draw / discard pile buttons — open a modal listing that pile's cards. */
+.piles {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.pile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  color: var(--ink-dim);
+  background: var(--hull);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.pile:hover:not(:disabled) {
+  color: var(--signal);
+  border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--signal) 20%, transparent);
+}
+.pileicon {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+.pile__label {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.pile__count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* On the narrowest layouts the labels drop out — icon + count still read clearly. */
+@media (max-width: 480px) {
+  .pile__label {
+    display: none;
+  }
+}
+
 /* Win / loss overlay */
 .battle__overlay {
   position: fixed;

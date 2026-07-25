@@ -199,10 +199,16 @@ const en = {
   'reward.title': 'Install a ship system',
   'reward.sub': 'One upgrade, bolted on for the rest of the run.',
 
-  // Deck viewer (current run deck)
+  // Card list modal (run deck + combat piles)
   'deckView.title': 'Current deck',
-  'deckView.sub': '{count} cards',
+  'cardList.count': '{count} cards',
+  'cardList.empty': 'Empty',
   'run.viewDeckHint': 'View current deck',
+
+  // Combat piles
+  'pile.draw': 'Draw pile',
+  'pile.discard': 'Discard pile',
+  'pile.drawNote': 'Sorted — the real draw order stays hidden.',
 
   // Shop screen
   'shop.eyebrow': 'Salvage trader',
@@ -422,10 +428,16 @@ const fr: Record<UiKey, string> = {
   'reward.title': 'Installer un système de vaisseau',
   'reward.sub': 'Une amélioration, montée pour le reste de la partie.',
 
-  // Deck viewer (current run deck)
+  // Card list modal (run deck + combat piles)
   'deckView.title': 'Deck actuel',
-  'deckView.sub': '{count} cartes',
+  'cardList.count': '{count} cartes',
+  'cardList.empty': 'Vide',
   'run.viewDeckHint': 'Voir le deck actuel',
+
+  // Combat piles
+  'pile.draw': 'Pioche',
+  'pile.discard': 'Défausse',
+  'pile.drawNote': 'Triée — l’ordre de pioche réel reste caché.',
 
   // Shop screen
   'shop.eyebrow': 'Négociant en débris',

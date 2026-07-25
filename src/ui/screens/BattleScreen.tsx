@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { cardDefinitions } from '../../data/cards';
 import type { CombatState, Intent } from '../../engine/combat/types';
 import { useTranslation, type Translator } from '../../i18n';
 import { Card } from '../components/Card';
+import { CardListModal } from '../components/CardListModal';
+import { PileIcon } from '../components/PileIcon';
 import './BattleScreen.css';
 
 interface BattleScreenProps {
@@ -14,6 +17,7 @@ interface BattleScreenProps {
 export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: BattleScreenProps) {
   const tr = useTranslation();
   const { t, enemyName } = tr;
+  const [openPile, setOpenPile] = useState<'draw' | 'discard' | null>(null);
   const isPlayerTurn = combat.phase === 'playerTurn';
   const { player, enemy } = combat;
 
@@ -63,14 +67,46 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
       </div>
 
       <div className="battle__bar">
-        <span className="pilecount mono">
-          {t('battle.draw')} <b>{combat.drawPile.length}</b> · {t('battle.discard')}{' '}
-          <b>{combat.discardPile.length}</b> · {t('battle.turn')} <b>{combat.turn}</b>
-        </span>
+        <div className="piles">
+          <button
+            className="pile"
+            onClick={() => setOpenPile('draw')}
+            title={t('pile.draw')}
+            aria-label={`${t('pile.draw')}: ${combat.drawPile.length}`}
+          >
+            <PileIcon variant="draw" />
+            <span className="pile__label">{t('pile.draw')}</span>
+            <span className="pile__count mono">{combat.drawPile.length}</span>
+          </button>
+          <button
+            className="pile"
+            onClick={() => setOpenPile('discard')}
+            title={t('pile.discard')}
+            aria-label={`${t('pile.discard')}: ${combat.discardPile.length}`}
+          >
+            <PileIcon variant="discard" />
+            <span className="pile__label">{t('pile.discard')}</span>
+            <span className="pile__count mono">{combat.discardPile.length}</span>
+          </button>
+          <span className="pilecount mono">
+            {t('battle.turn')} <b>{combat.turn}</b>
+          </span>
+        </div>
         <button className="btn-primary" disabled={!isPlayerTurn} onClick={onEndTurn}>
           {t('battle.endTurn')}
         </button>
       </div>
+
+      {openPile && (
+        <CardListModal
+          title={openPile === 'draw' ? t('pile.draw') : t('pile.discard')}
+          cardIds={(openPile === 'draw' ? combat.drawPile : combat.discardPile).map(
+            (c) => c.cardId,
+          )}
+          note={openPile === 'draw' ? t('pile.drawNote') : undefined}
+          onClose={() => setOpenPile(null)}
+        />
+      )}
 
       {(combat.phase === 'won' || combat.phase === 'lost') && (
         <div className="battle__overlay">
