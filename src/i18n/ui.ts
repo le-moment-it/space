@@ -436,6 +436,8 @@ const en = {
   'level.xp': 'XP',
   'level.progress': '{into} / {span} XP to level {next}',
   'level.max': 'Maximum level reached.',
+  'level.maxShort': 'MAX',
+  'level.xpOf': '{into} / {span} XP',
   'level.sub':
     'Every encounter you win pays XP. Higher levels raise the odds of better cards and open more of the collection for deck building.',
   'level.nextUnlock': 'Level {level} unlocks {count} more cards.',
@@ -890,6 +892,8 @@ const fr: Record<UiKey, string> = {
   'level.xp': 'XP',
   'level.progress': '{into} / {span} XP jusqu’au niveau {next}',
   'level.max': 'Niveau maximum atteint.',
+  'level.maxShort': 'MAX',
+  'level.xpOf': '{into} / {span} XP',
   'level.sub':
     'Chaque rencontre gagnée rapporte de l’XP. Les niveaux supérieurs augmentent les chances d’obtenir de meilleures cartes et ouvrent davantage de la collection pour composer votre deck.',
   'level.nextUnlock': 'Le niveau {level} débloque {count} cartes de plus.',

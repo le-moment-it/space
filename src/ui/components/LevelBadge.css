@@ -1,39 +1,70 @@
 .levelbadge {
   display: inline-flex;
   flex-direction: column;
-  gap: 0.22rem;
-  padding: 0.3rem 0.6rem;
+  gap: 0.3rem;
+  /* Wide enough that the bar reads as a gauge rather than a hairline, and that the
+     XP counts have room to sit beside the level without crowding it. */
+  min-width: 150px;
+  padding: 0.4rem 0.7rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--hull-2);
 }
 
-.levelbadge__text {
-  font-size: 0.62rem;
+.levelbadge__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.levelbadge__level {
+  font-size: 0.72rem;
+  font-weight: 600;
   letter-spacing: 0.14em;
   color: var(--signal);
+}
+
+/* Dimmer than the level: the number you glance at, not the one you read first. */
+.levelbadge__xp {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
 }
 
 .levelbadge__bar {
   display: block;
   width: 100%;
-  min-width: 54px;
-  height: 3px;
-  border-radius: 2px;
+  height: 6px;
+  border-radius: 3px;
   background: var(--void);
+  border: 1px solid var(--line);
   overflow: hidden;
 }
 .levelbadge__fill {
   display: block;
   height: 100%;
-  border-radius: 2px;
-  background: var(--signal);
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--signal) 70%, transparent),
+    var(--signal)
+  );
+  box-shadow: 0 0 6px var(--signal-glow);
   /* Grows as XP lands, so a level-up is visible rather than merely recorded. */
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 /* At the cap there is nothing left to fill toward — say so with colour, not a full bar. */
 .levelbadge__fill--max {
   background: var(--rarity-legendary);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--rarity-legendary) 55%, transparent);
+}
+
+@media (max-width: 700px) {
+  /* The top bar wraps at this width; give the badge back its space. */
+  .levelbadge {
+    min-width: 120px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
