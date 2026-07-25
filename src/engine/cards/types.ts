@@ -22,6 +22,12 @@ export interface CardDefinition {
   effect: CardEffect;
   /** Omitted means 'common' — see rarityOf(). Every launch card is common. */
   rarity?: CardRarity;
+  /**
+   * Exhaust: playing this card removes it from the fight instead of discarding it,
+   * so it cannot be drawn again this combat. A modifier rather than an effect kind,
+   * so any effect can exhaust. The run deck is untouched — it returns next fight.
+   */
+  exhaust?: boolean;
 }
 
 /** The single source of truth for the default: an undeclared rarity is common. */

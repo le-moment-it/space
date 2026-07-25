@@ -42,6 +42,7 @@ export type CombatLogEntry =
   | { t: 'contact'; enemyId: string; hull: number }
   | { t: 'notEnoughPower'; cardId: string }
   | { t: 'played'; cardId: string }
+  | { t: 'exhausted'; cardId: string }
   | { t: 'damage'; cardId: string; amount: number; absorbed: number }
   | { t: 'shield'; amount: number }
   | { t: 'heal'; amount: number }
@@ -60,6 +61,8 @@ export interface CombatState {
   drawPile: CardInstance[];
   hand: CardInstance[];
   discardPile: CardInstance[];
+  /** Cards exhausted this fight. Never reshuffled — they are out until the next combat. */
+  exhaustPile: CardInstance[];
   turn: number;
   phase: CombatPhase;
   log: CombatLogEntry[];

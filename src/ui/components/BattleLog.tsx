@@ -24,6 +24,8 @@ function formatEntry(entry: Exclude<CombatLogEntry, { t: 'endTurn' }>, tr: Trans
       return line('system', t('log.notEnoughPower', { name: cardName(entry.cardId) }));
     case 'played':
       return line('player', t('log.played', { name: cardName(entry.cardId) }), true);
+    case 'exhausted':
+      return line('system', t('log.exhausted', { name: cardName(entry.cardId) }));
     case 'damage':
       return line(
         'player',

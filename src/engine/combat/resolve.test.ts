@@ -62,6 +62,15 @@ const cardDefinitions: Record<string, CardDefinition> = {
     description: '',
     effect: { kind: 'draw', amount: 2 },
   },
+  oneShot: {
+    id: 'oneShot',
+    name: 'One Shot',
+    type: 'weapon',
+    cost: 0,
+    description: '',
+    effect: { kind: 'damage', amount: 4 },
+    exhaust: true,
+  },
 };
 
 const passiveEnemy: EnemyDefinition = {
@@ -283,6 +292,75 @@ describe('playCard', () => {
     if (!scanInHand) throw new Error('scan not in opening hand for this seed');
     state = playCard(state, scanInHand.instanceId, cardDefinitions, rng);
     expect(state.log.some((entry) => entry.t === 'reshuffle')).toBe(true);
+  });
+});
+
+describe('exhaust', () => {
+  const startExhaustFight = (rng = createRng(11)) =>
+    initCombat({
+      cardDefinitions,
+      startingDeckCardIds: deckOf('oneShot', 'strike', 'strike', 'strike', 'strike'),
+      enemy: passiveEnemy,
+      rng,
+    });
+
+  it('sends an exhausted card out of the fight instead of to the discard pile', () => {
+    const rng = createRng(11);
+    let state = startExhaustFight(rng);
+    const oneShot = state.hand.find((c) => c.cardId === 'oneShot');
+    if (!oneShot) throw new Error('oneShot not in opening hand for this seed');
+
+    state = playCard(state, oneShot.instanceId, cardDefinitions, rng);
+
+    expect(state.exhaustPile.map((c) => c.instanceId)).toEqual([oneShot.instanceId]);
+    expect(state.discardPile).not.toContainEqual(oneShot);
+    expect(state.hand).not.toContainEqual(oneShot);
+    // The effect still resolves — exhaust is a cost, not a replacement.
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 4);
+    expect(state.log.at(-1)).toEqual({ t: 'exhausted', cardId: 'oneShot' });
+  });
+
+  it('never returns an exhausted card to the draw pile on reshuffle', () => {
+    const rng = createRng(11);
+    let state = startExhaustFight(rng);
+    const oneShot = state.hand.find((c) => c.cardId === 'oneShot');
+    if (!oneShot) throw new Error('oneShot not in opening hand for this seed');
+    state = playCard(state, oneShot.instanceId, cardDefinitions, rng);
+
+    // Cycle several turns so the discard pile is reshuffled at least once.
+    for (let i = 0; i < 6; i++) state = endPlayerTurn(state, rng);
+
+    expect(state.log.some((entry) => entry.t === 'reshuffle')).toBe(true);
+    const everywhere = [...state.hand, ...state.drawPile, ...state.discardPile];
+    expect(everywhere.map((c) => c.instanceId)).not.toContain(oneShot.instanceId);
+    expect(state.exhaustPile).toHaveLength(1);
+  });
+
+  it('starts every fight with an empty exhaust pile, so exhausted cards come back', () => {
+    const rng = createRng(11);
+    let state = startExhaustFight(rng);
+    const oneShot = state.hand.find((c) => c.cardId === 'oneShot');
+    if (!oneShot) throw new Error('oneShot not in opening hand for this seed');
+    state = playCard(state, oneShot.instanceId, cardDefinitions, rng);
+    expect(state.exhaustPile).toHaveLength(1);
+
+    // A fresh combat is built from the run deck, which exhaust never touched.
+    const next = startExhaustFight(createRng(11));
+    expect(next.exhaustPile).toEqual([]);
+    const allCards = [...next.hand, ...next.drawPile, ...next.discardPile];
+    expect(allCards.filter((c) => c.cardId === 'oneShot')).toHaveLength(1);
+  });
+
+  it('leaves non-exhaust cards discarding normally', () => {
+    const rng = createRng(11);
+    let state = startExhaustFight(rng);
+    const strike = state.hand.find((c) => c.cardId === 'strike');
+    if (!strike) throw new Error('strike not in opening hand for this seed');
+
+    state = playCard(state, strike.instanceId, cardDefinitions, rng);
+
+    expect(state.discardPile.map((c) => c.instanceId)).toContain(strike.instanceId);
+    expect(state.exhaustPile).toEqual([]);
   });
 });
 

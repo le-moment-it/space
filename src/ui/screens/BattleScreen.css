@@ -213,6 +213,15 @@
   border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--signal) 20%, transparent);
 }
+/* Exhausted cards are spent — hazard-toned, matching the keyword on the card. */
+.pile--exhaust {
+  color: color-mix(in srgb, var(--hazard) 55%, var(--ink-dim));
+}
+.pile--exhaust:hover:not(:disabled) {
+  color: var(--hazard);
+  border-color: color-mix(in srgb, var(--hazard) 45%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--hazard) 20%, transparent);
+}
 .pileicon {
   width: 17px;
   height: 17px;

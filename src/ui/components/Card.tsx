@@ -131,6 +131,15 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
       </div>
       <div className="card__text">
         <EffectText effect={card.effect} t={t} />
+        {card.exhaust && (
+          <>
+            {' '}
+            <b className="kw kw--exhaust" title={t('effect.exhaustHint')}>
+              {t('effect.exhaust')}
+            </b>
+            .
+          </>
+        )}
       </div>
       <div className="card__rarity">{t(RARITY_LABEL_KEY[rarity])}</div>
     </button>

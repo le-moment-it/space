@@ -159,10 +159,21 @@ interface GameStore {
   resetLoadout: () => void;
 }
 
+/**
+ * Back-fills fields added to an in-flight combat after a save was written. A player
+ * mid-fight when a new build ships would otherwise load a CombatState missing the
+ * newer piles — cheaper and safer than a save version bump for an additive field.
+ */
+function normalizeRun(run: RunState | null): RunState | null {
+  if (!run?.activeCombat || run.activeCombat.exhaustPile) return run;
+  return { ...run, activeCombat: { ...run.activeCombat, exhaustPile: [] } };
+}
+
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
-  const initialSave: SaveDataV5 = loadSave(SAVE_DEFAULTS);
+  const loaded: SaveDataV5 = loadSave(SAVE_DEFAULTS);
+  const initialSave: SaveDataV5 = { ...loaded, currentRun: normalizeRun(loaded.currentRun) };
 
   function persist(meta: SaveMetaV5, run: RunState | null): void {
     persistSave({ version: 5, meta, currentRun: run });

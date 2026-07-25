@@ -97,6 +97,7 @@ export function initCombat(opts: {
     drawPile,
     hand: [],
     discardPile: [],
+    exhaustPile: [],
     turn: 1,
     phase: 'playerTurn',
     log: [{ t: 'contact', enemyId: opts.enemy.id, hull: opts.enemy.maxHull }],
@@ -130,7 +131,11 @@ export function playCard(
   const enemy = { ...state.enemy };
   let hand = [...state.hand.slice(0, cardIndex), ...state.hand.slice(cardIndex + 1)];
   let drawPile = state.drawPile;
-  let discardPile = [...state.discardPile, instance];
+  // Exhausted cards leave the fight entirely: they skip the discard pile, so the
+  // reshuffle can never bring them back. The run deck is untouched.
+  const exhausted = def.exhaust === true;
+  let discardPile = exhausted ? state.discardPile : [...state.discardPile, instance];
+  const exhaustPile = exhausted ? [...state.exhaustPile, instance] : state.exhaustPile;
   let log: CombatLogEntry[] = [...state.log, { t: 'played', cardId: def.id }];
 
   switch (def.effect.kind) {
@@ -180,10 +185,12 @@ export function playCard(
     }
   }
 
+  if (exhausted) log.push({ t: 'exhausted', cardId: def.id });
+
   const phase = enemy.hull <= 0 ? 'won' : state.phase;
   if (phase === 'won') log.push({ t: 'enemyDestroyed', enemyId: enemy.id });
 
-  return { ...state, player, enemy, hand, drawPile, discardPile, log, phase };
+  return { ...state, player, enemy, hand, drawPile, discardPile, exhaustPile, log, phase };
 }
 
 export function endPlayerTurn(

@@ -101,6 +101,8 @@ const en = {
   'effect.draw': 'Draw',
   'effect.card': 'card',
   'effect.cards': 'cards',
+  'effect.exhaust': 'Exhaust',
+  'effect.exhaustHint': 'Leaves the fight when played. Back next combat.',
 
   // Battle screen
   'battle.hostileContact': 'Hostile contact',
@@ -214,7 +216,10 @@ const en = {
   // Combat piles
   'pile.draw': 'Draw pile',
   'pile.discard': 'Discard pile',
+  'pile.exhaust': 'Exhausted',
   'pile.drawNote': 'Sorted — the real draw order stays hidden.',
+  'pile.exhaustNote': 'Out for this fight. Back in your deck next combat.',
+  'log.exhausted': '{name} exhausted.',
 
   // Shop screen
   'shop.eyebrow': 'Salvage trader',
@@ -333,6 +338,8 @@ const fr: Record<UiKey, string> = {
   'effect.draw': 'Piocher',
   'effect.card': 'carte',
   'effect.cards': 'cartes',
+  'effect.exhaust': 'Épuisement',
+  'effect.exhaustHint': 'Quitte le combat une fois jouée. Revient au combat suivant.',
 
   // Battle screen
   'battle.hostileContact': 'Contact hostile',
@@ -449,7 +456,10 @@ const fr: Record<UiKey, string> = {
   // Combat piles
   'pile.draw': 'Pioche',
   'pile.discard': 'Défausse',
+  'pile.exhaust': 'Épuisées',
   'pile.drawNote': 'Triée — l’ordre de pioche réel reste caché.',
+  'pile.exhaustNote': 'Hors jeu pour ce combat. De retour au combat suivant.',
+  'log.exhausted': '{name} épuisée.',
 
   // Shop screen
   'shop.eyebrow': 'Négociant en débris',

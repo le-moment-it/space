@@ -186,6 +186,13 @@
 .kw--weaken {
   color: var(--threat);
 }
+/* Exhaust is a cost, not a payoff — hazard-toned so it reads as a caveat. */
+.kw--exhaust {
+  color: var(--hazard);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 0.92em;
+}
 
 /* States */
 .card--interactive:hover:not(:disabled) {

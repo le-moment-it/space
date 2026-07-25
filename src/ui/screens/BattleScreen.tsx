@@ -7,6 +7,12 @@ import { CardListModal } from '../components/CardListModal';
 import { PileIcon } from '../components/PileIcon';
 import './BattleScreen.css';
 
+const PILES = {
+  draw: (c: CombatState) => c.drawPile,
+  discard: (c: CombatState) => c.discardPile,
+  exhaust: (c: CombatState) => c.exhaustPile,
+} as const;
+
 interface BattleScreenProps {
   combat: CombatState;
   onPlayCard: (instanceId: string) => void;
@@ -17,7 +23,7 @@ interface BattleScreenProps {
 export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: BattleScreenProps) {
   const tr = useTranslation();
   const { t, enemyName } = tr;
-  const [openPile, setOpenPile] = useState<'draw' | 'discard' | null>(null);
+  const [openPile, setOpenPile] = useState<'draw' | 'discard' | 'exhaust' | null>(null);
   const isPlayerTurn = combat.phase === 'playerTurn';
   const { player, enemy } = combat;
 
@@ -88,6 +94,20 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
             <span className="pile__label">{t('pile.discard')}</span>
             <span className="pile__count mono">{combat.discardPile.length}</span>
           </button>
+          {/* Only surfaces once something is exhausted — decks without exhaust
+              cards never see a pile that would always read zero. */}
+          {combat.exhaustPile.length > 0 && (
+            <button
+              className="pile pile--exhaust"
+              onClick={() => setOpenPile('exhaust')}
+              title={t('pile.exhaust')}
+              aria-label={`${t('pile.exhaust')}: ${combat.exhaustPile.length}`}
+            >
+              <PileIcon variant="exhaust" />
+              <span className="pile__label">{t('pile.exhaust')}</span>
+              <span className="pile__count mono">{combat.exhaustPile.length}</span>
+            </button>
+          )}
           <span className="pilecount mono">
             {t('battle.turn')} <b>{combat.turn}</b>
           </span>
@@ -99,11 +119,15 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
 
       {openPile && (
         <CardListModal
-          title={openPile === 'draw' ? t('pile.draw') : t('pile.discard')}
-          cardIds={(openPile === 'draw' ? combat.drawPile : combat.discardPile).map(
-            (c) => c.cardId,
-          )}
-          note={openPile === 'draw' ? t('pile.drawNote') : undefined}
+          title={t(`pile.${openPile}`)}
+          cardIds={PILES[openPile](combat).map((c) => c.cardId)}
+          note={
+            openPile === 'draw'
+              ? t('pile.drawNote')
+              : openPile === 'exhaust'
+                ? t('pile.exhaustNote')
+                : undefined
+          }
           onClose={() => setOpenPile(null)}
         />
       )}
