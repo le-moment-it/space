@@ -41,6 +41,10 @@
   --card-shipsystem: #a98bff;
   --card-crew: #ecc879;
 
+  /* Rules keywords (Exhaust, …) — silver, deliberately outside the semantic
+     palette so a keyword never reads as damage/shield/repair. */
+  --keyword: #e2eaf7;
+
   /* Card rarity. Deliberately offset from the type accents above (blue reads
      apart from maneuver cyan, purple from shipsystem violet, gold from crew). */
   --rarity-common: #93a1b8;

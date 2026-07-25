@@ -1,0 +1,42 @@
+/* Keyword printed on a card face — silver, so it reads as a rules term rather
+   than one of the semantic effect colors. The dotted rule is the affordance:
+   it marks the word as something you can look up. */
+.kwchip {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--keyword);
+  text-shadow: 0 0 10px rgba(226, 234, 247, 0.18);
+  border-bottom: 1px dotted color-mix(in srgb, var(--keyword) 55%, transparent);
+  padding-bottom: 1px;
+  cursor: help;
+}
+
+/* The explainer, portalled to <body> */
+.kwcard {
+  position: fixed;
+  z-index: 60;
+  padding: 0.6rem 0.75rem;
+  background: linear-gradient(180deg, var(--hull-2), var(--hull));
+  border: 1px solid var(--line-2);
+  border-left: 2px solid var(--keyword);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+.kwcard__name {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--keyword);
+  margin-bottom: 0.3rem;
+}
+.kwcard__desc {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ink-dim);
+}

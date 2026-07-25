@@ -2,6 +2,7 @@ import type { CardDefinition, CardEffect, CardRarity, CardType } from '../../eng
 import { rarityOf } from '../../engine/cards/types';
 import { useTranslation, type Translator, type UiKey } from '../../i18n';
 import { CardArt } from './CardArt';
+import { Keyword } from './Keyword';
 import './Card.css';
 
 const TYPE_LABEL_KEY: Record<CardType, UiKey> = {
@@ -111,6 +112,7 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
     .join(' ');
 
   const rarity = rarityOf(card);
+  const unplayable = interactive && !playable;
 
   return (
     <button
@@ -118,8 +120,12 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
       className={className}
       data-type={card.type}
       data-rarity={rarity}
-      disabled={interactive && !playable}
-      onClick={onClick}
+      // aria-disabled rather than the disabled attribute: a natively disabled
+      // button swallows pointer events on its children, which would kill
+      // right-click on keywords for exactly the cards players need to read
+      // (the ones they cannot afford). The click is guarded instead.
+      aria-disabled={unplayable || undefined}
+      onClick={unplayable ? undefined : onClick}
     >
       <div className="card__header">
         <span className="card__type">{t(TYPE_LABEL_KEY[card.type])}</span>
@@ -131,16 +137,12 @@ export function Card({ card, playable = false, dimmed = false, onClick }: CardPr
       </div>
       <div className="card__text">
         <EffectText effect={card.effect} t={t} />
-        {card.exhaust && (
-          <>
-            {' '}
-            <b className="kw kw--exhaust" title={t('effect.exhaustHint')}>
-              {t('effect.exhaust')}
-            </b>
-            .
-          </>
-        )}
       </div>
+      {card.exhaust && (
+        <div className="card__keywords">
+          <Keyword id="exhaust" />
+        </div>
+      )}
       <div className="card__rarity">{t(RARITY_LABEL_KEY[rarity])}</div>
     </button>
   );

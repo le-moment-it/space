@@ -101,8 +101,10 @@ const en = {
   'effect.draw': 'Draw',
   'effect.card': 'card',
   'effect.cards': 'cards',
-  'effect.exhaust': 'Exhaust',
-  'effect.exhaustHint': 'Leaves the fight when played. Back next combat.',
+  // Rules keywords — label printed on the card, desc shown on right-click
+  'keyword.exhaust': 'Exhaust',
+  'keyword.exhaust.desc':
+    'When you play this card, it leaves the fight instead of going to your discard pile, so you cannot draw it again this combat. It returns to your deck for the next fight.',
 
   // Battle screen
   'battle.hostileContact': 'Hostile contact',
@@ -338,8 +340,10 @@ const fr: Record<UiKey, string> = {
   'effect.draw': 'Piocher',
   'effect.card': 'carte',
   'effect.cards': 'cartes',
-  'effect.exhaust': 'Épuisement',
-  'effect.exhaustHint': 'Quitte le combat une fois jouée. Revient au combat suivant.',
+  // Rules keywords — label printed on the card, desc shown on right-click
+  'keyword.exhaust': 'Épuisement',
+  'keyword.exhaust.desc':
+    'Quand vous jouez cette carte, elle quitte le combat au lieu d’aller dans votre défausse : vous ne pouvez plus la piocher pendant ce combat. Elle revient dans votre deck au combat suivant.',
 
   // Battle screen
   'battle.hostileContact': 'Contact hostile',
