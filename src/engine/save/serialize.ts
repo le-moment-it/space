@@ -4,11 +4,40 @@ import type { SaveDataV5 } from './types';
 
 const STORAGE_KEY = 'space-roguelike:save';
 
+const union = (owned: string[], defaults: string[]): string[] => [
+  ...owned,
+  ...defaults.filter((id) => !owned.includes(id)),
+];
+
+/**
+ * Grants default-unlocked content the save predates.
+ *
+ * SaveDefaults only seed a *new* save, so a card added to the default-unlocked set
+ * later would never reach existing players — their unlock list was frozen at the
+ * version they started on. Unioning the defaults in on every load fixes that for
+ * every future addition without a save version bump, and is idempotent. Only ever
+ * adds: milestone unlocks the player earned are untouched, as is their loadout.
+ */
+function grantDefaultUnlocks(save: SaveDataV5, defaults: SaveDefaults): SaveDataV5 {
+  const unlockedCardIds = union(save.meta.unlockedCardIds, defaults.unlockedCardIds);
+  const unlockedShipSystemIds = union(
+    save.meta.unlockedShipSystemIds,
+    defaults.unlockedShipSystemIds,
+  );
+  if (
+    unlockedCardIds.length === save.meta.unlockedCardIds.length &&
+    unlockedShipSystemIds.length === save.meta.unlockedShipSystemIds.length
+  ) {
+    return save;
+  }
+  return { ...save, meta: { ...save.meta, unlockedCardIds, unlockedShipSystemIds } };
+}
+
 export function loadSave(defaults: SaveDefaults): SaveDataV5 {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createEmptySave(defaults);
-    return migrateSave(JSON.parse(raw), defaults);
+    const save = raw ? migrateSave(JSON.parse(raw), defaults) : createEmptySave(defaults);
+    return grantDefaultUnlocks(save, defaults);
   } catch {
     return createEmptySave(defaults);
   }

@@ -173,7 +173,6 @@ const cardList: CardDefinition[] = [
     cost: 0,
     description: 'Gain 10 shields. Exhaust.',
     effect: { kind: 'shield', amount: 10 },
-    rarity: 'rare',
     exhaust: true,
   },
   {

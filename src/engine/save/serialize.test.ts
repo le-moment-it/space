@@ -32,6 +32,36 @@ describe('loadSave / persistSave', () => {
     expect(loadSave(defaults)).toEqual(createEmptySave(defaults));
   });
 
+  it('grants default-unlocked content added after the save was written', () => {
+    const save = createEmptySave(defaults);
+    save.meta.unlockedCardIds.push('earned-from-a-milestone');
+    persistSave(save);
+
+    // A later build ships a new card that is unlocked from the start.
+    const withNewCard = { ...defaults, unlockedCardIds: ['a', 'brand-new'] };
+    const loaded = loadSave(withNewCard);
+
+    expect(loaded.meta.unlockedCardIds).toContain('brand-new');
+    // Existing unlocks survive — this only ever adds.
+    expect(loaded.meta.unlockedCardIds).toContain('earned-from-a-milestone');
+    expect(loaded.meta.unlockedCardIds).toContain('a');
+    // The player's chosen loadout is never touched.
+    expect(loaded.meta.loadoutCardIds).toEqual(save.meta.loadoutCardIds);
+  });
+
+  it('grants newly default-unlocked ship systems too', () => {
+    persistSave(createEmptySave(defaults));
+    const loaded = loadSave({ ...defaults, unlockedShipSystemIds: ['x', 'new-system'] });
+    expect(loaded.meta.unlockedShipSystemIds).toEqual(['x', 'new-system']);
+  });
+
+  it('does not duplicate defaults the save already has', () => {
+    persistSave(createEmptySave(defaults));
+    const loaded = loadSave(defaults);
+    expect(loaded.meta.unlockedCardIds).toEqual(['a']);
+    expect(loaded.meta.unlockedShipSystemIds).toEqual(['x']);
+  });
+
   it('migrates a real v1 payload found in localStorage (e.g. from before this update)', () => {
     const v1Payload = {
       version: 1,
