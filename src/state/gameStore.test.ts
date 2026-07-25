@@ -119,3 +119,68 @@ describe('gameStore — loadout', () => {
     expect(useGameStore.getState().meta.loadoutCardIds).toHaveLength(10);
   });
 });
+
+describe('gameStore — in-run cards stay in the run', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
+  });
+
+  /**
+   * Cards gained mid-run (combat reward, shop, cache, event, crew) must live only in
+   * that run's deck. They must never reach meta.unlockedCardIds, which is what the
+   * Deck screen offers when building a loadout — only milestones unlock cards there.
+   */
+  it('a card picked as a combat reward does not become permanently unlocked', () => {
+    useGameStore.setState((s) => ({
+      meta: {
+        ...s.meta,
+        unlockedCardIds: ['kinetic-cannon'],
+        loadoutCardIds: Array(10).fill('kinetic-cannon'),
+      },
+    }));
+    useGameStore.getState().startNewRun();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run should exist after startNewRun');
+
+    const unlockedBefore = [...useGameStore.getState().meta.unlockedCardIds];
+    const reward = 'plasma-lance';
+    expect(unlockedBefore).not.toContain(reward);
+
+    useGameStore.setState({
+      run: { ...run, phase: 'cardReward', cardRewardOptions: [reward] },
+    });
+    useGameStore.getState().chooseCardReward(reward);
+
+    // It is in the run deck for the rest of this run...
+    expect(useGameStore.getState().run?.deckCardIds).toContain(reward);
+    // ...but the permanent collection is untouched.
+    expect(useGameStore.getState().meta.unlockedCardIds).toEqual(unlockedBefore);
+    expect(useGameStore.getState().meta.loadoutCardIds).not.toContain(reward);
+  });
+
+  it('the next run starts from the saved loadout, without last run’s pickups', () => {
+    useGameStore.setState((s) => ({
+      meta: {
+        ...s.meta,
+        unlockedCardIds: ['kinetic-cannon'],
+        loadoutCardIds: Array(10).fill('kinetic-cannon'),
+      },
+    }));
+    useGameStore.getState().startNewRun();
+    const run = useGameStore.getState().run;
+    if (!run) throw new Error('run should exist after startNewRun');
+
+    useGameStore.setState({
+      run: { ...run, phase: 'cardReward', cardRewardOptions: ['plasma-lance'] },
+    });
+    useGameStore.getState().chooseCardReward('plasma-lance');
+    expect(useGameStore.getState().run?.deckCardIds).toContain('plasma-lance');
+
+    useGameStore.getState().returnToHub();
+    useGameStore.getState().startNewRun();
+
+    expect(useGameStore.getState().run?.deckCardIds).toEqual(Array(10).fill('kinetic-cannon'));
+    expect(useGameStore.getState().run?.deckCardIds).not.toContain('plasma-lance');
+  });
+});
