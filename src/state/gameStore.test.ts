@@ -1,9 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptySave } from '../engine/save/schema';
 import { makeSave } from '../engine/save/serialize';
-import { LOADOUT_SIZE } from '../engine/save/types';
 import { defaultUnlockedCardIds } from '../data/cards';
-import { milestoneDefinitions } from '../data/milestones';
+import { cardDefinitions } from '../data/cards';
+import {
+  levelFor,
+  MAX_LEVEL,
+  nextUnlock,
+  unlocksUpTo,
+  XP_AWARDS,
+  xpForLevel,
+} from '../engine/progression/level';
 import { TOTAL_ACTS, type RunState } from '../engine/run/types';
 import { SAVE_DEFAULTS, useGameStore } from './gameStore';
 
@@ -139,7 +146,7 @@ describe('gameStore — in-run cards stay in the run', () => {
   /**
    * Cards gained mid-run (combat reward, shop, cache, event, crew) must live only in
    * that run's deck. They must never reach meta.unlockedCardIds, which is what the
-   * Deck screen offers when building a loadout — only milestones unlock cards there.
+   * Deck screen offers when building a loadout — only levelling unlocks cards there.
    */
   it('a card picked as a combat reward does not become permanently unlocked', () => {
     useGameStore.setState((s) => ({
@@ -389,7 +396,7 @@ describe('gameStore — reset and import', () => {
   it('resumes an imported run in progress', () => {
     useGameStore.getState().startNewRun();
     const exported = {
-      version: 6 as const,
+      version: 7 as const,
       meta: useGameStore.getState().meta,
       currentRun: useGameStore.getState().run,
     };
@@ -416,7 +423,7 @@ describe('gameStore — reset and import', () => {
   });
 });
 
-describe('gameStore — unearned unlocks are revoked on import', () => {
+describe('gameStore — level unlocks are additive', () => {
   beforeEach(() => {
     localStorage.clear();
     useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
@@ -427,50 +434,28 @@ describe('gameStore — unearned unlocks are revoked on import', () => {
     return { ...save, meta: { ...save.meta, ...meta } };
   };
 
-  it('drops a card no default or completed milestone ever granted', () => {
-    // 'overwhelming-barrage' is legendary and gated behind the last milestone.
+  /**
+   * The regression that matters most in this rework. Cards used to be revoked unless a
+   * milestone justified them; with milestones gone, that logic would have wiped every
+   * card every existing player had earned. Unlocks are additive now — prove it.
+   */
+  it('never revokes a card, even one no level has granted yet', () => {
     useGameStore.getState().importSave(
       saveWith({
-        unlockedCardIds: [...defaultUnlockedCardIds, 'overwhelming-barrage'],
+        xp: 0,
+        unlockedCardIds: [...defaultUnlockedCardIds, 'overwhelming-barrage', 'nanite-swarm'],
       }),
     );
 
-    expect(useGameStore.getState().meta.unlockedCardIds).not.toContain('overwhelming-barrage');
-    // The legitimate defaults are untouched.
-    expect(useGameStore.getState().meta.unlockedCardIds).toEqual(defaultUnlockedCardIds);
+    const unlocked = useGameStore.getState().meta.unlockedCardIds;
+    expect(unlocked).toContain('overwhelming-barrage');
+    expect(unlocked).toContain('nanite-swarm');
   });
 
-  it('keeps a card the player earned, even one above common', () => {
-    const milestone = milestoneDefinitions.find((m) =>
-      m.unlocksCardIds.includes('overwhelming-barrage'),
-    );
-    if (!milestone) throw new Error('expected a milestone to grant overwhelming-barrage');
-
+  it('leaves a loadout alone rather than stripping and padding it', () => {
     useGameStore.getState().importSave(
       saveWith({
-        unlockedCardIds: [...defaultUnlockedCardIds, 'overwhelming-barrage'],
-        milestones: { [milestone.id]: true },
-      }),
-    );
-
-    expect(useGameStore.getState().meta.unlockedCardIds).toContain('overwhelming-barrage');
-  });
-
-  it('keeps a card whose milestone the stats already satisfy but was never flagged', () => {
-    useGameStore.getState().importSave(
-      saveWith({
-        unlockedCardIds: [...defaultUnlockedCardIds, 'nanite-swarm'],
-        milestones: {},
-        stats: { ...emptyMeta().stats, elitesDefeated: 99, runsStarted: 99, bossesDefeated: 99 },
-      }),
-    );
-
-    expect(useGameStore.getState().meta.unlockedCardIds).toContain('nanite-swarm');
-  });
-
-  it('drops a revoked card from the loadout and tops the deck back up to full', () => {
-    useGameStore.getState().importSave(
-      saveWith({
+        xp: 0,
         unlockedCardIds: [...defaultUnlockedCardIds, 'master-gunner'],
         loadoutCards: [
           { cardId: 'flak-burst', level: 0 },
@@ -480,10 +465,108 @@ describe('gameStore — unearned unlocks are revoked on import', () => {
     );
 
     const loadout = useGameStore.getState().meta.loadoutCards.map((c) => c.cardId);
-    expect(loadout).not.toContain('master-gunner');
-    // Refilled from the default deck: a short loadout would leave Launch disabled.
-    expect(loadout).toHaveLength(LOADOUT_SIZE);
-    expect(loadout[0]).toBe('flak-burst');
+    expect(loadout).toEqual(['flak-burst', 'master-gunner']);
+  });
+
+  it('grants everything the level entitles the player to, on load', () => {
+    const level = 12;
+    useGameStore.getState().importSave(saveWith({ xp: xpForLevel(level) }));
+
+    const unlocked = useGameStore.getState().meta.unlockedCardIds;
+    for (const id of unlocksUpTo(level).cardIds) expect(unlocked).toContain(id);
+    // ...and nothing from beyond it.
+    const beyond = nextUnlock(level);
+    if (beyond) expect(unlocked).not.toContain(beyond.cardIds[0]);
+  });
+
+  it('grants the ship systems too', () => {
+    useGameStore.getState().importSave(saveWith({ xp: xpForLevel(MAX_LEVEL) }));
+    const systems = useGameStore.getState().meta.unlockedShipSystemIds;
+    for (const id of unlocksUpTo(MAX_LEVEL).shipSystemIds) expect(systems).toContain(id);
+  });
+});
+
+describe('gameStore — XP awards', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useGameStore.setState({ meta: emptyMeta(), run: null, appPhase: 'hub', pendingEndingIds: [] });
+  });
+
+  /**
+   * Enters a node of `type` and lands a killing blow, so the store sees the real
+   * transition into 'won' rather than a hand-built one.
+   */
+  const winFightOn = (type: 'combat' | 'elite' | 'boss') => {
+    useGameStore.getState().startNewRun();
+    const start = useGameStore.getState().run!;
+
+    // Reach any node of the wanted type by pretending it is the next available step.
+    const nodeId = Object.keys(start.map.nodes).find((id) => start.map.nodes[id].type === type);
+    if (!nodeId) throw new Error(`no ${type} node on this map`);
+    useGameStore.setState({
+      run: { ...start, map: { ...start.map, entryNodeIds: [nodeId] }, currentNodeId: null },
+    });
+    useGameStore.getState().enterNode(nodeId);
+
+    // One hit from dead, so any attack in hand finishes it.
+    const inCombat = useGameStore.getState().run!;
+    useGameStore.setState({
+      run: {
+        ...inCombat,
+        activeCombat: {
+          ...inCombat.activeCombat!,
+          enemy: { ...inCombat.activeCombat!.enemy, hull: 1, shield: 0 },
+        },
+      },
+    });
+
+    const hand = useGameStore.getState().run!.activeCombat!.hand;
+    const attack = hand.find((c) => cardDefinitions[c.cardId].effect.kind === 'damage');
+    if (!attack) throw new Error('expected an attack in the opening hand');
+    useGameStore.getState().playCard(attack.instanceId);
+  };
+
+  it.each([
+    ['combat', XP_AWARDS.combat],
+    ['elite', XP_AWARDS.elite],
+    ['boss', XP_AWARDS.boss],
+  ] as const)('pays %s XP for winning on a %s node', (type, award) => {
+    winFightOn(type);
+
+    expect(useGameStore.getState().run?.activeCombat?.phase).toBe('won');
+    expect(useGameStore.getState().meta.xp).toBe(award);
+    expect(useGameStore.getState().run?.xpEarned).toBe(award);
+  });
+
+  it('pays once, however many actions follow the win', () => {
+    winFightOn('combat');
+    const afterWin = useGameStore.getState().meta.xp;
+
+    // Re-dispatching against a finished fight must not top it up again.
+    useGameStore.getState().endTurn();
+    useGameStore.getState().playCard('does-not-exist');
+
+    expect(useGameStore.getState().meta.xp).toBe(afterWin);
+    expect(useGameStore.getState().run?.xpEarned).toBe(afterWin);
+  });
+
+  it('pays nothing for an action that changes nothing', () => {
+    useGameStore.getState().startNewRun();
+    useGameStore.getState().playCard('not-a-real-instance');
+    expect(useGameStore.getState().meta.xp).toBe(0);
+  });
+
+  it('starts a run with no XP banked for it', () => {
+    useGameStore.getState().startNewRun();
+    expect(useGameStore.getState().run?.xpEarned).toBe(0);
+  });
+
+  it('levels up once enough XP is banked', () => {
+    useGameStore.setState((s) => ({ meta: { ...s.meta, xp: xpForLevel(2) - XP_AWARDS.boss } }));
+
+    winFightOn('boss');
+
+    expect(levelFor(useGameStore.getState().meta.xp)).toBe(2);
   });
 });
 

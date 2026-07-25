@@ -1,14 +1,26 @@
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { cardDefinitions, defaultUnlockedCardIds } from '../../data/cards';
-import { rarityOf } from '../../engine/cards/types';
+import { rarityWeightsFor } from '../../engine/cards/rarityOdds';
+import { CARD_RARITIES } from '../../engine/cards/types';
+import { MAX_LEVEL, xpForLevel } from '../../engine/progression/level';
 import { createEmptySave } from '../../engine/save/schema';
 import { SAVE_DEFAULTS, useGameStore } from '../../state/gameStore';
 import { RulesScreen } from './RulesScreen';
 
-const setUnlocked = (unlockedCardIds: string[]) => {
+const setProfile = (xp: number, unlockedCardIds: string[] = defaultUnlockedCardIds) => {
   const meta = createEmptySave(SAVE_DEFAULTS).meta;
-  useGameStore.setState({ meta: { ...meta, unlockedCardIds } });
+  useGameStore.setState({ meta: { ...meta, xp, unlockedCardIds } });
+};
+
+/** The percentages the curve implies for a source at a level, as the screen formats them. */
+const expected = (level: number, source: 'combat' | 'elite' | 'shop' | 'cache') => {
+  const w = rarityWeightsFor(level, source);
+  const total = CARD_RARITIES.reduce((sum, r) => sum + w[r], 0);
+  return CARD_RARITIES.map((r) => {
+    const n = (w[r] / total) * 100;
+    return `${n >= 10 ? Math.round(n) : Math.round(n * 10) / 10}%`;
+  });
 };
 
 /** The odds cells of one row of the drop table, left to right. */
@@ -23,7 +35,7 @@ const oddsRow = (name: RegExp) => {
 describe('RulesScreen', () => {
   beforeEach(() => {
     localStorage.clear();
-    setUnlocked(defaultUnlockedCardIds);
+    setProfile(0);
   });
 
   it('renders every section', () => {
@@ -53,44 +65,43 @@ describe('RulesScreen', () => {
     expect(screen.getByText(/first damage that would reach your hull/i)).toBeVisible();
   });
 
-  it('reports 100% common on a fresh profile, because nothing else is unlocked', () => {
+  it('gives a real but tiny chance of every rarity at level 1', () => {
     render(<RulesScreen />);
 
-    // Default unlocks are all common, so every source can only offer commons.
-    expect(oddsRow(/combat win/i)).toEqual(['100%', '0%', '0%', '0%']);
-    expect(oddsRow(/trader/i)).toEqual(['100%', '0%', '0%', '0%']);
+    // The point of the rework: no tier is impossible on a fresh profile.
+    expect(oddsRow(/combat win/i)).toEqual(expected(1, 'combat'));
+    expect(oddsRow(/combat win/i)).toEqual(['96%', '3%', '0.8%', '0.2%']);
   });
 
-  it('shows the designed weights once every tier is unlocked', () => {
-    setUnlocked(Object.keys(cardDefinitions));
+  it('shows better odds at the cap than at level 1', () => {
+    setProfile(xpForLevel(MAX_LEVEL));
     render(<RulesScreen />);
 
-    expect(oddsRow(/combat win/i)).toEqual(['70%', '22%', '7%', '1%']);
-    expect(oddsRow(/elite win/i)).toEqual(['45%', '35%', '16%', '4%']);
-    expect(oddsRow(/trader/i)).toEqual(['55%', '30%', '12%', '3%']);
-    expect(oddsRow(/derelict cache/i)).toEqual(['65%', '25%', '9%', '1%']);
+    expect(oddsRow(/combat win/i)).toEqual(expected(MAX_LEVEL, 'combat'));
+    expect(oddsRow(/elite win/i)).toEqual(expected(MAX_LEVEL, 'elite'));
+    // Legendary is 0.2% at level 1 and far higher here.
+    expect(oddsRow(/combat win/i)[3]).toBe('7%');
   });
 
-  it('redistributes a locked tier rather than leaving its share unclaimed', () => {
-    // Everything but the legendaries.
-    setUnlocked(
-      Object.keys(cardDefinitions).filter((id) => rarityOf(cardDefinitions[id]) !== 'legendary'),
-    );
+  it('ranks elite above trader above cache above combat, at any level', () => {
+    setProfile(xpForLevel(10));
     render(<RulesScreen />);
 
-    const [common, rare, epic, legendary] = oddsRow(/combat win/i);
-    expect(legendary).toBe('0%');
-    // 70/22/7 renormalised over 99. Small values keep a decimal so 1% and 0.5%
-    // stay distinguishable; larger ones round.
-    expect(common).toBe('71%');
-    expect(rare).toBe('22%');
-    expect(epic).toBe('7.1%');
+    const legendaryOf = (row: RegExp) => parseFloat(oddsRow(row)[3]);
+    expect(legendaryOf(/derelict cache/i)).toBeGreaterThan(legendaryOf(/combat win/i));
+    expect(legendaryOf(/trader/i)).toBeGreaterThan(legendaryOf(/derelict cache/i));
+    expect(legendaryOf(/elite win/i)).toBeGreaterThan(legendaryOf(/trader/i));
   });
 
-  it('counts how many cards of each rarity you have unlocked', () => {
+  it('reports how much of the collection is buildable', () => {
     render(<RulesScreen />);
-    // 12 default commons out of the full common pool.
-    expect(screen.getByText(/^12 unlocked of \d+$/)).toBeInTheDocument();
-    expect(screen.getAllByText(/^0 unlocked of \d+$/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^12 of \d+ in your collection$/)).toBeInTheDocument();
+    expect(screen.getAllByText(/^0 of \d+ in your collection$/).length).toBeGreaterThan(0);
+  });
+
+  it('shows more of the collection once levelled', () => {
+    setProfile(xpForLevel(MAX_LEVEL), Object.keys(cardDefinitions));
+    render(<RulesScreen />);
+    expect(screen.queryAllByText(/^0 of \d+ in your collection$/)).toEqual([]);
   });
 });

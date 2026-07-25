@@ -253,13 +253,13 @@ const en = {
   // Achievements screen
   'ach.eyebrow': 'Log',
   'ach.title': 'Achievements',
-  'ach.sub': 'The crew you’ve met, the milestones you’ve hit, the endings you’ve reached.',
+  'ach.sub': 'The crew you’ve met, the levels you’ve earned, the endings you’ve reached.',
   'ach.runsStarted': 'Runs started',
   'ach.runsWon': 'Runs won',
   'ach.runsLost': 'Runs lost',
   'ach.elitesDowned': 'Elites downed',
   'ach.bossesDowned': 'Bosses downed',
-  'ach.milestones': 'Milestones',
+  'ach.milestones': 'Progress',
   'ach.crewCodex': 'Crew codex',
   'ach.endings': 'Endings',
   'ach.unknownDrifter': 'Unknown drifter',
@@ -375,8 +375,8 @@ const en = {
 
   'rules.rarity': 'Rarity',
   'rules.rarity.sub':
-    'Higher rarity means a stronger card at the same cost — and a rarer one. You unlock higher tiers by hitting milestones; until then they cannot appear.',
-  'rules.rarity.count': '{count} unlocked of {total}',
+    'Higher rarity means a stronger card at the same cost — and a rarer one. Every card can drop from your very first run; your commander level is what raises the odds. The count below is how much of each tier you can build decks with.',
+  'rules.rarity.count': '{count} of {total} in your collection',
 
   'rules.upgrades': 'Upgrades',
   'rules.upgrades.tiers':
@@ -394,7 +394,7 @@ const en = {
 
   'rules.drops': 'What you find',
   'rules.drops.sub':
-    'Card odds are your real chances right now — a tier you have not unlocked cannot appear, and its share goes to the tiers that can.',
+    'These are your real chances at your current level, and they rise every time you level up.',
   'rules.drops.source': 'Source',
   'rules.drops.reward': 'Reward',
   'rules.drops.designed': 'Designed',
@@ -429,6 +429,19 @@ const en = {
 
   'rules.salvageByAct': '{act1} / {act2} / {act3} salvage by act',
   'rules.priceFormula': '{base} + {perCost} per energy, plus rarity',
+  // Commander level (XP)
+  'level.short': 'LV {level}',
+  'level.title': 'Commander level',
+  'level.label': 'Level',
+  'level.xp': 'XP',
+  'level.progress': '{into} / {span} XP to level {next}',
+  'level.max': 'Maximum level reached.',
+  'level.sub':
+    'Every encounter you win pays XP. Higher levels raise the odds of better cards and open more of the collection for deck building.',
+  'level.nextUnlock': 'Level {level} unlocks {count} more cards.',
+  'level.earned': '+{xp} XP this run',
+  'level.leveledUp': 'Level up — you are now level {level}.',
+  'level.unlockedNow': 'New cards are available in the Deck tab.',
 } as const;
 
 export type UiKey = keyof typeof en;
@@ -688,13 +701,13 @@ const fr: Record<UiKey, string> = {
   // Achievements screen
   'ach.eyebrow': 'Journal',
   'ach.title': 'Succès',
-  'ach.sub': 'L’équipage rencontré, les jalons atteints, les fins découvertes.',
+  'ach.sub': 'L’équipage rencontré, les niveaux atteints, les fins découvertes.',
   'ach.runsStarted': 'Parties commencées',
   'ach.runsWon': 'Parties gagnées',
   'ach.runsLost': 'Parties perdues',
   'ach.elitesDowned': 'Élites abattues',
   'ach.bossesDowned': 'Boss abattus',
-  'ach.milestones': 'Jalons',
+  'ach.milestones': 'Progression',
   'ach.crewCodex': 'Codex d’équipage',
   'ach.endings': 'Fins',
   'ach.unknownDrifter': 'Vagabond inconnu',
@@ -814,8 +827,8 @@ const fr: Record<UiKey, string> = {
 
   'rules.rarity': 'Rareté',
   'rules.rarity.sub':
-    'Plus la rareté est élevée, plus la carte est forte à coût égal — et plus elle est rare. Les paliers supérieurs se débloquent via les jalons ; avant cela, ils ne peuvent pas apparaître.',
-  'rules.rarity.count': '{count} débloquées sur {total}',
+    'Plus la rareté est élevée, plus la carte est forte à coût égal — et plus elle est rare. Toute carte peut apparaître dès votre première partie ; c’est votre niveau de commandant qui augmente les chances. Le compte ci-dessous indique ce que vous pouvez utiliser pour composer vos decks.',
+  'rules.rarity.count': '{count} sur {total} dans votre collection',
 
   'rules.upgrades': 'Améliorations',
   'rules.upgrades.tiers':
@@ -833,7 +846,7 @@ const fr: Record<UiKey, string> = {
 
   'rules.drops': 'Ce que vous trouvez',
   'rules.drops.sub':
-    'Les chances affichées sont vos chances réelles actuelles : un palier non débloqué ne peut pas sortir, et sa part revient aux paliers qui le peuvent.',
+    'Ce sont vos chances réelles à votre niveau actuel, et elles augmentent à chaque niveau gagné.',
   'rules.drops.source': 'Source',
   'rules.drops.reward': 'Récompense',
   'rules.drops.designed': 'Théorique',
@@ -869,6 +882,20 @@ const fr: Record<UiKey, string> = {
 
   'rules.salvageByAct': '{act1} / {act2} / {act3} de ferraille selon l’acte',
   'rules.priceFormula': '{base} + {perCost} par énergie, plus la rareté',
+
+  // Commander level (XP)
+  'level.short': 'NV {level}',
+  'level.title': 'Niveau de commandant',
+  'level.label': 'Niveau',
+  'level.xp': 'XP',
+  'level.progress': '{into} / {span} XP jusqu’au niveau {next}',
+  'level.max': 'Niveau maximum atteint.',
+  'level.sub':
+    'Chaque rencontre gagnée rapporte de l’XP. Les niveaux supérieurs augmentent les chances d’obtenir de meilleures cartes et ouvrent davantage de la collection pour composer votre deck.',
+  'level.nextUnlock': 'Le niveau {level} débloque {count} cartes de plus.',
+  'level.earned': '+{xp} XP cette partie',
+  'level.leveledUp': 'Niveau supérieur — vous êtes désormais niveau {level}.',
+  'level.unlockedNow': 'De nouvelles cartes sont disponibles dans l’onglet Deck.',
 };
 
 export const uiStrings: Record<Language, Record<UiKey, string>> = { en, fr };

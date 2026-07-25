@@ -1,6 +1,6 @@
 import type { DeckCard } from '../cards/types';
 import { MAX_UPGRADE_LEVEL, nextLevel, rarityOf } from '../cards/types';
-import { RARITY_ODDS, RARITY_PRICE_PREMIUM, type OfferSource } from '../cards/rarityOdds';
+import { rarityWeightsFor, RARITY_PRICE_PREMIUM, type OfferSource } from '../cards/rarityOdds';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
 import { DEFAULT_COMBAT_CONFIG, type CombatConfig } from '../combat/types';
 import { generateMap } from '../map/generate';
@@ -35,6 +35,7 @@ export function initRun(
     salvage: config.startingSalvage,
     shipSystemIds: [],
     crewIds: [],
+    xpEarned: 0,
     phase: 'map',
     activeCombat: null,
     activeEventId: null,
@@ -48,8 +49,9 @@ export function initRun(
 }
 
 /**
- * Draws `count` distinct cards from a pool, weighted by rarity for that source.
- * Rarity is what makes a card rare — the pools themselves are no longer curated.
+ * Draws `count` distinct cards from a pool, weighted by rarity for that source and
+ * the player's level. The pools themselves are not curated by rarity — every card is
+ * available from run 1, and the curve alone decides how likely each tier is.
  */
 function offerCards(
   pool: readonly string[],
@@ -62,7 +64,7 @@ function offerCards(
     pool,
     count,
     (id) => rarityOf(content.cardDefinitions[id] ?? {}),
-    RARITY_ODDS[source],
+    rarityWeightsFor(content.playerLevel, source),
     rng,
   );
 }

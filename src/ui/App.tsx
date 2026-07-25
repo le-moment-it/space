@@ -4,6 +4,7 @@ import './ui.css';
 import { endingDefinitions } from '../data/endings';
 import { useTranslation, type UiKey } from '../i18n';
 import { useGameStore } from '../state/gameStore';
+import { LevelBadge } from './components/LevelBadge';
 import { SettingsPanel } from './components/SettingsPanel';
 import { AchievementsScreen } from './screens/AchievementsScreen';
 import { DeckScreen } from './screens/DeckScreen';
@@ -71,6 +72,7 @@ export function App() {
           </nav>
         </div>
         <div className="topbar__right">
+          <LevelBadge />
           {inActiveRun &&
             (confirmAbandon ? (
               <span className="topbar__confirm">

@@ -1,7 +1,7 @@
 import type { RunState } from '../run/types';
 import { createEmptySave, type SaveDefaults } from './schema';
 import { tryMigrateSave } from './migrate';
-import { CURRENT_SAVE_VERSION, type SaveDataV6, type SaveMetaV6 } from './types';
+import { CURRENT_SAVE_VERSION, type SaveDataV7, type SaveMetaV7 } from './types';
 
 const STORAGE_KEY = 'space-roguelike:save';
 
@@ -19,7 +19,7 @@ const union = (owned: string[], defaults: string[]): string[] => [
  * every future addition without a save version bump, and is idempotent. Only ever
  * adds: milestone unlocks the player earned are untouched, as is their loadout.
  */
-function grantDefaultUnlocks(save: SaveDataV6, defaults: SaveDefaults): SaveDataV6 {
+function grantDefaultUnlocks(save: SaveDataV7, defaults: SaveDefaults): SaveDataV7 {
   const unlockedCardIds = union(save.meta.unlockedCardIds, defaults.unlockedCardIds);
   const unlockedShipSystemIds = union(
     save.meta.unlockedShipSystemIds,
@@ -35,7 +35,7 @@ function grantDefaultUnlocks(save: SaveDataV6, defaults: SaveDefaults): SaveData
 }
 
 /** The on-disk payload. The one place that decides what a written save looks like. */
-export function makeSave(meta: SaveMetaV6, currentRun: RunState | null): SaveDataV6 {
+export function makeSave(meta: SaveMetaV7, currentRun: RunState | null): SaveDataV7 {
   return { version: CURRENT_SAVE_VERSION, meta, currentRun };
 }
 
@@ -44,7 +44,7 @@ export function makeSave(meta: SaveMetaV6, currentRun: RunState | null): SaveDat
  * returning null if it isn't a save. Migration and default-unlock grants apply
  * either way, so an export taken from an older build still loads.
  */
-export function parseSave(raw: string, defaults: SaveDefaults): SaveDataV6 | null {
+export function parseSave(raw: string, defaults: SaveDefaults): SaveDataV7 | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -63,7 +63,7 @@ export function parseSave(raw: string, defaults: SaveDefaults): SaveDataV6 | nul
  * and a run missing its map crashes the run screen on the very next render. Losing an
  * unfinished run and landing in the hub is a far better failure than a white page.
  */
-export function dropUnusableRun(save: SaveDataV6): SaveDataV6 {
+export function dropUnusableRun(save: SaveDataV7): SaveDataV7 {
   const run = save.currentRun as Record<string, unknown> | null;
   if (run === null) return save;
   const usable =
@@ -75,7 +75,7 @@ export function dropUnusableRun(save: SaveDataV6): SaveDataV6 {
   return usable ? save : { ...save, currentRun: null };
 }
 
-export function loadSave(defaults: SaveDefaults): SaveDataV6 {
+export function loadSave(defaults: SaveDefaults): SaveDataV7 {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const save = raw ? parseSave(raw, defaults) : null;
@@ -86,7 +86,7 @@ export function loadSave(defaults: SaveDefaults): SaveDataV6 {
   }
 }
 
-export function persistSave(save: SaveDataV6): void {
+export function persistSave(save: SaveDataV7): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(save));
   } catch {

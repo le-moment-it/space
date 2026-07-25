@@ -5,6 +5,7 @@ import { useTranslation } from '../../i18n';
 import { BattleLog } from '../components/BattleLog';
 import { CardListModal } from '../components/CardListModal';
 import { CrewRoster } from '../components/CrewRoster';
+import { RunXpSummary } from '../components/RunXpSummary';
 import { BattleScreen } from './BattleScreen';
 import { CardRewardScreen } from './CardRewardScreen';
 import { CrewOfferScreen } from './CrewOfferScreen';
@@ -119,6 +120,7 @@ export function RunScreen() {
               </p>
               <h2>{t('run.wonTitle')}</h2>
               <p className="screen__sub">{t('run.wonSub')}</p>
+              <RunXpSummary xpEarned={run.xpEarned} />
               <button className="btn-primary" onClick={returnToHub}>
                 {t('run.returnToBridge')}
               </button>
@@ -132,6 +134,7 @@ export function RunScreen() {
               </p>
               <h2>{t('run.lostTitle')}</h2>
               <p className="screen__sub">{t('run.lostSub')}</p>
+              <RunXpSummary xpEarned={run.xpEarned} />
               <button className="btn-primary" onClick={returnToHub}>
                 {t('run.returnToBridge')}
               </button>

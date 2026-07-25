@@ -3,7 +3,6 @@ import { crewDefinitions } from '../data/crew';
 import { endingDefinitions } from '../data/endings';
 import { bossEnemyByAct, combatEnemiesByAct, eliteEnemiesByAct } from '../data/enemies';
 import { eventDefinitions } from '../data/events';
-import { milestoneDefinitions } from '../data/milestones';
 import { shipSystemDefinitions } from '../data/shipSystems';
 import type { Language } from './types';
 
@@ -111,17 +110,6 @@ const shipSystemDescriptions: Record<string, string> = {
   'emergency-cutoff': '+18 coque max.',
   'quantum-buffer': '+2 énergie de réacteur max par tour.',
   'overclocked-thrusters': 'Pioche 1 carte de plus chaque tour.',
-};
-
-const milestoneDescriptions: Record<string, string> = {
-  'defeat-a-boss': 'Vaincre un boss de secteur une fois.',
-  'defeat-5-elites': 'Vaincre 5 hostiles d’élite (toutes parties confondues).',
-  'complete-10-runs': 'Terminer 10 parties, gagnées ou perdues.',
-  'reach-act-2': 'Atteindre l’Acte 2.',
-  'reach-act-3': 'Atteindre l’Acte 3.',
-  'defeat-3-bosses': 'Vaincre 3 boss d’acte (toutes parties confondues).',
-  'defeat-15-elites': 'Vaincre 15 hostiles d’élite (toutes parties confondues).',
-  'complete-25-runs': 'Terminer 25 parties, gagnées ou perdues.',
 };
 
 interface FrEvent {
@@ -289,7 +277,6 @@ export interface ContentTranslator {
   enemyName: (id: string) => string;
   shipSystemName: (id: string) => string;
   shipSystemDescription: (id: string) => string;
-  milestoneDescription: (id: string) => string;
   crewName: (id: string) => string;
   crewRole: (id: string) => string;
   crewBio: (id: string) => string;
@@ -313,10 +300,6 @@ export function makeContentTranslator(lang: Language): ContentTranslator {
       (en ? undefined : shipSystemNames[id]) ?? shipSystemDefinitions[id]?.name ?? id,
     shipSystemDescription: (id) =>
       (en ? undefined : shipSystemDescriptions[id]) ?? shipSystemDefinitions[id]?.description ?? '',
-    milestoneDescription: (id) => {
-      const def = milestoneDefinitions.find((m) => m.id === id);
-      return (en ? undefined : milestoneDescriptions[id]) ?? def?.description ?? id;
-    },
     crewName: (id) => (en ? undefined : crew[id]?.name) ?? crewDefinitions[id]?.name ?? id,
     crewRole: (id) => (en ? undefined : crew[id]?.role) ?? crewDefinitions[id]?.role ?? '',
     crewBio: (id) => (en ? undefined : crew[id]?.bio) ?? crewDefinitions[id]?.bio ?? '',

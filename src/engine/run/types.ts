@@ -56,6 +56,8 @@ export interface RunState {
   activeCrewId: string | null;
   shopOffer: ShopOfferItem[] | null;
   pendingReward: PendingReward | null;
+  /** XP earned this run, for the end-of-run summary. Lifetime XP lives in the save. */
+  xpEarned: number;
   /** The 3 ship systems offered while phase is 'reward'. */
   rewardOptions: string[] | null;
   /** The card choices offered after a (non-boss) combat win, while phase is 'cardReward'. */
@@ -94,5 +96,7 @@ export interface RunContent {
   crewOfferChance: number;
   /** How many crew may be aboard at once; recruiting past it requires replacing someone. */
   crewCap: number;
+  /** Commander level. Raises the rarity weights on every card offer this run. */
+  playerLevel: number;
   combatConfig?: CombatConfig;
 }

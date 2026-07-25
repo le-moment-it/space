@@ -1,0 +1,23 @@
+.runxp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.4rem 0 0.2rem;
+}
+.runxp__earned {
+  font-size: 0.95rem;
+  color: var(--signal);
+}
+.runxp__levelup {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rarity-legendary);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--rarity-legendary) 45%, transparent);
+}
+.runxp__note {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}

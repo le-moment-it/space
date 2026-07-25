@@ -182,6 +182,7 @@ function makeContent(overrides: Partial<RunContent> = {}): RunContent {
     // 0 by default so pre-existing event-node tests stay deterministic; crew tests override.
     crewOfferChance: 0,
     crewCap: 3,
+    playerLevel: 20,
     ...overrides,
   };
 }

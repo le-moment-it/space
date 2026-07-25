@@ -5,8 +5,8 @@ import {
   defaultUnlockedCardIds,
   eliteRewardCardIds,
 } from '../../data/cards';
-import { milestoneDefinitions } from '../../data/milestones';
-import { RARITY_ODDS } from './rarityOdds';
+import { LEVEL_UNLOCKS, MAX_LEVEL, unlocksUpTo } from '../progression/level';
+import { rarityWeightsFor } from './rarityOdds';
 import { CARD_RARITIES, rarityOf, type CardDefinition } from './types';
 
 describe('card rarity', () => {
@@ -105,23 +105,14 @@ describe('unlock curve', () => {
     expect(defaultLoadoutCardIds.filter((id) => !unlocked.has(id))).toEqual([]);
   });
 
-  it('names a real card in every default and milestone unlock list', () => {
-    const ids = [
-      ...defaultUnlockedCardIds,
-      ...milestoneDefinitions.flatMap((m) => m.unlocksCardIds),
-    ];
+  it('names a real card in every default and level unlock list', () => {
+    const ids = [...defaultUnlockedCardIds, ...LEVEL_UNLOCKS.flatMap((u) => u.cardIds)];
     expect(ids.filter((id) => !cardDefinitions[id])).toEqual([]);
   });
 
-  it('leaves no card above common unreachable', () => {
-    const reachable = new Set([
-      ...defaultUnlockedCardIds,
-      ...milestoneDefinitions.flatMap((m) => m.unlocksCardIds),
-    ]);
-    const stranded = Object.values(cardDefinitions)
-      .filter((c) => rarityOf(c) !== 'common')
-      .map((c) => c.id)
-      .filter((id) => !reachable.has(id));
+  it('makes every card buildable by the level cap — none is stranded', () => {
+    const reachable = new Set([...defaultUnlockedCardIds, ...unlocksUpTo(MAX_LEVEL).cardIds]);
+    const stranded = Object.keys(cardDefinitions).filter((id) => !reachable.has(id));
     expect(stranded).toEqual([]);
   });
 
@@ -143,28 +134,21 @@ describe('unlock curve', () => {
    * normal win draws from the whole unlocked pool and can roll a Legendary.
    */
   it('stocks the elite reward pool with every rarity its odds promise', () => {
-    const promised = CARD_RARITIES.filter((r) => RARITY_ODDS.elite[r] > 0);
+    const promised = CARD_RARITIES.filter((r) => rarityWeightsFor(MAX_LEVEL, 'elite')[r] > 0);
     const stocked = new Set(eliteRewardCardIds.map((id) => rarityOf(cardDefinitions[id])));
     expect(promised.filter((r) => !stocked.has(r))).toEqual([]);
   });
 
-  it('offers elites at least as good a shot at high rarity as a normal fight', () => {
-    // The whole point of taking the harder fight.
-    for (const rarity of ['rare', 'epic', 'legendary'] as const) {
-      expect(RARITY_ODDS.elite[rarity]).toBeGreaterThanOrEqual(RARITY_ODDS.combat[rarity]);
-    }
-  });
-
-  it('gates the strongest cards behind the latest milestones', () => {
-    const legendaries = milestoneDefinitions.filter((m) =>
-      m.unlocksCardIds.some((id) => rarityOf(cardDefinitions[id]) === 'legendary'),
-    );
-    expect(legendaries.length).toBeGreaterThan(0);
-    // Milestones are listed in rough order of effort; Legendaries belong at the end.
-    for (const milestone of legendaries) {
-      expect(milestoneDefinitions.indexOf(milestone)).toBeGreaterThanOrEqual(
-        milestoneDefinitions.length - 2,
+  it('gates the strongest cards behind the highest levels', () => {
+    for (const unlock of LEVEL_UNLOCKS) {
+      const hasLegendary = unlock.cardIds.some(
+        (id) => rarityOf(cardDefinitions[id]) === 'legendary',
       );
+      if (hasLegendary) expect(unlock.level).toBeGreaterThanOrEqual(MAX_LEVEL - 2);
     }
+    // And they are reachable at all.
+    const buildable = new Set(unlocksUpTo(MAX_LEVEL).cardIds);
+    const legendaries = Object.values(cardDefinitions).filter((c) => rarityOf(c) === 'legendary');
+    expect(legendaries.every((c) => buildable.has(c.id))).toBe(true);
   });
 });

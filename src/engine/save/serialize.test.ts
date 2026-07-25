@@ -85,7 +85,7 @@ describe('loadSave / persistSave', () => {
 
     const loaded = loadSave(defaults);
 
-    expect(loaded.version).toBe(6);
+    expect(loaded.version).toBe(7);
     expect(loaded.meta.crew).toEqual({});
     expect(loaded.meta.endingsUnlocked).toEqual([]);
     expect(loaded.meta.loadoutCards).toEqual(
@@ -150,7 +150,7 @@ describe('parseSave', () => {
 
     const parsed = parseSave(JSON.stringify(v5), defaults);
 
-    expect(parsed?.version).toBe(6);
+    expect(parsed?.version).toBe(7);
     expect(parsed?.meta.loadoutCards).toEqual([{ cardId: 'a', level: 0 }]);
   });
 
@@ -214,6 +214,6 @@ describe('dropUnusableRun', () => {
 describe('makeSave', () => {
   it('stamps the current version', () => {
     const meta = createEmptySave(defaults).meta;
-    expect(makeSave(meta, null)).toEqual({ version: 6, meta, currentRun: null });
+    expect(makeSave(meta, null)).toEqual({ version: 7, meta, currentRun: null });
   });
 });

@@ -8,7 +8,7 @@ describe('createEmptySave', () => {
       unlockedShipSystemIds: ['x'],
       loadoutCardIds: ['a', 'b'],
     });
-    expect(save.version).toBe(6);
+    expect(save.version).toBe(7);
     expect(save.meta.unlockedCardIds).toEqual(['a', 'b']);
     expect(save.meta.unlockedShipSystemIds).toEqual(['x']);
     expect(save.meta.loadoutCards).toEqual([
@@ -16,6 +16,7 @@ describe('createEmptySave', () => {
       { cardId: 'b', level: 0 },
     ]);
     expect(save.meta.milestones).toEqual({});
+    expect(save.meta.xp).toBe(0);
     expect(save.meta.crew).toEqual({});
     expect(save.meta.endingsUnlocked).toEqual([]);
     expect(save.meta.stats).toEqual({

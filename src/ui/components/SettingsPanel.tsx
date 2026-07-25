@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { dropUnusableRun, makeSave, parseSave } from '../../engine/save/serialize';
-import type { SaveDataV6 } from '../../engine/save/types';
+import type { SaveDataV7 } from '../../engine/save/types';
 import { LANGUAGES, LANGUAGE_LABELS, useTranslation, type UiKey } from '../../i18n';
 import { SAVE_DEFAULTS, useGameStore } from '../../state/gameStore';
 import { downloadJson, readTextFile, saveFilename } from '../files';
@@ -9,7 +9,7 @@ import './SettingsPanel.css';
 type Status = { key: UiKey; error?: boolean };
 
 /** A file the player picked, parsed and waiting for them to confirm the overwrite. */
-type PendingImport = { save: SaveDataV6; runDropped: boolean };
+type PendingImport = { save: SaveDataV7; runDropped: boolean };
 
 /** A small modal from the top bar: language, and the save data itself. */
 export function SettingsPanel({ onClose }: { onClose: () => void }) {

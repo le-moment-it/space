@@ -1,5 +1,6 @@
+import { XP_AWARDS } from '../progression/level';
 import { createEmptySave, type SaveDefaults } from './schema';
-import { CURRENT_SAVE_VERSION, LOADOUT_SIZE, type SaveDataV6 } from './types';
+import { CURRENT_SAVE_VERSION, LOADOUT_SIZE, type SaveDataV7 } from './types';
 
 type Migration = (data: Record<string, unknown>, defaults: SaveDefaults) => Record<string, unknown>;
 type Validator = (data: Record<string, unknown>) => boolean;
@@ -61,7 +62,7 @@ function isValidSaveDataV5(data: Record<string, unknown>): boolean {
   );
 }
 
-function isValidSaveDataV6(data: unknown): data is SaveDataV6 {
+function isValidSaveDataV6(data: unknown): boolean {
   if (!isPlainObject(data) || data.version !== 6) return false;
   if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
   const meta = data.meta as Record<string, unknown>;
@@ -69,6 +70,18 @@ function isValidSaveDataV6(data: unknown): data is SaveDataV6 {
     isPlainObject(meta.crew) &&
     Array.isArray(meta.endingsUnlocked) &&
     Array.isArray(meta.loadoutCards)
+  );
+}
+
+function isValidSaveDataV7(data: unknown): data is SaveDataV7 {
+  if (!isPlainObject(data) || data.version !== 7) return false;
+  if (!hasBaseMetaShape(data) || !statsHave(data, V2_STAT_FIELDS)) return false;
+  const meta = data.meta as Record<string, unknown>;
+  return (
+    isPlainObject(meta.crew) &&
+    Array.isArray(meta.endingsUnlocked) &&
+    Array.isArray(meta.loadoutCards) &&
+    typeof meta.xp === 'number'
   );
 }
 
@@ -193,6 +206,30 @@ function withLeveledPiles(combat: Record<string, unknown>): Record<string, unkno
   return patched;
 }
 
+/**
+ * v7 replaces milestones with a commander level driven by lifetime XP.
+ *
+ * Existing progress is credited rather than reset: a player's recorded elite and boss
+ * kills are paid at the new per-encounter rates, and each run started is credited with
+ * a run's worth of ordinary fights — which were never counted, so this is the closest
+ * honest estimate. Their unlocked cards are untouched, and unlocks are additive from
+ * here, so nothing they earned can be taken away.
+ */
+function migrateV6ToV7(data: Record<string, unknown>): Record<string, unknown> {
+  const meta = data.meta as Record<string, unknown>;
+  const stats = (meta.stats ?? {}) as Record<string, number>;
+  const xp =
+    (stats.elitesDefeated ?? 0) * XP_AWARDS.elite +
+    (stats.bossesDefeated ?? 0) * XP_AWARDS.boss +
+    (stats.runsStarted ?? 0) * 60;
+
+  return {
+    version: 7,
+    meta: { ...meta, xp },
+    currentRun: data.currentRun ?? null,
+  };
+}
+
 // All keyed by the version being migrated FROM.
 const VALIDATORS: Record<number, Validator> = {
   1: isValidSaveDataV1,
@@ -200,6 +237,7 @@ const VALIDATORS: Record<number, Validator> = {
   3: isValidSaveDataV3,
   4: isValidSaveDataV4,
   5: isValidSaveDataV5,
+  6: isValidSaveDataV6,
 };
 const MIGRATIONS: Record<number, Migration> = {
   1: migrateV1ToV2,
@@ -207,6 +245,7 @@ const MIGRATIONS: Record<number, Migration> = {
   3: migrateV3ToV4,
   4: migrateV4ToV5,
   5: migrateV5ToV6,
+  6: migrateV6ToV7,
 };
 
 /**
@@ -219,7 +258,7 @@ const MIGRATIONS: Record<number, Migration> = {
  * the player picked must be able to say "that isn't a save", which it cannot do if a
  * rejection is indistinguishable from successfully importing a brand-new profile.
  */
-export function tryMigrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6 | null {
+export function tryMigrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV7 | null {
   if (!isPlainObject(raw) || typeof raw.version !== 'number') return null;
 
   let data: Record<string, unknown> = raw;
@@ -232,7 +271,7 @@ export function tryMigrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6
     version = (data.version as number | undefined) ?? version + 1;
   }
 
-  return isValidSaveDataV6(data) ? data : null;
+  return isValidSaveDataV7(data) ? data : null;
 }
 
 /**
@@ -240,6 +279,6 @@ export function tryMigrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6
  * Falls back to a fresh save for anything unrecognized rather than crashing the app.
  * Losing progress is far better than a broken game.
  */
-export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV6 {
+export function migrateSave(raw: unknown, defaults: SaveDefaults): SaveDataV7 {
   return tryMigrateSave(raw, defaults) ?? createEmptySave(defaults);
 }

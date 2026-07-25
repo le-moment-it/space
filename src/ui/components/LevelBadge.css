@@ -1,0 +1,43 @@
+.levelbadge {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--hull-2);
+}
+
+.levelbadge__text {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  color: var(--signal);
+}
+
+.levelbadge__bar {
+  display: block;
+  width: 100%;
+  min-width: 54px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--void);
+  overflow: hidden;
+}
+.levelbadge__fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--signal);
+  /* Grows as XP lands, so a level-up is visible rather than merely recorded. */
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* At the cap there is nothing left to fill toward — say so with colour, not a full bar. */
+.levelbadge__fill--max {
+  background: var(--rarity-legendary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .levelbadge__fill {
+    transition: none;
+  }
+}

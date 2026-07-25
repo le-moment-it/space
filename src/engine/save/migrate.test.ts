@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { migrateSave, tryMigrateSave } from './migrate';
 import { createEmptySave } from './schema';
-import type { SaveDataV1, SaveDataV2, SaveDataV4, SaveDataV5, SaveDataV6 } from './types';
+import type { SaveDataV1, SaveDataV2, SaveDataV4, SaveDataV5, SaveDataV7 } from './types';
 
 const defaults = {
   unlockedCardIds: ['a', 'b'],
@@ -19,9 +19,9 @@ const fullStats = {
 };
 
 describe('migrateSave', () => {
-  it('passes through a valid current-version (v6) save unchanged', () => {
-    const valid: SaveDataV6 = {
-      version: 6,
+  it('passes through a valid current-version (v7) save unchanged', () => {
+    const valid: SaveDataV7 = {
+      version: 7,
       meta: {
         unlockedCardIds: ['a', 'b', 'c'],
         unlockedShipSystemIds: ['x', 'y'],
@@ -29,6 +29,7 @@ describe('migrateSave', () => {
         stats: fullStats,
         crew: { medic: { timesRecruited: 2 } },
         endingsUnlocked: ['first-contact'],
+        xp: 0,
         loadoutCards: [
           { cardId: 'a', level: 0 },
           { cardId: 'b', level: 1 },
@@ -62,7 +63,7 @@ describe('migrateSave', () => {
     expect(migrateSave(incomplete, defaults)).toEqual(createEmptySave(defaults));
   });
 
-  describe('v4 -> v6 migration', () => {
+  describe('v4 -> v7 migration', () => {
     const validV4: SaveDataV4 = {
       version: 4,
       meta: {
@@ -78,7 +79,7 @@ describe('migrateSave', () => {
 
     it('carries everything over and adopts the default loadout', () => {
       const result = migrateSave(validV4, defaults);
-      expect(result.version).toBe(6);
+      expect(result.version).toBe(7);
       expect(result.meta.unlockedCardIds).toEqual(validV4.meta.unlockedCardIds);
       expect(result.meta.endingsUnlocked).toEqual(validV4.meta.endingsUnlocked);
       expect(result.meta.stats).toEqual(validV4.meta.stats);
@@ -107,7 +108,7 @@ describe('migrateSave', () => {
     });
   });
 
-  describe('v5 -> v6 migration (card upgrade levels)', () => {
+  describe('v5 -> v7 migration (card upgrade levels)', () => {
     const validV5: SaveDataV5 = {
       version: 5,
       meta: {
@@ -124,7 +125,7 @@ describe('migrateSave', () => {
 
     it('turns the flat loadout into levelled slots', () => {
       const result = migrateSave(validV5, defaults);
-      expect(result.version).toBe(6);
+      expect(result.version).toBe(7);
       expect(result.meta.loadoutCards).toEqual([
         { cardId: 'a', level: 0 },
         { cardId: 'b', level: 0 },
@@ -171,7 +172,7 @@ describe('migrateSave', () => {
     });
   });
 
-  describe('full v1 -> v6 migration chain', () => {
+  describe('full v1 -> v7 migration chain', () => {
     const validV1: SaveDataV1 = {
       version: 1,
       meta: {
@@ -183,9 +184,9 @@ describe('migrateSave', () => {
       currentRun: null,
     };
 
-    it('walks a v1 save through every migration to a valid v6 shape', () => {
+    it('walks a v1 save through every migration to a valid v7 shape', () => {
       const result = migrateSave(validV1, defaults);
-      expect(result.version).toBe(6);
+      expect(result.version).toBe(7);
       expect(result.meta.unlockedCardIds).toEqual(['a', 'b', 'c']);
       expect(result.meta.milestones).toEqual({ 'win-a-run': true });
       expect(result.meta.stats).toEqual({
@@ -238,7 +239,7 @@ describe('migrateSave', () => {
       currentRun: null,
     };
     const result = migrateSave(validV2, defaults);
-    expect(result.version).toBe(6);
+    expect(result.version).toBe(7);
     expect(result.meta.crew).toEqual({});
     expect(result.meta.endingsUnlocked).toEqual([]);
     expect(result.meta.loadoutCards).toEqual(
@@ -283,7 +284,7 @@ describe('tryMigrateSave', () => {
 
     const result = tryMigrateSave(validV2, defaults);
 
-    expect(result?.version).toBe(6);
+    expect(result?.version).toBe(7);
     expect(result?.meta.endingsUnlocked).toEqual([]);
   });
 });

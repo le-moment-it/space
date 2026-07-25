@@ -10,12 +10,11 @@ import { CREW_CAP, CREW_OFFER_CHANCE, crewDefinitions, recruitableCrewIds } from
 import { endingDefinitions } from '../data/endings';
 import { bossEnemyByAct, combatEnemiesByAct, eliteEnemiesByAct } from '../data/enemies';
 import { eventDefinitions } from '../data/events';
-import { milestoneDefinitions } from '../data/milestones';
 import { defaultUnlockedShipSystemIds, shipSystemDefinitions } from '../data/shipSystems';
 import { generateMap } from '../engine/map/generate';
 import { DEFAULT_MAP_CONFIG } from '../engine/map/types';
 import { evaluateEndings } from '../engine/progression/endings';
-import { evaluateMilestones } from '../engine/progression/unlocks';
+import { levelFor, unlocksUpTo, XP_AWARDS } from '../engine/progression/level';
 import {
   acknowledgeCombat,
   buyShopItem,
@@ -39,8 +38,14 @@ import { MAX_UPGRADE_LEVEL, nextLevel, type DeckCard } from '../engine/cards/typ
 import { createRng, type Rng } from '../engine/rng';
 import { clearSave, loadSave, makeSave, persistSave } from '../engine/save/serialize';
 import { createEmptySave } from '../engine/save/schema';
-import { LOADOUT_SIZE, type SaveDataV6, type SaveMetaV6 } from '../engine/save/types';
+import { LOADOUT_SIZE, type SaveDataV7, type SaveMetaV7 } from '../engine/save/types';
 import { loadLanguage, persistLanguage, type Language } from '../i18n/types';
+
+/** Adds `additions` not already present, preserving order. */
+const union = (owned: string[], additions: string[]): string[] => [
+  ...owned,
+  ...additions.filter((id) => !owned.includes(id)),
+];
 
 /** Exported so the settings panel can migrate an imported file the same way a load does. */
 export const SAVE_DEFAULTS = {
@@ -54,7 +59,7 @@ export const SAVE_DEFAULTS = {
  * full deck of unlocked cards, otherwise the default (guards against a loadout left
  * incomplete, or referencing a card that no longer exists / isn't unlocked).
  */
-function resolveLoadout(meta: SaveMetaV6): DeckCard[] {
+function resolveLoadout(meta: SaveMetaV7): DeckCard[] {
   const unlocked = new Set(meta.unlockedCardIds);
   const allValid =
     meta.loadoutCards.length === LOADOUT_SIZE &&
@@ -75,39 +80,65 @@ function resolveLoadout(meta: SaveMetaV6): DeckCard[] {
   return defaultLoadoutCardIds.map((cardId) => ({ cardId, level: 0 as const }));
 }
 
-function buildRunContent(meta: SaveMetaV6): RunContent {
-  const unlockedCards = new Set(meta.unlockedCardIds);
-  const unlockedShopPool = runCardPool.filter((id) => unlockedCards.has(id));
-  const unlockedEliteRewards = eliteRewardCardIds.filter((id) => unlockedCards.has(id));
-
+/**
+ * The content a run draws from.
+ *
+ * Drop pools are deliberately NOT filtered by what the player has unlocked: every card
+ * can appear from run 1 and the rarity curve alone decides how likely each tier is.
+ * `unlockedCardIds` gates only the deck builder — see `resolveLoadout` and
+ * `addLoadoutCard`. Filtering here as well would double-gate rarity and put the odds
+ * back to a flat 0% above Common on a fresh profile, which is what levels replaced.
+ */
+function buildRunContent(meta: SaveMetaV7): RunContent {
   return {
     cardDefinitions,
     combatEnemiesByAct,
     eliteEnemiesByAct,
     bossEnemyByAct,
     events: eventDefinitions,
-    eliteRewardCardIds:
-      unlockedEliteRewards.length > 0 ? unlockedEliteRewards : meta.unlockedCardIds,
-    shopCardPool: unlockedShopPool,
-    treasureCardPool: unlockedShopPool,
+    eliteRewardCardIds,
+    shopCardPool: runCardPool,
+    treasureCardPool: runCardPool,
     shipSystemDefinitions,
     availableShipSystemIds: meta.unlockedShipSystemIds,
     crewDefinitions,
     recruitableCrewIds,
     crewOfferChance: CREW_OFFER_CHANCE,
     crewCap: CREW_CAP,
+    playerLevel: levelFor(meta.xp),
   };
 }
 
 /**
- * Detects run-ending / milestone-relevant transitions between two RunState snapshots
- * and updates lifetime stats + re-evaluates milestones accordingly. Works regardless
- * of which action caused the transition (combat, an event's hull effect, etc.).
+ * XP for the encounter this transition just won, or 0 if it didn't win one.
+ *
+ * Edge-triggered on the move into 'won', so it cannot pay twice while the victory
+ * screen sits open — and `withRun` drops no-op actions before ever reaching here, so
+ * an illegal move can't be spammed for XP.
  */
-function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV6): SaveMetaV6 {
+function encounterXp(prevRun: RunState, nextRun: RunState): number {
+  const justWon = prevRun.activeCombat?.phase !== 'won' && nextRun.activeCombat?.phase === 'won';
+  if (!justWon) return 0;
+  const node = prevRun.currentNodeId ? prevRun.map.nodes[prevRun.currentNodeId] : undefined;
+  const type = node?.type;
+  if (type !== 'combat' && type !== 'elite' && type !== 'boss') return 0;
+  return XP_AWARDS[type];
+}
+
+/**
+ * Detects run-ending / progression-relevant transitions between two RunState snapshots
+ * and updates lifetime stats, XP and crew accordingly. Works regardless of which action
+ * caused the transition (combat, an event's hull effect, etc.).
+ */
+function applyBookkeeping(
+  prevRun: RunState,
+  nextRun: RunState,
+  meta: SaveMetaV7,
+  xpGained: number,
+): SaveMetaV7 {
   let stats = meta.stats;
   let crew = meta.crew;
-  let changed = false;
+  let changed = xpGained > 0;
 
   const currentNode = prevRun.currentNodeId ? prevRun.map.nodes[prevRun.currentNodeId] : undefined;
   const justWon = prevRun.activeCombat?.phase !== 'won' && nextRun.activeCombat?.phase === 'won';
@@ -144,12 +175,12 @@ function applyBookkeeping(prevRun: RunState, nextRun: RunState, meta: SaveMetaV6
   }
 
   if (!changed) return meta;
-  const withMilestones = evaluateMilestones({ ...meta, stats, crew }, milestoneDefinitions);
-  return evaluateEndings(withMilestones, endingDefinitions);
+  const withXp = { ...meta, stats, crew, xp: meta.xp + xpGained };
+  return evaluateEndings(grantLevelUnlocks(withXp), endingDefinitions);
 }
 
 interface GameStore {
-  meta: SaveMetaV6;
+  meta: SaveMetaV7;
   run: RunState | null;
   appPhase: 'hub' | 'run';
   /** UI language. App-level preference, persisted to localStorage separately from the save. */
@@ -189,7 +220,7 @@ interface GameStore {
   /** Wipe all progress back to a new profile. Does not touch `language`. */
   resetSave: () => void;
   /** Replace all progress with a save the player imported. */
-  importSave: (save: SaveDataV6) => void;
+  importSave: (save: SaveDataV7) => void;
 }
 
 /**
@@ -229,6 +260,9 @@ function dropDeletedCards(run: RunState): RunState {
  */
 function normalizeRun(run: RunState | null): RunState | null {
   if (!run) return run;
+  // Additive RunState field: back-filled rather than version-bumped, since only `meta`
+  // is versioned. A run saved before XP existed simply starts its tally at 0.
+  if (run.xpEarned === undefined) run = { ...run, xpEarned: 0 };
   // Runs at hub/map phase have no combat but can still hold deleted cards in the deck,
   // so this runs before the activeCombat guard below.
   const cleaned = dropDeletedCards(run);
@@ -247,61 +281,40 @@ function normalizeRun(run: RunState | null): RunState | null {
 }
 
 /**
- * Revokes permanently-unlocked cards that have no source.
+ * Grants everything the player's level entitles them to.
  *
- * A card can only ever enter `unlockedCardIds` two ways: it is default-unlocked, or a
- * completed milestone granted it. Cards picked up during a run are explicitly run-only.
- * Anything else in the list was put there by a build that got its unlock tables wrong —
- * as one did, by default-unlocking every Rare, Epic and Legendary — and `grantDefaultUnlocks`
- * has no way to take those back, since it only ever adds.
+ * Additive only, exactly like `grantDefaultUnlocks` — a retuned level table can grant
+ * more but never take anything back. That is deliberate: the function this replaced
+ * revoked unlocks it could not justify, and once milestones were gone it would have
+ * silently wiped every card a player had earned.
  *
- * So the invariant is enforced on load instead. Milestones count as earned if their flag
- * is set *or* the stats already satisfy them, so this can only ever remove a grant that
- * was never justified. Any future way to unlock a card must be accounted for here, or it
- * will be quietly revoked on the next load.
+ * Only gates the deck builder. Every card can drop during a run from level 1; the
+ * rarity curve alone decides how likely each tier is.
  */
-function pruneUnearnedCards(meta: SaveMetaV6): SaveMetaV6 {
-  const earned = new Set(SAVE_DEFAULTS.unlockedCardIds);
-  for (const milestone of milestoneDefinitions) {
-    if (!meta.milestones[milestone.id] && !milestone.isComplete(meta.stats)) continue;
-    for (const id of milestone.unlocksCardIds) earned.add(id);
-  }
-
-  const unlockedCardIds = meta.unlockedCardIds.filter((id) => earned.has(id));
-  const loadoutCards = meta.loadoutCards.filter((slot) => earned.has(slot.cardId));
+function grantLevelUnlocks(meta: SaveMetaV7): SaveMetaV7 {
+  const earned = unlocksUpTo(levelFor(meta.xp));
+  const unlockedCardIds = union(meta.unlockedCardIds, earned.cardIds);
+  const unlockedShipSystemIds = union(meta.unlockedShipSystemIds, earned.shipSystemIds);
   if (
     unlockedCardIds.length === meta.unlockedCardIds.length &&
-    loadoutCards.length === meta.loadoutCards.length
+    unlockedShipSystemIds.length === meta.unlockedShipSystemIds.length
   ) {
     return meta;
   }
-
-  // Losing a slot leaves a short deck, and the Start screen refuses to launch one —
-  // so a player whose deck held a card that later went away would find the button
-  // dead with no idea why. Top the deck back up from the default so the game stays
-  // playable, keeping the picks that survived.
-  const padded = [...loadoutCards];
-  if (loadoutCards.length < meta.loadoutCards.length) {
-    for (const cardId of defaultLoadoutCardIds) {
-      if (padded.length >= LOADOUT_SIZE) break;
-      padded.push({ cardId, level: 0 as const });
-    }
-  }
-
-  return { ...meta, unlockedCardIds, loadoutCards: padded };
+  return { ...meta, unlockedCardIds, unlockedShipSystemIds };
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
   let rng: Rng = createRng(Date.now());
 
-  const loaded: SaveDataV6 = loadSave(SAVE_DEFAULTS);
-  const initialSave: SaveDataV6 = {
+  const loaded: SaveDataV7 = loadSave(SAVE_DEFAULTS);
+  const initialSave: SaveDataV7 = {
     ...loaded,
-    meta: pruneUnearnedCards(loaded.meta),
+    meta: grantLevelUnlocks(loaded.meta),
     currentRun: normalizeRun(loaded.currentRun),
   };
 
-  function persist(meta: SaveMetaV6, run: RunState | null): void {
+  function persist(meta: SaveMetaV7, run: RunState | null): void {
     persistSave(makeSave(meta, run));
   }
 
@@ -317,14 +330,19 @@ export const useGameStore = create<GameStore>((set, get) => {
    */
   function withRun(
     mutate: (run: RunState, content: RunContent) => RunState,
-    metaMutate?: (meta: SaveMetaV6, prevRun: RunState) => SaveMetaV6,
+    metaMutate?: (meta: SaveMetaV7, prevRun: RunState) => SaveMetaV7,
   ): void {
     const { run, meta } = get();
     if (!run) return;
     const content = buildRunContent(meta);
-    const nextRun = mutate(run, content);
-    if (nextRun === run) return;
-    const bookkept = applyBookkeeping(run, nextRun, meta);
+    const mutated = mutate(run, content);
+    if (mutated === run) return;
+    // One award, credited twice: to lifetime XP, and to this run's tally for the
+    // end-of-run summary.
+    const xpGained = encounterXp(run, mutated);
+    const nextRun =
+      xpGained > 0 ? { ...mutated, xpEarned: (mutated.xpEarned ?? 0) + xpGained } : mutated;
+    const bookkept = applyBookkeeping(run, nextRun, meta, xpGained);
     const nextMeta = metaMutate ? metaMutate(bookkept, run) : bookkept;
     const newEndings = nextMeta.endingsUnlocked.filter((id) => !meta.endingsUnlocked.includes(id));
     persist(nextMeta, nextRun);
@@ -344,7 +362,7 @@ export const useGameStore = create<GameStore>((set, get) => {
    * keep the run-level upgrade and skip the permanent one, so a stale index can
    * never silently upgrade the wrong card forever.
    */
-  function upgradeLoadoutSlot(meta: SaveMetaV6, prevRun: RunState, deckIndex: number): SaveMetaV6 {
+  function upgradeLoadoutSlot(meta: SaveMetaV7, prevRun: RunState, deckIndex: number): SaveMetaV7 {
     const card = prevRun.deckCards[deckIndex];
     const slotIndex = card?.loadoutIndex;
     if (card === undefined || slotIndex === undefined) return meta;
@@ -375,7 +393,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     startNewRun: () => {
       const map = generateMap(rng, DEFAULT_MAP_CONFIG);
       const newRun = initRun(map, resolveLoadout(get().meta), DEFAULT_RUN_CONFIG);
-      const meta: SaveMetaV6 = {
+      const meta: SaveMetaV7 = {
         ...get().meta,
         stats: { ...get().meta.stats, runsStarted: get().meta.stats.runsStarted + 1 },
       };
@@ -464,7 +482,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     importSave: (save) => {
       // Same treatment as a load: the file may have been exported by a build whose
       // unlock tables were wrong.
-      const meta = pruneUnearnedCards(save.meta);
+      const meta = grantLevelUnlocks(save.meta);
       const run = normalizeRun(save.currentRun);
       persist(meta, run);
       set({

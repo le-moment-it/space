@@ -1,6 +1,11 @@
 import { crewDefinitions } from '../../data/crew';
 import { endingDefinitions } from '../../data/endings';
-import { milestoneDefinitions } from '../../data/milestones';
+import {
+  LEVEL_UNLOCKS,
+  levelProgress,
+  MAX_LEVEL,
+  nextUnlock,
+} from '../../engine/progression/level';
 import { useTranslation } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
 import './AchievementsScreen.css';
@@ -11,7 +16,8 @@ export function AchievementsScreen() {
   const tr = useTranslation();
   const { t } = tr;
 
-  const completedMilestones = milestoneDefinitions.filter((m) => meta.milestones[m.id]).length;
+  const { level, into, span, atMax } = levelProgress(meta.xp);
+  const upcoming = nextUnlock(level);
   const unlockedEndings = endingDefinitions.filter((e) =>
     meta.endingsUnlocked.includes(e.id),
   ).length;
@@ -37,16 +43,39 @@ export function AchievementsScreen() {
           <div className="ach__section-head">
             <p className="eyebrow">{t('ach.milestones')}</p>
             <span className="mono ach__count">
-              {completedMilestones}/{milestoneDefinitions.length}
+              {level}/{MAX_LEVEL}
             </span>
           </div>
+
+          <p className="ach__level mono">{t('level.short', { level })}</p>
+          <p className="ach__level-sub">
+            {atMax ? t('level.max') : t('level.progress', { into, span, next: level + 1 })}
+          </p>
+          {!atMax && (
+            <span className="ach__level-bar" aria-hidden="true">
+              <span className="ach__level-fill" style={{ width: `${(into / span) * 100}%` }} />
+            </span>
+          )}
+          {upcoming && (
+            <p className="ach__level-next">
+              {t('level.nextUnlock', {
+                level: upcoming.level,
+                count: upcoming.cardIds.length,
+              })}
+            </p>
+          )}
+
+          {/* The whole ladder, so the climb is legible rather than a surprise. */}
           <ul className="milestone-list">
-            {milestoneDefinitions.map((m) => {
-              const done = Boolean(meta.milestones[m.id]);
+            {LEVEL_UNLOCKS.map((unlock) => {
+              const done = level >= unlock.level;
               return (
-                <li key={m.id} className={done ? 'milestone milestone--done' : 'milestone'}>
+                <li key={unlock.level} className={done ? 'milestone milestone--done' : 'milestone'}>
                   <span className="milestone__mark">{done ? '◆' : '◇'}</span>
-                  <span>{tr.milestoneDescription(m.id)}</span>
+                  <span>
+                    {t('level.short', { level: unlock.level })} ·{' '}
+                    {unlock.cardIds.map((id) => tr.cardName(id)).join(', ')}
+                  </span>
                 </li>
               );
             })}

@@ -83,7 +83,7 @@ export interface SaveDataV5 {
   currentRun: RunState | null;
 }
 
-// --- v6 (current) ---
+// --- v6 (historical — frozen shape, used only as the v6->v7 migration input) ---
 
 export interface SaveMetaV6 extends Omit<SaveMetaV5, 'loadoutCardIds'> {
   /** The player's starting deck: one entry per slot, each carrying its upgrade level. */
@@ -96,7 +96,26 @@ export interface SaveDataV6 {
   currentRun: RunState | null;
 }
 
-export const CURRENT_SAVE_VERSION = 6;
+// --- v7 (current) ---
+
+export interface SaveMetaV7 extends SaveMetaV6 {
+  /**
+   * Lifetime XP. Drives the commander level, which raises card-rarity odds and opens
+   * cards for deck building — the single meta-progression track since milestones went.
+   *
+   * `milestones` is still on the shape above but no longer read: dropping it would
+   * mean forking the base-meta validator that every version v1-v6 shares.
+   */
+  xp: number;
+}
+
+export interface SaveDataV7 {
+  version: 7;
+  meta: SaveMetaV7;
+  currentRun: RunState | null;
+}
+
+export const CURRENT_SAVE_VERSION = 7;
 
 /** Number of cards in a starting loadout. */
 export const LOADOUT_SIZE = 10;

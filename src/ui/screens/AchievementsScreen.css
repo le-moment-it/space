@@ -175,3 +175,33 @@
   border-color: var(--signal);
   box-shadow: 0 0 0 1px var(--signal-soft);
 }
+
+/* Level panel */
+.ach__level {
+  margin-top: 0.2rem;
+  font-size: 1.3rem;
+  color: var(--signal);
+}
+.ach__level-sub {
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}
+.ach__level-bar {
+  display: block;
+  height: 4px;
+  margin-top: 0.5rem;
+  border-radius: 2px;
+  background: var(--void);
+  overflow: hidden;
+}
+.ach__level-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--signal);
+}
+.ach__level-next {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--ink-dim);
+}

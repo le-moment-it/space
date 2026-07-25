@@ -7,12 +7,12 @@ describe('AchievementsScreen', () => {
     localStorage.clear();
   });
 
-  it('renders stats, milestones, crew codex, and endings sections', () => {
+  it('renders stats, progress, crew codex, and endings sections', () => {
     render(<AchievementsScreen />);
     expect(screen.getByRole('heading', { name: /achievements/i })).toBeInTheDocument();
     expect(screen.getByText(/runs won/i)).toBeInTheDocument();
     // Section eyebrow labels (exact match, to avoid the descriptive subtitle prose).
-    expect(screen.getByText('Milestones')).toBeInTheDocument();
+    expect(screen.getByText('Progress')).toBeInTheDocument();
     expect(screen.getByText('Crew codex')).toBeInTheDocument();
     expect(screen.getByText('Endings')).toBeInTheDocument();
   });

@@ -9,6 +9,7 @@ import {
   type CardRarity,
 } from '../../engine/cards/types';
 import { DEFAULT_COMBAT_CONFIG } from '../../engine/combat/types';
+import { levelFor } from '../../engine/progression/level';
 import { NODE_TYPE_WEIGHTS } from '../../engine/map/generate';
 import { useTranslation, type UiKey } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
@@ -45,16 +46,13 @@ export function RulesScreen() {
   const tr = useTranslation();
   const { t } = tr;
 
-  // The same pools the engine builds a run from (see buildRunContent).
-  const unlocked = new Set(meta.unlockedCardIds);
-  const generalPool = runCardPool.filter((id) => unlocked.has(id));
-  // Mirrors buildRunContent's fallback: before any elite-pool card is unlocked, an
-  // elite draws from your whole collection instead. Without this the table showed a
-  // flat 0% for a reward the player does in fact receive.
-  const unlockedElite = eliteRewardCardIds.filter((id) => unlocked.has(id));
-  const elitePool = unlockedElite.length > 0 ? unlockedElite : generalPool;
+  // The same pools the engine draws from (see buildRunContent) — every card, not just
+  // the ones unlocked for deck building. Level is what moves these numbers.
+  const generalPool = runCardPool;
+  const elitePool = eliteRewardCardIds;
+  const level = levelFor(meta.xp);
   const oddsFor = (pool: string[], source: OfferSource) =>
-    effectiveRarityOdds(pool, source, cardDefinitions);
+    effectiveRarityOdds(pool, source, cardDefinitions, level);
 
   const totalByRarity = (rarity: CardRarity) =>
     Object.values(cardDefinitions).filter((c) => rarityOf(c) === rarity).length;

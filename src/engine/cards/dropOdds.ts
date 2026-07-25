@@ -1,9 +1,9 @@
 import { CARD_RARITIES, rarityOf, type CardDefinition, type CardRarity } from './types';
-import { RARITY_ODDS, type OfferSource } from './rarityOdds';
+import { rarityWeightsFor, type OfferSource } from './rarityOdds';
 
 export interface RarityChance {
   rarity: CardRarity;
-  /** The designed weight for this source, before any pool filtering. */
+  /** The curve's weight for this source and level, before any pool filtering. */
   weight: number;
   /** What you will actually see, as a percentage of one offered card. */
   percent: number;
@@ -14,11 +14,11 @@ export interface RarityChance {
 /**
  * The rarity odds a player actually experiences from one offer slot.
  *
- * `RARITY_ODDS` are relative weights, not percentages, and the pools they draw from
- * are filtered to what the player has unlocked. `weightedSample` therefore rolls only
- * among tiers that still have cards and renormalises across them — so a profile with
- * no Epics unlocked sees that 7% redistributed, not wasted. This reproduces that
- * arithmetic so the Rules screen can never quietly disagree with the engine.
+ * The weights are relative, not percentages, and they move with the player's level.
+ * `weightedSample` rolls only among tiers that still have cards and renormalises
+ * across them, so a pool missing a tier redistributes its share rather than wasting
+ * it. This reproduces that arithmetic — including the level — so the Rules screen can
+ * never quietly disagree with the engine.
  *
  * Exact rather than approximate for a single slot. Across a 3-card offer it stays
  * exact unless a tier is *exhausted* mid-offer, which needs a tier with fewer than 3
@@ -28,8 +28,9 @@ export function effectiveRarityOdds(
   pool: readonly string[],
   source: OfferSource,
   cardDefinitions: Record<string, CardDefinition>,
+  level: number,
 ): RarityChance[] {
-  const weights = RARITY_ODDS[source];
+  const weights = rarityWeightsFor(level, source);
 
   const available: Record<CardRarity, number> = {
     common: 0,

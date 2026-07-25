@@ -52,7 +52,7 @@ describe('SettingsPanel — export', () => {
     expect(downloads).toHaveLength(1);
     expect(downloads[0].filename).toMatch(/^space-save-\d{4}-\d{2}-\d{2}\.json$/);
     const written = downloads[0].data as ReturnType<typeof makeSave>;
-    expect(written.version).toBe(6);
+    expect(written.version).toBe(7);
     expect(written.meta.stats.runsWon).toBe(3);
     // The in-progress run travels with it, so an import can resume mid-run.
     expect(written.currentRun).toEqual(useGameStore.getState().run);
