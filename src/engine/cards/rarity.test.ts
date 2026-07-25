@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { cardDefinitions, defaultLoadoutCardIds, defaultUnlockedCardIds } from '../../data/cards';
+import {
+  cardDefinitions,
+  defaultLoadoutCardIds,
+  defaultUnlockedCardIds,
+  eliteRewardCardIds,
+} from '../../data/cards';
 import { milestoneDefinitions } from '../../data/milestones';
+import { RARITY_ODDS } from './rarityOdds';
 import { CARD_RARITIES, rarityOf, type CardDefinition } from './types';
 
 describe('card rarity', () => {
@@ -129,6 +135,24 @@ describe('unlock curve', () => {
       }
     }
     expect(dominated).toEqual([]);
+  });
+
+  /**
+   * The elite pool was once entirely Common, which silently renormalised the elite
+   * odds to 100% Common and made an elite reward *worse* than a normal fight's — a
+   * normal win draws from the whole unlocked pool and can roll a Legendary.
+   */
+  it('stocks the elite reward pool with every rarity its odds promise', () => {
+    const promised = CARD_RARITIES.filter((r) => RARITY_ODDS.elite[r] > 0);
+    const stocked = new Set(eliteRewardCardIds.map((id) => rarityOf(cardDefinitions[id])));
+    expect(promised.filter((r) => !stocked.has(r))).toEqual([]);
+  });
+
+  it('offers elites at least as good a shot at high rarity as a normal fight', () => {
+    // The whole point of taking the harder fight.
+    for (const rarity of ['rare', 'epic', 'legendary'] as const) {
+      expect(RARITY_ODDS.elite[rarity]).toBeGreaterThanOrEqual(RARITY_ODDS.combat[rarity]);
+    }
   });
 
   it('gates the strongest cards behind the latest milestones', () => {

@@ -22,6 +22,7 @@ const en = {
   'nav.game': 'Game',
   'nav.deck': 'Deck',
   'nav.achievements': 'Achievements',
+  'nav.rules': 'Rules',
   'nav.mainMenu': 'Main menu',
   'nav.runInProgress': 'Run in progress',
   'nav.abandonRun': 'Abandon run',
@@ -346,6 +347,88 @@ const en = {
   'ending.eyebrow': 'Ending',
   'ending.label': 'Ending: {title}',
   'ending.next': 'Next',
+  // Rules screen
+  'rules.eyebrow': 'Reference',
+  'rules.title': 'Rules',
+  'rules.sub': 'How a run works, what every keyword does, and what you can expect to find.',
+
+  'rules.run': 'The run',
+  'rules.run.acts':
+    'A run is 3 acts. Each act is a fresh star chart ending in a boss; clearing it restores your hull in full and draws the next chart.',
+  'rules.run.deck':
+    'Cards you pick up belong to that run only. What you unlock permanently is the pool you build your starting deck from, in the Deck tab.',
+  'rules.run.death':
+    'Reaching 0 hull ends the run. Hull carries between fights within an act — only rest stops and repairs bring it back.',
+
+  'rules.combat': 'A fight',
+  'rules.combat.power':
+    'You start each turn with {power} reactor power and draw back up to {draw} cards.',
+  'rules.combat.shields':
+    'Shields absorb damage, then reset to 0 at the start of your turn — they are for the hit you can see coming, not savings.',
+  'rules.combat.intent':
+    'The enemy shows its next move before you act, so every turn is a decision with full information.',
+  'rules.combat.discard':
+    'Whatever is left in your hand is discarded at end of turn. Your discard pile is reshuffled when you run out of cards to draw.',
+
+  'rules.keywords': 'Keywords',
+  'rules.keywords.sub': 'Right-click any keyword, anywhere in the game, to see this again.',
+
+  'rules.rarity': 'Rarity',
+  'rules.rarity.sub':
+    'Higher rarity means a stronger card at the same cost — and a rarer one. You unlock higher tiers by hitting milestones; until then they cannot appear.',
+  'rules.rarity.count': '{count} unlocked of {total}',
+
+  'rules.upgrades': 'Upgrades',
+  'rules.upgrades.tiers':
+    'Every card has two upgrades, + and ++. Right-click a card to see its path.',
+  'rules.upgrades.step':
+    'An upgrade adds +{big} to damage, shields and repair, or +{small} to the smaller effects like power and draw. Only the card’s headline effect is stepped.',
+  'rules.upgrades.where':
+    'A Garage upgrades one card for the current run. Beating an act boss can instead upgrade a starting-deck card permanently.',
+
+  'rules.crew': 'Crew',
+  'rules.crew.passive':
+    'Crew grant a passive for the rest of the run and add nothing to your deck. Up to {cap} can be aboard; when full, you choose who stands down.',
+  'rules.crew.offer':
+    'Signal nodes have a {chance}% chance of a crew offer while anyone is still un-recruited.',
+
+  'rules.drops': 'What you find',
+  'rules.drops.sub':
+    'Card odds are your real chances right now — a tier you have not unlocked cannot appear, and its share goes to the tiers that can.',
+  'rules.drops.source': 'Source',
+  'rules.drops.reward': 'Reward',
+  'rules.drops.designed': 'Designed',
+  'rules.drops.locked': 'none unlocked',
+  'rules.drops.perCard': 'Chances are per card offered.',
+
+  'rules.drop.combat': 'Combat win',
+  'rules.drop.combat.reward': 'Choose 1 of 3 cards · {salvage}',
+  'rules.drop.elite': 'Elite win',
+  'rules.drop.elite.reward': 'Choose 1 of 3 cards · {salvage}',
+  'rules.drop.shop': 'Trader',
+  'rules.drop.shop.reward': '3 cards for sale · priced {price}',
+  'rules.drop.cache': 'Derelict cache',
+  'rules.drop.cache.reward': '1 free card · {salvage}',
+
+  'rules.other': 'Other nodes',
+  'rules.other.boss': 'Boss win',
+  'rules.other.boss.desc':
+    'No card and no salvage. Choose 1 of 3 ship systems, or permanently upgrade a starting-deck card. Your hull is fully restored for the next act.',
+  'rules.other.rest': 'Repair bay',
+  'rules.other.rest.desc': 'Restores {percent}% of your maximum hull.',
+  'rules.other.garage': 'Garage',
+  'rules.other.garage.desc': 'Upgrade one card in your deck, free, for the rest of this run.',
+  'rules.other.event': 'Signal',
+  'rules.other.event.desc':
+    'A crew offer, or a choice with a consequence — salvage, hull, or a card.',
+
+  'rules.map': 'The star chart',
+  'rules.map.sub': 'Roughly how often each node type appears, once past the opening layers.',
+  'rules.map.note':
+    'The first layer is always combat, elites never appear in the first two, and a repair bay or garage never follows another.',
+
+  'rules.salvageByAct': '{act1} / {act2} / {act3} salvage by act',
+  'rules.priceFormula': '{base} + {perCost} per energy, plus rarity',
 } as const;
 
 export type UiKey = keyof typeof en;
@@ -366,6 +449,7 @@ const fr: Record<UiKey, string> = {
   'nav.game': 'Jeu',
   'nav.deck': 'Deck',
   'nav.achievements': 'Succès',
+  'nav.rules': 'Règles',
   'nav.mainMenu': 'Menu principal',
   'nav.runInProgress': 'Partie en cours',
   'nav.abandonRun': 'Abandonner',
@@ -700,6 +784,91 @@ const fr: Record<UiKey, string> = {
   'ending.eyebrow': 'Fin',
   'ending.label': 'Fin : {title}',
   'ending.next': 'Suivant',
+
+  // Rules screen
+  'rules.eyebrow': 'Référence',
+  'rules.title': 'Règles',
+  'rules.sub':
+    'Le déroulement d’une partie, ce que fait chaque mot-clé, et ce que vous pouvez y trouver.',
+
+  'rules.run': 'La partie',
+  'rules.run.acts':
+    'Une partie compte 3 actes. Chaque acte est une nouvelle carte stellaire se terminant par un boss ; le vaincre restaure toute votre coque et génère la carte suivante.',
+  'rules.run.deck':
+    'Les cartes ramassées n’appartiennent qu’à cette partie. Ce que vous débloquez durablement, c’est le pool servant à composer votre deck de départ, dans l’onglet Deck.',
+  'rules.run.death':
+    'À 0 de coque, la partie s’arrête. La coque est conservée entre les combats d’un acte : seuls les réparations et les baies de réparation la remontent.',
+
+  'rules.combat': 'Un combat',
+  'rules.combat.power':
+    'Chaque tour, vous disposez de {power} énergie de réacteur et repiochez jusqu’à {draw} cartes.',
+  'rules.combat.shields':
+    'Les boucliers absorbent les dégâts, puis retombent à 0 au début de votre tour : ils servent au coup que vous voyez venir, pas à épargner.',
+  'rules.combat.intent':
+    'L’ennemi annonce son prochain coup avant que vous jouiez : chaque tour est une décision prise en pleine connaissance de cause.',
+  'rules.combat.discard':
+    'Ce qu’il reste en main est défaussé en fin de tour. Votre défausse est remélangée quand la pioche est vide.',
+
+  'rules.keywords': 'Mots-clés',
+  'rules.keywords.sub': 'Clic droit sur un mot-clé, n’importe où dans le jeu, pour revoir ceci.',
+
+  'rules.rarity': 'Rareté',
+  'rules.rarity.sub':
+    'Plus la rareté est élevée, plus la carte est forte à coût égal — et plus elle est rare. Les paliers supérieurs se débloquent via les jalons ; avant cela, ils ne peuvent pas apparaître.',
+  'rules.rarity.count': '{count} débloquées sur {total}',
+
+  'rules.upgrades': 'Améliorations',
+  'rules.upgrades.tiers':
+    'Chaque carte a deux améliorations, + et ++. Clic droit sur une carte pour voir sa progression.',
+  'rules.upgrades.step':
+    'Une amélioration ajoute +{big} aux dégâts, boucliers et réparations, ou +{small} aux effets plus petits comme l’énergie et la pioche. Seul l’effet principal de la carte est amélioré.',
+  'rules.upgrades.where':
+    'Un Garage améliore une carte pour la partie en cours. Vaincre le boss d’un acte permet à la place d’améliorer définitivement une carte du deck de départ.',
+
+  'rules.crew': 'Équipage',
+  'rules.crew.passive':
+    'Un équipier confère un passif pour le reste de la partie et n’ajoute rien à votre deck. Jusqu’à {cap} à bord ; une fois complet, vous choisissez qui se retire.',
+  'rules.crew.offer':
+    'Les nœuds de signal ont {chance} % de chances de proposer un équipier tant qu’il en reste à recruter.',
+
+  'rules.drops': 'Ce que vous trouvez',
+  'rules.drops.sub':
+    'Les chances affichées sont vos chances réelles actuelles : un palier non débloqué ne peut pas sortir, et sa part revient aux paliers qui le peuvent.',
+  'rules.drops.source': 'Source',
+  'rules.drops.reward': 'Récompense',
+  'rules.drops.designed': 'Théorique',
+  'rules.drops.locked': 'aucune débloquée',
+  'rules.drops.perCard': 'Les chances s’entendent par carte proposée.',
+
+  'rules.drop.combat': 'Combat gagné',
+  'rules.drop.combat.reward': '1 carte au choix sur 3 · {salvage}',
+  'rules.drop.elite': 'Élite vaincue',
+  'rules.drop.elite.reward': '1 carte au choix sur 3 · {salvage}',
+  'rules.drop.shop': 'Marchand',
+  'rules.drop.shop.reward': '3 cartes en vente · au prix de {price}',
+  'rules.drop.cache': 'Épave à piller',
+  'rules.drop.cache.reward': '1 carte offerte · {salvage}',
+
+  'rules.other': 'Autres nœuds',
+  'rules.other.boss': 'Boss vaincu',
+  'rules.other.boss.desc':
+    'Ni carte ni ferraille. Choisissez 1 système de vaisseau sur 3, ou améliorez définitivement une carte du deck de départ. Votre coque est entièrement restaurée pour l’acte suivant.',
+  'rules.other.rest': 'Baie de réparation',
+  'rules.other.rest.desc': 'Restaure {percent} % de votre coque maximale.',
+  'rules.other.garage': 'Garage',
+  'rules.other.garage.desc':
+    'Améliorez une carte de votre deck, gratuitement, pour le reste de la partie.',
+  'rules.other.event': 'Signal',
+  'rules.other.event.desc':
+    'Une proposition d’équipier, ou un choix avec des conséquences — ferraille, coque ou carte.',
+
+  'rules.map': 'La carte stellaire',
+  'rules.map.sub': 'Fréquence approximative de chaque type de nœud, passé les premières couches.',
+  'rules.map.note':
+    'La première couche est toujours un combat, les élites n’apparaissent jamais dans les deux premières, et une baie de réparation ou un garage ne suit jamais un autre.',
+
+  'rules.salvageByAct': '{act1} / {act2} / {act3} de ferraille selon l’acte',
+  'rules.priceFormula': '{base} + {perCost} par énergie, plus la rareté',
 };
 
 export const uiStrings: Record<Language, Record<UiKey, string>> = { en, fr };

@@ -2,7 +2,13 @@ import { weightedPick, type Rng } from '../rng';
 import type { MapConfig, MapGraph, MapNode, NodeType } from './types';
 import { DEFAULT_MAP_CONFIG } from './types';
 
-const NODE_TYPE_WEIGHTS: { value: NodeType; weight: number }[] = [
+/**
+ * Relative weights, not percentages — they sum to 107, and the allowed set is
+ * filtered per node (no elites before `eliteMinLayerIndex`, no rest/garage following
+ * itself), so `weightedPick` renormalises over whatever survives. Exported so the
+ * Rules screen states the same numbers the generator uses.
+ */
+export const NODE_TYPE_WEIGHTS: { value: NodeType; weight: number }[] = [
   { value: 'combat', weight: 45 },
   { value: 'event', weight: 20 },
   { value: 'elite', weight: 10 },

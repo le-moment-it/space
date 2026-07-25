@@ -338,8 +338,16 @@ export const defaultLoadoutCardIds: string[] = [
 /** Card ids purchasable at Salvage Trader nodes / offerable at Derelict Cache nodes. */
 export const runCardPool: string[] = Object.keys(cardDefinitions);
 
-/** Stronger cards awarded for clearing an Elite Hostile encounter. */
+/**
+ * Stronger cards awarded for clearing an Elite Hostile encounter.
+ *
+ * Must contain cards of every rarity the `elite` odds claim to offer. This list was
+ * once all Common, which quietly renormalised those odds to 100% Common and made an
+ * elite reward *worse* than a normal fight's — a normal win draws from the whole
+ * unlocked pool and can roll a Legendary. `rarity.test.ts` now enforces the match.
+ */
 export const eliteRewardCardIds: string[] = [
+  // Common
   'disruptor-cannon',
   'emergency-shield-boost',
   'nanite-repair',
@@ -349,6 +357,21 @@ export const eliteRewardCardIds: string[] = [
   'full-repair-kit',
   'aegis-shield',
   'capacitor-bank',
+  // Rare
+  'nanite-swarm',
+  'targeting-lock',
+  'capacitor-brace',
+  'triage-primer',
+  'siphon-beam',
+  // Epic
+  'corrosive-flak',
+  'hull-cutter',
+  'gunnery-calibration',
+  'deflector-tuning',
+  'needle-volley',
+  // Legendary
+  'overwhelming-barrage',
+  'master-gunner',
 ];
 
 /**

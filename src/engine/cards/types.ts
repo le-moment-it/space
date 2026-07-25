@@ -77,7 +77,7 @@ export function rarityOf(card: Pick<CardDefinition, 'rarity'>): CardRarity {
  * where +2 is a modest bump, while power/weaken/draw are small (1–4) where +2 a tier
  * would be wild — draw 1 -> 5 is a different card, not an upgraded one.
  */
-const DEFAULT_UPGRADE_STEP: Record<CardEffect['kind'], number> = {
+export const DEFAULT_UPGRADE_STEP: Record<CardEffect['kind'], number> = {
   damage: 2,
   shield: 2,
   heal: 2,

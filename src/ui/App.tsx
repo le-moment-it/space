@@ -8,16 +8,18 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { AchievementsScreen } from './screens/AchievementsScreen';
 import { DeckScreen } from './screens/DeckScreen';
 import { EndingScene } from './screens/EndingScene';
+import { RulesScreen } from './screens/RulesScreen';
 import { RunScreen } from './screens/RunScreen';
 import { StartScreen } from './screens/StartScreen';
 import { TitleScreen } from './screens/TitleScreen';
 
-type MenuTab = 'game' | 'deck' | 'achievements';
+type MenuTab = 'game' | 'deck' | 'achievements' | 'rules';
 
 const TABS: { id: MenuTab; label: UiKey }[] = [
   { id: 'game', label: 'nav.game' },
   { id: 'deck', label: 'nav.deck' },
   { id: 'achievements', label: 'nav.achievements' },
+  { id: 'rules', label: 'nav.rules' },
 ];
 
 export function App() {
@@ -103,6 +105,7 @@ export function App() {
           (inRun ? <RunScreen /> : <StartScreen onEditDeck={() => setTab('deck')} />)}
         {tab === 'deck' && <DeckScreen />}
         {tab === 'achievements' && <AchievementsScreen />}
+        {tab === 'rules' && <RulesScreen />}
       </main>
 
       {pendingEnding && (

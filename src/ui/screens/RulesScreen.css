@@ -1,0 +1,152 @@
+.rules__cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  .rules__cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rules__note {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+.rules__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  padding-left: 1rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.rules__list li::marker {
+  color: var(--ink-faint);
+}
+
+/* Term/description rows, ruled between — the map legend's idiom. */
+.rules__defs {
+  margin-top: 0.7rem;
+  list-style: none;
+}
+.rules__def {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+}
+.rules__def + .rules__def {
+  border-top: 1px solid var(--line);
+}
+.rules__def-term {
+  flex: 0 0 8.5rem;
+  font-size: 0.84rem;
+  color: var(--ink);
+}
+.rules__def-desc {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+@media (max-width: 560px) {
+  .rules__def {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .rules__def-term {
+    flex: none;
+  }
+}
+
+/*
+ * Rarity colouring follows Card.css: a data-rarity attribute remaps a local --rarity
+ * custom property, and everything downstream reads var(--rarity).
+ */
+.rules__def[data-rarity],
+.rules__table [data-rarity] {
+  --rarity: var(--rarity-common);
+}
+[data-rarity='rare'] {
+  --rarity: var(--rarity-rare);
+}
+[data-rarity='epic'] {
+  --rarity: var(--rarity-epic);
+}
+[data-rarity='legendary'] {
+  --rarity: var(--rarity-legendary);
+}
+.rules__def-term--rarity {
+  color: var(--rarity);
+}
+
+/*
+ * The table scrolls inside .rules__scroll, so a wide table never scrolls the page.
+ * The panel is a flex/grid item, and those default to min-width:auto — which refuses
+ * to shrink below the table's intrinsic width and pushes the page sideways instead of
+ * letting the wrapper below scroll. Both need the explicit 0.
+ */
+.rules .panel {
+  min-width: 0;
+}
+.rules__scroll {
+  margin-top: 0.8rem;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.rules__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.rules__table th,
+.rules__table td {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.rules__table thead th {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  white-space: nowrap;
+  border-bottom-color: var(--line-2);
+}
+.rules__table tbody tr:last-child th,
+.rules__table tbody tr:last-child td {
+  border-bottom: none;
+}
+.rules__table tbody th {
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.rules__th--rarity {
+  color: var(--rarity);
+  text-align: right;
+}
+.rules__reward {
+  color: var(--ink-dim);
+  min-width: 14rem;
+}
+.rules__odds {
+  text-align: right;
+  color: var(--rarity);
+  white-space: nowrap;
+}
+/* A tier you cannot roll reads as absent rather than merely small. */
+.rules__odds--none {
+  color: var(--ink-faint);
+}
