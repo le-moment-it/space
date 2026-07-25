@@ -2,6 +2,7 @@ import type { CardDefinition, CardInstance, DeckCard } from '../cards/types';
 import { resolveCard } from '../cards/types';
 import { shuffle, type Rng } from '../rng';
 import { intentForTurn } from './enemyAI';
+import { applyStatus, decayStatuses, statusAmount, tickDamage } from './status';
 import type { CombatConfig, CombatLogEntry, CombatState, EnemyDefinition } from './types';
 import { DEFAULT_COMBAT_CONFIG } from './types';
 
@@ -87,6 +88,7 @@ export function initCombat(opts: {
       shield: 0,
       power: config.playerMaxPower,
       maxPower: config.playerMaxPower,
+      statuses: {},
     },
     enemy: {
       id: opts.enemy.id,
@@ -94,8 +96,7 @@ export function initCombat(opts: {
       hull: opts.enemy.maxHull,
       maxHull: opts.enemy.maxHull,
       shield: 0,
-      weakenAmount: 0,
-      weakenTurnsRemaining: 0,
+      statuses: {},
       intentPattern: opts.enemy.intentPattern,
       intent: intentForTurn(opts.enemy.intentPattern, 0),
     },
@@ -169,14 +170,13 @@ export function playCard(
       log.push({ t: 'power', amount: def.effect.amount });
       break;
     case 'weaken':
-      enemy.weakenAmount = def.effect.amount;
-      enemy.weakenTurnsRemaining = def.effect.duration;
-      log.push({
-        t: 'weaken',
-        enemyId: enemy.id,
-        amount: def.effect.amount,
-        duration: def.effect.duration,
-      });
+      enemy.statuses = applyStatus(
+        enemy.statuses,
+        'weaken',
+        def.effect.amount,
+        def.effect.duration,
+      );
+      log.push({ t: 'status', target: 'enemy', status: 'weaken', amount: def.effect.amount });
       break;
     case 'draw': {
       const result = drawCards(hand, drawPile, discardPile, def.effect.amount, rng, log);
@@ -213,12 +213,22 @@ export function endPlayerTurn(
   const enemy = { ...state.enemy };
   let player = { ...state.player };
 
+  // Statuses tick before the enemy acts, so Corrosion can finish a fight on your
+  // turn rather than after taking one more hit.
+  const enemyTick = tickDamage(enemy.statuses);
+  if (enemyTick > 0) {
+    enemy.hull = Math.max(0, enemy.hull - enemyTick);
+    log.push({ t: 'statusTick', target: 'enemy', status: 'corrosion', amount: enemyTick });
+  }
+  if (enemy.hull <= 0) {
+    enemy.statuses = decayStatuses(enemy.statuses);
+    log.push({ t: 'enemyDestroyed', enemyId: enemy.id });
+    return { ...state, player, enemy, discardPile, hand: [], log, phase: 'won' };
+  }
+
   const intent = enemy.intent;
   if (intent.kind === 'attack') {
-    const amount = Math.max(
-      0,
-      intent.amount - (enemy.weakenTurnsRemaining > 0 ? enemy.weakenAmount : 0),
-    );
+    const amount = Math.max(0, intent.amount - statusAmount(enemy.statuses, 'weaken'));
     const absorbed = Math.min(player.shield, amount);
     player = { ...player, shield: player.shield - absorbed };
     const remaining = amount - absorbed;
@@ -229,10 +239,8 @@ export function endPlayerTurn(
     log.push({ t: 'enemyShield', enemyId: enemy.id, amount: intent.amount });
   }
 
-  if (enemy.weakenTurnsRemaining > 0) {
-    enemy.weakenTurnsRemaining -= 1;
-    if (enemy.weakenTurnsRemaining === 0) enemy.weakenAmount = 0;
-  }
+  enemy.statuses = decayStatuses(enemy.statuses);
+  player = { ...player, statuses: decayStatuses(player.statuses) };
 
   if (player.hull <= 0) {
     return { ...state, player, enemy, discardPile, hand: [], log, phase: 'lost' };

@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { CombatLogEntry } from '../../engine/combat/types';
-import { useTranslation, type Translator } from '../../i18n';
+import { useTranslation, type Translator, type UiKey } from '../../i18n';
 import './BattleLog.css';
 
 type Side = 'player' | 'enemy' | 'system';
@@ -41,14 +41,15 @@ function formatEntry(entry: Exclude<CombatLogEntry, { t: 'endTurn' }>, tr: Trans
       return line('player', t('log.heal', { amount: entry.amount }));
     case 'power':
       return line('player', t('log.power', { amount: entry.amount }));
-    case 'weaken':
+    case 'status':
       return line(
-        'player',
-        t('log.weaken', {
-          name: enemyName(entry.enemyId),
-          amount: entry.amount,
-          duration: entry.duration,
-        }),
+        entry.target === 'enemy' ? 'player' : 'player',
+        t(`status.${entry.status}.applied` as UiKey, { amount: entry.amount }),
+      );
+    case 'statusTick':
+      return line(
+        entry.target === 'enemy' ? 'player' : 'enemy',
+        t(`status.${entry.status}.tick` as UiKey, { amount: entry.amount }),
       );
     case 'draw':
       return line(

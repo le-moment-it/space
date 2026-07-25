@@ -1,4 +1,5 @@
 import type { CardInstance } from '../cards/types';
+import type { StatusId, Statuses } from './status';
 
 export type Intent = { kind: 'attack'; amount: number } | { kind: 'defend'; amount: number };
 
@@ -17,8 +18,7 @@ export interface EnemyState {
   hull: number;
   maxHull: number;
   shield: number;
-  weakenAmount: number;
-  weakenTurnsRemaining: number;
+  statuses: Statuses;
   intentPattern: Intent[];
   intent: Intent;
 }
@@ -29,6 +29,7 @@ export interface PlayerState {
   shield: number;
   power: number;
   maxPower: number;
+  statuses: Statuses;
 }
 
 export type CombatPhase = 'playerTurn' | 'enemyTurn' | 'won' | 'lost';
@@ -47,7 +48,8 @@ export type CombatLogEntry =
   | { t: 'shield'; amount: number }
   | { t: 'heal'; amount: number }
   | { t: 'power'; amount: number }
-  | { t: 'weaken'; enemyId: string; amount: number; duration: number }
+  | { t: 'status'; target: 'player' | 'enemy'; status: StatusId; amount: number }
+  | { t: 'statusTick'; target: 'player' | 'enemy'; status: StatusId; amount: number }
   | { t: 'draw'; amount: number }
   | { t: 'reshuffle' }
   | { t: 'endTurn' }

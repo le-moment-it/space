@@ -268,3 +268,11 @@
   font-size: 2rem;
   margin-bottom: 0.5rem;
 }
+
+/* The pre-weaken figure, struck through beside what will actually land. */
+.intent__was {
+  margin-left: 0.35rem;
+  font-size: 0.72em;
+  opacity: 0.55;
+  text-decoration-thickness: 1px;
+}

@@ -190,8 +190,18 @@ interface GameStore {
  * newer piles — cheaper and safer than a save version bump for an additive field.
  */
 function normalizeRun(run: RunState | null): RunState | null {
-  if (!run?.activeCombat || run.activeCombat.exhaustPile) return run;
-  return { ...run, activeCombat: { ...run.activeCombat, exhaustPile: [] } };
+  const combat = run?.activeCombat;
+  if (!run || !combat) return run;
+  if (combat.exhaustPile && combat.player.statuses && combat.enemy.statuses) return run;
+  return {
+    ...run,
+    activeCombat: {
+      ...combat,
+      exhaustPile: combat.exhaustPile ?? [],
+      player: { ...combat.player, statuses: combat.player.statuses ?? {} },
+      enemy: { ...combat.enemy, statuses: combat.enemy.statuses ?? {} },
+    },
+  };
 }
 
 export const useGameStore = create<GameStore>((set, get) => {

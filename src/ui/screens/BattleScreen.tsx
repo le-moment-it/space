@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { cardDefinitions } from '../../data/cards';
 import type { CombatState, Intent } from '../../engine/combat/types';
 import { resolveCard } from '../../engine/cards/types';
+import { statusAmount } from '../../engine/combat/status';
+import { StatusChips } from '../components/StatusChips';
 import { useTranslation, type Translator } from '../../i18n';
 import { Card } from '../components/Card';
 import { CardListModal } from '../components/CardListModal';
@@ -34,15 +36,12 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
         <div className="combatant combatant--enemy">
           <p className="eyebrow combatant__tag">{t('battle.hostileContact')}</p>
           <h3 className="combatant__name">{enemyName(enemy.id)}</h3>
-          <IntentReadout intent={enemy.intent} t={t} />
-          {enemy.weakenTurnsRemaining > 0 && (
-            <p className="combatant__status">
-              {t('battle.weakened', {
-                amount: enemy.weakenAmount,
-                turns: enemy.weakenTurnsRemaining,
-              })}
-            </p>
-          )}
+          <IntentReadout
+            intent={enemy.intent}
+            weaken={statusAmount(enemy.statuses, 'weaken')}
+            t={t}
+          />
+          <StatusChips statuses={enemy.statuses} />
           <HpBar value={enemy.hull} max={enemy.maxHull} tone="threat" t={t} />
           {enemy.shield > 0 && <ShieldChip value={enemy.shield} t={t} />}
         </div>
@@ -53,6 +52,7 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
             <PowerPips current={player.power} max={player.maxPower} t={t} />
             {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
           </div>
+          <StatusChips statuses={player.statuses} />
           <HpBar value={player.hull} max={player.maxHull} tone="hull" t={t} />
         </div>
       </div>
@@ -153,15 +153,28 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
   );
 }
 
-function IntentReadout({ intent, t }: { intent: Intent; t: Translator['t'] }) {
+function IntentReadout({
+  intent,
+  weaken,
+  t,
+}: {
+  intent: Intent;
+  weaken: number;
+  t: Translator['t'];
+}) {
   const attack = intent.kind === 'attack';
+  // Show what the attack will ACTUALLY land for. It previously advertised the raw
+  // intent, so a weakened enemy said "10" and then hit for 7.
+  const amount = attack ? Math.max(0, intent.amount - weaken) : intent.amount;
+  const reduced = attack && amount < intent.amount;
   return (
     <div className={`intent ${attack ? 'intent--attack' : 'intent--defend'}`}>
       <span className="intent__label">
         {attack ? t('battle.incomingAttack') : t('battle.bracing')}
       </span>
       <span className="intent__value mono">
-        {attack ? '⌖' : '◈'} {intent.amount}
+        {attack ? '⌖' : '◈'} {amount}
+        {reduced && <s className="intent__was">{intent.amount}</s>}
       </span>
     </div>
   );

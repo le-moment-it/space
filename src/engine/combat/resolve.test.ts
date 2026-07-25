@@ -467,3 +467,54 @@ describe('endPlayerTurn', () => {
     expect(state.enemy.hull).toBe(0);
   });
 });
+
+describe('statuses in combat', () => {
+  it('weaken now stacks rather than overwriting', () => {
+    const rng = createRng(90);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('weaken', 'weaken', 'weaken', 'weaken', 'weaken', 'weaken'),
+      enemy: attackerEnemy,
+      rng,
+    });
+    // Two weakens (3 each) before the enemy acts.
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+    expect(state.enemy.statuses.weaken?.amount).toBe(6);
+
+    state = endPlayerTurn(state, rng);
+    // 10 attack - 6 weaken = 4 through.
+    expect(state.player.hull).toBe(DEFAULT_COMBAT_CONFIG.playerMaxHull - 4);
+  });
+
+  it('weaken expires after its duration', () => {
+    const rng = createRng(91);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('weaken', 'weaken', 'weaken', 'weaken', 'weaken', 'weaken'),
+      enemy: attackerEnemy,
+      rng,
+    });
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng); // 3 for 2 turns
+    const full = DEFAULT_COMBAT_CONFIG.playerMaxHull;
+
+    state = endPlayerTurn(state, rng); // reduced: 10 - 3
+    expect(state.player.hull).toBe(full - 7);
+    state = endPlayerTurn(state, rng); // still reduced (duration 2)
+    expect(state.player.hull).toBe(full - 14);
+    state = endPlayerTurn(state, rng); // expired: full 10
+    expect(state.player.hull).toBe(full - 24);
+    expect(state.enemy.statuses.weaken).toBeUndefined();
+  });
+
+  it('starts both combatants with an empty status bag', () => {
+    const state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('strike'),
+      enemy: passiveEnemy,
+      rng: createRng(92),
+    });
+    expect(state.player.statuses).toEqual({});
+    expect(state.enemy.statuses).toEqual({});
+  });
+});
