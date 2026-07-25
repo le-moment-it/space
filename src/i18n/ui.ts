@@ -103,6 +103,15 @@ const en = {
   'effect.draw': 'Draw',
   'effect.card': 'card',
   'effect.cards': 'cards',
+  'effect.apply': 'Apply',
+  'effect.corrosion': 'Corrosion',
+  'effect.breach': 'Breach',
+  'effect.perAttack': 'per attack this fight',
+  'effect.perShield': 'to every shield gain this fight',
+  'effect.double': 'Double your',
+  'effect.nextAttack': 'next attack',
+  'effect.nextShield': 'next shield gain',
+  'effect.nextRepair': 'next repair',
   // Rules keywords — label printed on the card, desc shown on right-click
   'keyword.exhaust': 'Exhaust',
   'keyword.exhaust.desc':
@@ -375,6 +384,15 @@ const fr: Record<UiKey, string> = {
   'effect.draw': 'Piocher',
   'effect.card': 'carte',
   'effect.cards': 'cartes',
+  'effect.apply': 'Appliquer',
+  'effect.corrosion': 'Corrosion',
+  'effect.breach': 'Brèche',
+  'effect.perAttack': 'par attaque ce combat',
+  'effect.perShield': 'à chaque gain de boucliers ce combat',
+  'effect.double': 'Doublez votre',
+  'effect.nextAttack': 'prochaine attaque',
+  'effect.nextShield': 'prochain gain de boucliers',
+  'effect.nextRepair': 'prochaine réparation',
   // Rules keywords — label printed on the card, desc shown on right-click
   'keyword.exhaust': 'Épuisement',
   'keyword.exhaust.desc':

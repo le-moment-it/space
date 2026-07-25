@@ -62,6 +62,38 @@ const cardDefinitions: Record<string, CardDefinition> = {
     description: '',
     effect: { kind: 'draw', amount: 2 },
   },
+  nanite: {
+    id: 'nanite',
+    name: 'Nanite Swarm',
+    type: 'weapon',
+    cost: 1,
+    description: '',
+    effect: { kind: 'corrosion', amount: 5 },
+  },
+  cutter: {
+    id: 'cutter',
+    name: 'Hull Cutter',
+    type: 'weapon',
+    cost: 1,
+    description: '',
+    effect: { kind: 'breach', amount: 2 },
+  },
+  calibrate: {
+    id: 'calibrate',
+    name: 'Gunnery Calibration',
+    type: 'shipSystem',
+    cost: 1,
+    description: '',
+    effect: { kind: 'calibration', amount: 2 },
+  },
+  lock: {
+    id: 'lock',
+    name: 'Targeting Lock',
+    type: 'shipSystem',
+    cost: 0,
+    description: '',
+    effect: { kind: 'charge', target: 'damage', amount: 1 },
+  },
   siphon: {
     id: 'siphon',
     name: 'Siphon Beam',
@@ -602,5 +634,124 @@ describe('multi-effect and multi-hit cards', () => {
 
     expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 8); // 6 -> 8
     expect(state.player.hull).toBe(24); // heal still 4
+  });
+});
+
+describe('corrosion', () => {
+  it('ticks its amount at end of turn, then erodes by one', () => {
+    const rng = createRng(100);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('nanite', 'nanite', 'nanite', 'nanite', 'nanite', 'nanite'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull); // no damage on application
+
+    state = endPlayerTurn(state, rng);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 5);
+    expect(state.enemy.statuses.corrosion?.amount).toBe(4);
+
+    state = endPlayerTurn(state, rng);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 9); // 5 then 4
+    expect(state.enemy.statuses.corrosion?.amount).toBe(3);
+  });
+
+  it('stacks when applied again', () => {
+    const rng = createRng(101);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('nanite', 'nanite', 'nanite', 'nanite', 'nanite', 'nanite'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+    expect(state.enemy.statuses.corrosion?.amount).toBe(10);
+  });
+
+  it('can finish the fight on your own turn', () => {
+    const rng = createRng(102);
+    const frail = { ...passiveEnemy, maxHull: 4 };
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('nanite', 'nanite', 'nanite', 'nanite', 'nanite', 'nanite'),
+      enemy: frail,
+      rng,
+    });
+    state = playCard(state, state.hand[0].instanceId, cardDefinitions, rng);
+    state = endPlayerTurn(state, rng);
+    expect(state.phase).toBe('won');
+  });
+});
+
+describe('breach, calibration and charge', () => {
+  const strikeAfter = (setupCard: string, seed: number) => {
+    const rng = createRng(seed);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf(setupCard, 'strike', 'strike', 'strike', 'strike', 'strike'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    const setup = state.hand.find((c) => c.cardId === setupCard);
+    if (!setup) throw new Error(`${setupCard} not in opening hand for seed ${seed}`);
+    state = playCard(state, setup.instanceId, cardDefinitions, rng);
+    const strike = state.hand.find((c) => c.cardId === 'strike');
+    if (!strike) throw new Error('strike not in hand');
+    return playCard(state, strike.instanceId, cardDefinitions, rng);
+  };
+
+  it('breach multiplies incoming damage', () => {
+    const state = strikeAfter('cutter', 103);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 9); // 6 x 1.5
+  });
+
+  it('calibration adds to every attack', () => {
+    const state = strikeAfter('calibrate', 104);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 8); // 6 + 2
+  });
+
+  it('a charge doubles the next attack and is then spent', () => {
+    const rng = createRng(105);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('lock', 'strike', 'strike', 'strike', 'strike', 'strike'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    const lock = state.hand.find((c) => c.cardId === 'lock');
+    if (!lock) throw new Error('lock not in opening hand for this seed');
+    state = playCard(state, lock.instanceId, cardDefinitions, rng);
+    expect(state.player.statuses.chargeDamage?.amount).toBe(1);
+
+    let strike = state.hand.find((c) => c.cardId === 'strike');
+    state = playCard(state, strike!.instanceId, cardDefinitions, rng);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 12); // doubled
+    expect(state.player.statuses.chargeDamage).toBeUndefined();
+
+    strike = state.hand.find((c) => c.cardId === 'strike');
+    state = playCard(state, strike!.instanceId, cardDefinitions, rng);
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 18); // back to 6
+  });
+
+  it('applies flat bonuses before multipliers', () => {
+    const rng = createRng(106);
+    let state = initCombat({
+      cardDefinitions,
+      startingDeck: deckOf('calibrate', 'lock', 'strike', 'strike', 'strike', 'strike'),
+      enemy: passiveEnemy,
+      rng,
+    });
+    for (const id of ['calibrate', 'lock']) {
+      const c = state.hand.find((x) => x.cardId === id);
+      if (!c) throw new Error(`${id} not in opening hand for this seed`);
+      state = playCard(state, c.instanceId, cardDefinitions, rng);
+    }
+    const strike = state.hand.find((c) => c.cardId === 'strike');
+    state = playCard(state, strike!.instanceId, cardDefinitions, rng);
+    // (6 + 2) x 2 = 16, not 6 x 2 + 2 = 14.
+    expect(state.enemy.hull).toBe(passiveEnemy.maxHull - 16);
   });
 });

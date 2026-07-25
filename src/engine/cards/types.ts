@@ -12,7 +12,17 @@ export type CardEffect =
   | { kind: 'heal'; amount: number }
   | { kind: 'power'; amount: number }
   | { kind: 'weaken'; amount: number; duration: number }
-  | { kind: 'draw'; amount: number };
+  | { kind: 'draw'; amount: number }
+  /** Stacking damage over time on the enemy; ticks, then erodes by 1 each turn. */
+  | { kind: 'corrosion'; amount: number }
+  /** The enemy takes extra damage for `amount` turns. */
+  | { kind: 'breach'; amount: number }
+  /** +amount damage on every attack for the rest of the combat. */
+  | { kind: 'calibration'; amount: number }
+  /** +amount on every shield gain for the rest of the combat. */
+  | { kind: 'deflector'; amount: number }
+  /** Doubles the next effect of the named kind. */
+  | { kind: 'charge'; target: 'damage' | 'shield' | 'heal'; amount: number };
 
 export type UpgradeLevel = 0 | 1 | 2;
 
@@ -74,6 +84,11 @@ const DEFAULT_UPGRADE_STEP: Record<CardEffect['kind'], number> = {
   power: 1,
   weaken: 1,
   draw: 1,
+  corrosion: 2,
+  breach: 1,
+  calibration: 1,
+  deflector: 1,
+  charge: 1,
 };
 
 /**

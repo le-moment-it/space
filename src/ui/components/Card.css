@@ -231,3 +231,11 @@
 .card[aria-disabled='true'] .kwchip {
   cursor: help;
 }
+
+/* Corrosion / Breach read as hull damage over time — hazard, not weapon red. */
+.kw--corrosion {
+  color: var(--hazard);
+}
+.kw--charge {
+  color: var(--plasma);
+}

@@ -2,7 +2,15 @@ import type { CardDefinition, CardInstance, DeckCard } from '../cards/types';
 import { effectsOf, resolveCard } from '../cards/types';
 import { shuffle, type Rng } from '../rng';
 import { intentForTurn } from './enemyAI';
-import { applyStatus, decayStatuses, statusAmount, tickDamage } from './status';
+import {
+  applyStatus,
+  BREACH_MULTIPLIER,
+  consumeStatus,
+  decayStatuses,
+  hasStatus,
+  statusAmount,
+  tickDamage,
+} from './status';
 import type { CombatConfig, CombatLogEntry, CombatState, EnemyDefinition } from './types';
 import { DEFAULT_COMBAT_CONFIG } from './types';
 
@@ -152,12 +160,22 @@ export function playCard(
   for (const effect of effectsOf(def)) {
     switch (effect.kind) {
       case 'damage': {
+        // Flat bonuses first, then multipliers: (base + Calibration) x Charge x Breach.
+        // Charge is spent once for the card, not once per hit of a multi-hit.
+        const charged = consumeStatus(player.statuses, 'chargeDamage');
+        player.statuses = charged.statuses;
+        const breachMult = hasStatus(enemy.statuses, 'breach') ? BREACH_MULTIPLIER : 1;
+        const amount = Math.floor(
+          (effect.amount + statusAmount(player.statuses, 'calibration')) *
+            charged.multiplier *
+            breachMult,
+        );
+
         // Multi-hit lands as separate hits, so shields absorb from each one — worse
         // into armour, better with per-attack bonuses.
         const hits = Math.max(1, effect.times ?? 1);
         for (let i = 0; i < hits; i++) {
           if (enemy.hull <= 0) break;
-          const amount = effect.amount;
           const absorbed = Math.min(enemy.shield, amount);
           enemy.shield -= absorbed;
           enemy.hull = Math.max(0, enemy.hull - (amount - absorbed));
@@ -165,14 +183,24 @@ export function playCard(
         }
         break;
       }
-      case 'shield':
-        player.shield += effect.amount;
-        log.push({ t: 'shield', amount: effect.amount });
+      case 'shield': {
+        const charged = consumeStatus(player.statuses, 'chargeShield');
+        player.statuses = charged.statuses;
+        const amount = Math.floor(
+          (effect.amount + statusAmount(player.statuses, 'deflector')) * charged.multiplier,
+        );
+        player.shield += amount;
+        log.push({ t: 'shield', amount });
         break;
-      case 'heal':
-        player.hull = Math.min(player.maxHull, player.hull + effect.amount);
-        log.push({ t: 'heal', amount: effect.amount });
+      }
+      case 'heal': {
+        const charged = consumeStatus(player.statuses, 'chargeHeal');
+        player.statuses = charged.statuses;
+        const amount = Math.floor(effect.amount * charged.multiplier);
+        player.hull = Math.min(player.maxHull, player.hull + amount);
+        log.push({ t: 'heal', amount });
         break;
+      }
       case 'power':
         player.power += effect.amount;
         log.push({ t: 'power', amount: effect.amount });
@@ -188,6 +216,33 @@ export function playCard(
         discardPile = result.discardPile;
         log = result.log;
         log.push({ t: 'draw', amount: effect.amount });
+        break;
+      }
+      case 'corrosion':
+        enemy.statuses = applyStatus(enemy.statuses, 'corrosion', effect.amount);
+        log.push({ t: 'status', target: 'enemy', status: 'corrosion', amount: effect.amount });
+        break;
+      case 'breach':
+        enemy.statuses = applyStatus(enemy.statuses, 'breach', 1, effect.amount);
+        log.push({ t: 'status', target: 'enemy', status: 'breach', amount: effect.amount });
+        break;
+      case 'calibration':
+        player.statuses = applyStatus(player.statuses, 'calibration', effect.amount);
+        log.push({ t: 'status', target: 'player', status: 'calibration', amount: effect.amount });
+        break;
+      case 'deflector':
+        player.statuses = applyStatus(player.statuses, 'deflector', effect.amount);
+        log.push({ t: 'status', target: 'player', status: 'deflector', amount: effect.amount });
+        break;
+      case 'charge': {
+        const id =
+          effect.target === 'damage'
+            ? 'chargeDamage'
+            : effect.target === 'shield'
+              ? 'chargeShield'
+              : 'chargeHeal';
+        player.statuses = applyStatus(player.statuses, id, effect.amount);
+        log.push({ t: 'status', target: 'player', status: id, amount: effect.amount });
         break;
       }
       default: {

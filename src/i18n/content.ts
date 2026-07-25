@@ -73,6 +73,18 @@ const cardNames: Record<string, string> = {
   'crew-deep-scan': 'Scan profond',
   'crew-stalwart-hymn': 'Hymne inébranlable',
   'crew-penance': 'Pénitence',
+  'nanite-swarm': 'Nuée de nanites',
+  'corrosive-flak': 'Flak corrosif',
+  'hull-cutter': 'Découpeur de coque',
+  'targeting-lock': 'Verrouillage de cible',
+  'capacitor-brace': 'Renfort de condensateurs',
+  'triage-primer': 'Amorce de triage',
+  'gunnery-calibration': 'Calibrage d’artillerie',
+  'deflector-tuning': 'Réglage des déflecteurs',
+  'needle-volley': 'Volée d’aiguilles',
+  'siphon-beam': 'Rayon siphon',
+  'overwhelming-barrage': 'Barrage écrasant',
+  'master-gunner': 'Maître canonnier',
 };
 
 const enemyNames: Record<string, string> = {
