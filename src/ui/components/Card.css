@@ -5,7 +5,9 @@
 
   position: relative;
   width: var(--card-w);
-  aspect-ratio: 5 / 7;
+  /* Taller than the classic 5:7. .card__text is flex:1, so the extra height
+     lands as breathing room between the effect text and the footer. */
+  aspect-ratio: 5 / 7.7;
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
@@ -148,8 +150,8 @@
 
 /* Rarity — machine label, footer of the card, colored by tier */
 .card__rarity {
-  margin: 0 0.5rem 0.45rem;
-  padding-top: 0.3rem;
+  margin: 0 0.5rem 0.5rem;
+  padding-top: 0.4rem;
   text-align: center;
   font-family: var(--mono);
   font-size: 0.55rem;
