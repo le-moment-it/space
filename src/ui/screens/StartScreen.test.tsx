@@ -23,7 +23,7 @@ describe('StartScreen', () => {
 
   it('disables launch and warns when the deck is short', () => {
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, loadoutCards: [{ cardId: 'kinetic-cannon', level: 0 }] },
+      meta: { ...s.meta, loadoutCards: [{ cardId: 'flak-burst', level: 0 }] },
     }));
     render(<StartScreen onEditDeck={() => {}} />);
     expect(screen.getByRole('button', { name: /launch new run/i })).toBeDisabled();

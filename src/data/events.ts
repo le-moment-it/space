@@ -34,7 +34,7 @@ export const eventDefinitions: EventDefinition[] = [
         label: 'Divert reactor power to stabilize it',
         effects: [
           { kind: 'hull', amount: -5 },
-          { kind: 'addCard', cardId: 'overcharge-reactor' },
+          { kind: 'addCard', cardId: 'overdrive-coils' },
         ],
       },
       { label: 'Overload and destroy it', effects: [{ kind: 'salvage', amount: 10 }] },

@@ -18,10 +18,10 @@ describe('i18n', () => {
 
   it('translates content by id, falling back to English when no override exists', () => {
     const fr = makeTranslator('fr');
-    expect(fr.cardName('kinetic-cannon')).toBe('Canon cinétique');
+    expect(fr.cardName('flak-burst')).toBe('Salve de flak');
     // English is read straight from the data file (no duplicate dictionary).
     const en = makeTranslator('en');
-    expect(en.cardName('kinetic-cannon')).toBe(cardDefinitions['kinetic-cannon'].name);
+    expect(en.cardName('flak-burst')).toBe(cardDefinitions['flak-burst'].name);
   });
 
   it('resolves scaled enemy ids back to the base name', () => {

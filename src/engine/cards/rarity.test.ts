@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cardDefinitions, defaultLoadoutCardIds, defaultUnlockedCardIds } from '../../data/cards';
 import { milestoneDefinitions } from '../../data/milestones';
-import { CARD_RARITIES, rarityOf } from './types';
+import { CARD_RARITIES, rarityOf, type CardDefinition } from './types';
 
 describe('card rarity', () => {
   it('defaults to common when a card declares no rarity', () => {
@@ -29,6 +29,57 @@ describe('card rarity', () => {
     }
   });
 });
+
+/** Total output per effect kind, so two cards can be compared line by line. */
+function payload(card: CardDefinition): Record<string, number> {
+  const out: Record<string, number> = {};
+  const add = (key: string, n: number) => (out[key] = (out[key] ?? 0) + n);
+  for (const e of [card.effect, ...(card.extraEffects ?? [])]) {
+    switch (e.kind) {
+      case 'damage':
+        add('damage', e.amount * (e.times ?? 1));
+        if ((e.times ?? 1) > 1) add('hits', e.times ?? 1);
+        break;
+      case 'charge':
+        add(`charge:${e.target}`, e.amount);
+        break;
+      case 'weaken':
+      case 'breach':
+        add(e.kind, e.amount);
+        add(`${e.kind}:turns`, 'duration' in e ? e.duration : e.amount);
+        break;
+      default:
+        add(e.kind, e.amount);
+    }
+  }
+  return out;
+}
+
+/**
+ * True when `a` costs the same, does everything `b` does at least as well, and beats
+ * it somewhere — i.e. `b` is a card no one would ever pick.
+ *
+ * Rarity is part of the comparison, not a loophole: a Legendary is *supposed* to beat
+ * a Common at equal cost, and only same-rarity pairs are a balance mistake. Multi-hit
+ * is treated as a difference rather than an upgrade, since splitting a total across
+ * several hits is worse against enemy shields.
+ */
+function strictlyBetter(a: CardDefinition, b: CardDefinition): boolean {
+  if (a.cost !== b.cost || a.type !== b.type || rarityOf(a) !== rarityOf(b)) return false;
+  if (a.exhaust && !b.exhaust) return false;
+
+  const pa = payload(a);
+  const pb = payload(b);
+  if (Object.keys(pb).some((k) => !(k in pa))) return false;
+  if ((pa.hits ?? 0) !== (pb.hits ?? 0)) return false;
+
+  let better = Object.keys(pa).some((k) => !(k in pb)) || (!a.exhaust && !!b.exhaust);
+  for (const [k, v] of Object.entries(pb)) {
+    if (pa[k] < v) return false;
+    if (pa[k] > v) better = true;
+  }
+  return better;
+}
 
 /**
  * A fresh profile builds its first deck out of the default-unlocked list, so anything
@@ -66,6 +117,20 @@ describe('unlock curve', () => {
       .map((c) => c.id)
       .filter((id) => !reachable.has(id));
     expect(stranded).toEqual([]);
+  });
+
+  it('offers no card that is strictly worse than another at the same cost', () => {
+    // Crew cards are exempt: they arrive bundled with the crew member you recruited,
+    // so two of them are never alternatives the player picks between.
+    const comparable = Object.values(cardDefinitions).filter((c) => c.type !== 'crew');
+
+    const dominated: string[] = [];
+    for (const a of comparable) {
+      for (const b of comparable) {
+        if (a.id !== b.id && strictlyBetter(a, b)) dominated.push(`${a.name} > ${b.name}`);
+      }
+    }
+    expect(dominated).toEqual([]);
   });
 
   it('gates the strongest cards behind the latest milestones', () => {

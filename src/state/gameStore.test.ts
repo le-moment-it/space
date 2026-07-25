@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptySave } from '../engine/save/schema';
+import { LOADOUT_SIZE } from '../engine/save/types';
 import { defaultUnlockedCardIds } from '../data/cards';
 import { milestoneDefinitions } from '../data/milestones';
 import { TOTAL_ACTS } from '../engine/run/types';
@@ -81,7 +82,7 @@ describe('gameStore — loadout', () => {
     useGameStore.setState({
       meta: {
         ...emptyMeta(),
-        unlockedCardIds: ['kinetic-cannon', 'flak-burst'],
+        unlockedCardIds: ['flak-burst', 'raise-shields'],
         loadoutCards: [],
       },
       run: null,
@@ -91,19 +92,19 @@ describe('gameStore — loadout', () => {
 
   it('adds an unlocked card and refuses an unlocked-but-unknown or locked one', () => {
     const store = () => useGameStore.getState();
-    store().addLoadoutCard('kinetic-cannon');
-    expect(store().meta.loadoutCards.map((c) => c.cardId)).toEqual(['kinetic-cannon']);
+    store().addLoadoutCard('flak-burst');
+    expect(store().meta.loadoutCards.map((c) => c.cardId)).toEqual(['flak-burst']);
 
     store().addLoadoutCard('does-not-exist');
-    store().addLoadoutCard('plasma-lance'); // real card, but not unlocked here
-    expect(store().meta.loadoutCards.map((c) => c.cardId)).toEqual(['kinetic-cannon']);
+    store().addLoadoutCard('siege-cannon'); // real card, but not unlocked here
+    expect(store().meta.loadoutCards.map((c) => c.cardId)).toEqual(['flak-burst']);
   });
 
   it('does not add past the loadout size cap', () => {
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, loadoutCards: Array(10).fill({ cardId: 'kinetic-cannon', level: 0 }) },
+      meta: { ...s.meta, loadoutCards: Array(10).fill({ cardId: 'flak-burst', level: 0 }) },
     }));
-    useGameStore.getState().addLoadoutCard('flak-burst');
+    useGameStore.getState().addLoadoutCard('raise-shields');
     expect(useGameStore.getState().meta.loadoutCards).toHaveLength(10);
   });
 
@@ -111,7 +112,7 @@ describe('gameStore — loadout', () => {
     useGameStore.setState((s) => ({
       meta: {
         ...s.meta,
-        loadoutCards: ['kinetic-cannon', 'flak-burst', 'kinetic-cannon'].map((cardId) => ({
+        loadoutCards: ['flak-burst', 'raise-shields', 'flak-burst'].map((cardId) => ({
           cardId,
           level: 0 as const,
         })),
@@ -119,8 +120,8 @@ describe('gameStore — loadout', () => {
     }));
     useGameStore.getState().removeLoadoutCard(1);
     expect(useGameStore.getState().meta.loadoutCards.map((c) => c.cardId)).toEqual([
-      'kinetic-cannon',
-      'kinetic-cannon',
+      'flak-burst',
+      'flak-burst',
     ]);
 
     useGameStore.getState().resetLoadout();
@@ -143,8 +144,8 @@ describe('gameStore — in-run cards stay in the run', () => {
     useGameStore.setState((s) => ({
       meta: {
         ...s.meta,
-        unlockedCardIds: ['kinetic-cannon'],
-        loadoutCards: Array(10).fill({ cardId: 'kinetic-cannon', level: 0 }),
+        unlockedCardIds: ['flak-burst'],
+        loadoutCards: Array(10).fill({ cardId: 'flak-burst', level: 0 }),
       },
     }));
     useGameStore.getState().startNewRun();
@@ -152,7 +153,7 @@ describe('gameStore — in-run cards stay in the run', () => {
     if (!run) throw new Error('run should exist after startNewRun');
 
     const unlockedBefore = [...useGameStore.getState().meta.unlockedCardIds];
-    const reward = 'plasma-lance';
+    const reward = 'siege-cannon';
     expect(unlockedBefore).not.toContain(reward);
 
     useGameStore.setState({
@@ -171,8 +172,8 @@ describe('gameStore — in-run cards stay in the run', () => {
     useGameStore.setState((s) => ({
       meta: {
         ...s.meta,
-        unlockedCardIds: ['kinetic-cannon'],
-        loadoutCards: Array(10).fill({ cardId: 'kinetic-cannon', level: 0 }),
+        unlockedCardIds: ['flak-burst'],
+        loadoutCards: Array(10).fill({ cardId: 'flak-burst', level: 0 }),
       },
     }));
     useGameStore.getState().startNewRun();
@@ -180,30 +181,30 @@ describe('gameStore — in-run cards stay in the run', () => {
     if (!run) throw new Error('run should exist after startNewRun');
 
     useGameStore.setState({
-      run: { ...run, phase: 'cardReward', cardRewardOptions: ['plasma-lance'] },
+      run: { ...run, phase: 'cardReward', cardRewardOptions: ['siege-cannon'] },
     });
-    useGameStore.getState().chooseCardReward('plasma-lance');
-    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).toContain('plasma-lance');
+    useGameStore.getState().chooseCardReward('siege-cannon');
+    expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).toContain('siege-cannon');
 
     useGameStore.getState().returnToHub();
     useGameStore.getState().startNewRun();
 
     expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).toEqual(
-      Array(10).fill('kinetic-cannon'),
+      Array(10).fill('flak-burst'),
     );
     expect(useGameStore.getState().run?.deckCards.map((c) => c.cardId)).not.toContain(
-      'plasma-lance',
+      'siege-cannon',
     );
   });
 });
 
 describe('gameStore — permanent card upgrades', () => {
-  const tenCannons = () =>
-    Array.from({ length: 10 }, () => ({ cardId: 'kinetic-cannon', level: 0 as const }));
+  const tenFlak = () =>
+    Array.from({ length: 10 }, () => ({ cardId: 'flak-burst', level: 0 as const }));
 
   const startAtBossReward = () => {
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, unlockedCardIds: ['kinetic-cannon'], loadoutCards: tenCannons() },
+      meta: { ...s.meta, unlockedCardIds: ['flak-burst'], loadoutCards: tenFlak() },
     }));
     useGameStore.getState().startNewRun();
     const run = useGameStore.getState().run;
@@ -251,7 +252,7 @@ describe('gameStore — permanent card upgrades', () => {
     if (!run) throw new Error('run');
     // A shop/reward pickup: no loadout slot.
     useGameStore.setState({
-      run: { ...run, deckCards: [...run.deckCards, { cardId: 'kinetic-cannon', level: 0 }] },
+      run: { ...run, deckCards: [...run.deckCards, { cardId: 'flak-burst', level: 0 }] },
     });
 
     useGameStore.getState().chooseCardUpgradeReward(10);
@@ -263,7 +264,7 @@ describe('gameStore — permanent card upgrades', () => {
 
   it('a garage upgrade never touches the loadout', () => {
     useGameStore.setState((s) => ({
-      meta: { ...s.meta, unlockedCardIds: ['kinetic-cannon'], loadoutCards: tenCannons() },
+      meta: { ...s.meta, unlockedCardIds: ['flak-burst'], loadoutCards: tenFlak() },
     }));
     useGameStore.getState().startNewRun();
     const run = useGameStore.getState().run;
@@ -283,9 +284,9 @@ describe('gameStore — permanent card upgrades', () => {
     useGameStore.setState((s) => ({
       meta: {
         ...s.meta,
-        unlockedCardIds: ['kinetic-cannon', 'flak-burst'],
+        unlockedCardIds: ['flak-burst', 'raise-shields'],
         loadoutCards: s.meta.loadoutCards.map((slot, i) =>
-          i === 3 ? { cardId: 'flak-burst', level: 0 as const } : slot,
+          i === 3 ? { cardId: 'raise-shields', level: 0 as const } : slot,
         ),
       },
     }));
@@ -466,18 +467,21 @@ describe('gameStore — unearned unlocks are revoked on import', () => {
     expect(useGameStore.getState().meta.unlockedCardIds).toContain('nanite-swarm');
   });
 
-  it('drops a revoked card from the loadout so the deck stays buildable', () => {
+  it('drops a revoked card from the loadout and tops the deck back up to full', () => {
     useGameStore.getState().importSave(
       saveWith({
         unlockedCardIds: [...defaultUnlockedCardIds, 'master-gunner'],
         loadoutCards: [
-          { cardId: 'kinetic-cannon', level: 0 },
+          { cardId: 'flak-burst', level: 0 },
           { cardId: 'master-gunner', level: 0 },
         ],
       }),
     );
 
     const loadout = useGameStore.getState().meta.loadoutCards.map((c) => c.cardId);
-    expect(loadout).toEqual(['kinetic-cannon']);
+    expect(loadout).not.toContain('master-gunner');
+    // Refilled from the default deck: a short loadout would leave Launch disabled.
+    expect(loadout).toHaveLength(LOADOUT_SIZE);
+    expect(loadout[0]).toBe('flak-burst');
   });
 });

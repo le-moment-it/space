@@ -232,15 +232,27 @@ function pruneUnearnedCards(meta: SaveMetaV6): SaveMetaV6 {
   }
 
   const unlockedCardIds = meta.unlockedCardIds.filter((id) => earned.has(id));
-  if (unlockedCardIds.length === meta.unlockedCardIds.length) return meta;
+  const loadoutCards = meta.loadoutCards.filter((slot) => earned.has(slot.cardId));
+  if (
+    unlockedCardIds.length === meta.unlockedCardIds.length &&
+    loadoutCards.length === meta.loadoutCards.length
+  ) {
+    return meta;
+  }
 
-  // A loadout slot holding a revoked card would be unbuildable and unremovable-by-adding;
-  // dropping it leaves a short loadout, which resolveLoadout already falls back from.
-  return {
-    ...meta,
-    unlockedCardIds,
-    loadoutCards: meta.loadoutCards.filter((slot) => earned.has(slot.cardId)),
-  };
+  // Losing a slot leaves a short deck, and the Start screen refuses to launch one —
+  // so a player whose deck held a card that later went away would find the button
+  // dead with no idea why. Top the deck back up from the default so the game stays
+  // playable, keeping the picks that survived.
+  const padded = [...loadoutCards];
+  if (loadoutCards.length < meta.loadoutCards.length) {
+    for (const cardId of defaultLoadoutCardIds) {
+      if (padded.length >= LOADOUT_SIZE) break;
+      padded.push({ cardId, level: 0 as const });
+    }
+  }
+
+  return { ...meta, unlockedCardIds, loadoutCards: padded };
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
