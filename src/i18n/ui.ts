@@ -66,11 +66,13 @@ const en = {
   'legend.signal': 'Signal',
   'legend.signal.hint': 'An unknown encounter',
   'legend.repair': 'Repair',
-  'legend.repair.hint': 'Mend hull or upgrade a card',
+  'legend.repair.hint': 'Restore hull',
   'legend.trade': 'Trade',
   'legend.trade.hint': 'Spend salvage',
   'legend.cache': 'Cache',
   'legend.cache.hint': 'Free loot',
+  'legend.garage': 'Garage',
+  'legend.garage.hint': 'Upgrade a card for this run',
   'legend.boss': 'Boss',
   'legend.boss.hint': 'Guards the way out',
 
@@ -192,6 +194,14 @@ const en = {
   'crew.welcomeAboard': 'Welcome aboard',
   'crew.leaveThem': 'Leave them',
 
+  // Garage screen
+  'garage.eyebrow': 'Refit bay',
+  'garage.title': 'Upgrade a card',
+  'garage.sub': 'Pick one card to improve. This refit lasts for this run only.',
+  'garage.leave': 'Leave',
+  'garage.maxed': 'Every card is fully upgraded.',
+  'garage.alreadyMax': 'Already fully upgraded',
+
   // Rest screen
   'rest.eyebrow': 'Repair bay',
   'rest.title': 'Systems restored',
@@ -305,11 +315,13 @@ const fr: Record<UiKey, string> = {
   'legend.signal': 'Signal',
   'legend.signal.hint': 'Une rencontre inconnue',
   'legend.repair': 'Réparation',
-  'legend.repair.hint': 'Réparer la coque ou améliorer une carte',
+  'legend.repair.hint': 'Réparer la coque',
   'legend.trade': 'Négoce',
   'legend.trade.hint': 'Dépenser de la ferraille',
   'legend.cache': 'Cache',
   'legend.cache.hint': 'Butin gratuit',
+  'legend.garage': 'Garage',
+  'legend.garage.hint': 'Améliorer une carte pour cette partie',
   'legend.boss': 'Boss',
   'legend.boss.hint': 'Garde la sortie',
 
@@ -433,6 +445,14 @@ const fr: Record<UiKey, string> = {
   'crew.grantsPassive': 'Confère un bonus passif tant qu’il est à bord.',
   'crew.welcomeAboard': 'Bienvenue à bord',
   'crew.leaveThem': 'Les laisser',
+
+  // Garage screen
+  'garage.eyebrow': 'Atelier de refonte',
+  'garage.title': 'Améliorer une carte',
+  'garage.sub': 'Choisissez une carte à améliorer. Cette refonte ne dure que pour cette partie.',
+  'garage.leave': 'Partir',
+  'garage.maxed': 'Toutes vos cartes sont au maximum.',
+  'garage.alreadyMax': 'Déjà au maximum',
 
   // Rest screen
   'rest.eyebrow': 'Baie de réparation',

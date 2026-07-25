@@ -9,6 +9,7 @@ import { CardRewardScreen } from './CardRewardScreen';
 import { CrewOfferScreen } from './CrewOfferScreen';
 import { DialogueScreen } from './DialogueScreen';
 import { EventScreen } from './EventScreen';
+import { GarageScreen } from './GarageScreen';
 import { MapScreen } from './MapScreen';
 import { RestScreen } from './RestScreen';
 import { RewardScreen } from './RewardScreen';
@@ -98,6 +99,7 @@ export function RunScreen() {
           {run.phase === 'rest' && <RestScreen run={run} />}
           {run.phase === 'shop' && <ShopScreen run={run} />}
           {run.phase === 'treasure' && <TreasureScreen run={run} />}
+          {run.phase === 'garage' && <GarageScreen run={run} />}
           {run.phase === 'cardReward' && (
             <CardRewardScreen run={run} onViewDeck={() => setDeckOpen(true)} />
           )}

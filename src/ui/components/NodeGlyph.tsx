@@ -47,6 +47,13 @@ function glyph(type: NodeType) {
           <path d="M8 13h16" />
         </>
       );
+    case 'garage':
+      // Wrench: a spanner head with a slot, over a diagonal shaft.
+      return (
+        <>
+          <path d="M20.5 7.5a4.6 4.6 0 0 1-6.1 6.1L9 19l-1.8 3.2L5 21.5l1-2.4 5.4-5.4a4.6 4.6 0 0 1 6.1-6.1l-2.7 2.7 1.9 1.9z" />
+        </>
+      );
     case 'boss':
       return (
         <>

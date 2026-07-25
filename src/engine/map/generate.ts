@@ -9,7 +9,15 @@ const NODE_TYPE_WEIGHTS: { value: NodeType; weight: number }[] = [
   { value: 'rest', weight: 10 },
   { value: 'shop', weight: 8 },
   { value: 'treasure', weight: 7 },
+  { value: 'garage', weight: 7 },
 ];
+
+/**
+ * Types that may not follow themselves along a path. Chaining two rests (or two
+ * garages) on one branch makes that branch strictly better than its neighbours,
+ * which is exactly the "trap vs free path" imbalance the layout tries to avoid.
+ */
+const NO_REPEAT_TYPES: NodeType[] = ['rest', 'garage'];
 
 function nodeId(layerIndex: number, index: number): string {
   return `l${layerIndex}n${index}`;
@@ -112,8 +120,8 @@ export function generateMap(rng: Rng, config: MapConfig = DEFAULT_MAP_CONFIG): M
   }
 
   // Step 5: assign node types. Layer 0 is always combat (a gentle, predictable
-  // opener). Elites are excluded below eliteMinLayerIndex; rest nodes can't
-  // directly follow another rest node.
+  // opener). Elites are excluded below eliteMinLayerIndex; the NO_REPEAT_TYPES
+  // can't directly follow a node of their own type.
   const types = new Map<string, NodeType>();
   for (let layerIndex = 0; layerIndex < config.layerCount; layerIndex++) {
     for (const id of layers[layerIndex]) {
@@ -122,11 +130,11 @@ export function generateMap(rng: Rng, config: MapConfig = DEFAULT_MAP_CONFIG): M
         continue;
       }
       const predecessorTypes = [...(incoming.get(id) ?? [])].map((predId) => types.get(predId));
-      const disallowRest = predecessorTypes.includes('rest');
       const disallowElite = layerIndex < config.eliteMinLayerIndex;
       const allowed = NODE_TYPE_WEIGHTS.filter(
         (entry) =>
-          !(entry.value === 'rest' && disallowRest) && !(entry.value === 'elite' && disallowElite),
+          !(NO_REPEAT_TYPES.includes(entry.value) && predecessorTypes.includes(entry.value)) &&
+          !(entry.value === 'elite' && disallowElite),
       );
       types.set(id, weightedPick(allowed, rng));
     }

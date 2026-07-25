@@ -20,6 +20,8 @@ import {
   playRunCombatCard,
   resolveCrewOffer,
   resolveEventChoice,
+  upgradableDeckIndices,
+  upgradeCardAtGarage,
 } from './resolve';
 import type { RunContent } from './types';
 import { TOTAL_ACTS } from './types';
@@ -32,11 +34,20 @@ const testMap: MapGraph = {
     midEvent: { id: 'midEvent', layerIndex: 1, type: 'event', next: ['midRest'] },
     midRest: { id: 'midRest', layerIndex: 2, type: 'rest', next: ['midShop'] },
     midShop: { id: 'midShop', layerIndex: 3, type: 'shop', next: ['midTreasure'] },
-    midTreasure: { id: 'midTreasure', layerIndex: 4, type: 'treasure', next: ['midElite'] },
-    midElite: { id: 'midElite', layerIndex: 5, type: 'elite', next: ['boss'] },
-    boss: { id: 'boss', layerIndex: 6, type: 'boss', next: [] },
+    midTreasure: { id: 'midTreasure', layerIndex: 4, type: 'treasure', next: ['midGarage'] },
+    midGarage: { id: 'midGarage', layerIndex: 5, type: 'garage', next: ['midElite'] },
+    midElite: { id: 'midElite', layerIndex: 6, type: 'elite', next: ['boss'] },
+    boss: { id: 'boss', layerIndex: 7, type: 'boss', next: [] },
   },
-  layers: [['entryCombat'], ['midEvent'], ['midRest'], ['midShop'], ['midTreasure'], ['midElite']],
+  layers: [
+    ['entryCombat'],
+    ['midEvent'],
+    ['midRest'],
+    ['midShop'],
+    ['midTreasure'],
+    ['midGarage'],
+    ['midElite'],
+  ],
   entryNodeIds: ['entryCombat'],
   bossNodeId: 'boss',
 };
@@ -267,7 +278,7 @@ describe('combat within a run', () => {
   it('offers elite-pool cards as the reward after winning an elite node', () => {
     const rng = createRng(4);
     let run = initRun(testMap, startingDeck);
-    run = { ...run, currentNodeId: 'midTreasure', visitedNodeIds: ['midTreasure'] };
+    run = { ...run, currentNodeId: 'midGarage', visitedNodeIds: ['midGarage'] };
     const content = makeContent();
     run = enterNode(run, 'midElite', content, rng);
     const card = run.activeCombat!.hand[0];
@@ -606,5 +617,93 @@ describe('treasure nodes', () => {
     run = leaveNode(run);
     expect(run.phase).toBe('map');
     expect(run.pendingReward).toBeNull();
+  });
+});
+
+describe('garage node', () => {
+  const enterGarage = (rng = createRng(70)) => {
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'midTreasure', visitedNodeIds: ['midTreasure'] };
+    return enterNode(run, 'midGarage', makeContent(), rng);
+  };
+
+  it('opens the garage phase on entry', () => {
+    const run = enterGarage();
+    expect(run.phase).toBe('garage');
+  });
+
+  it('upgrades exactly the chosen copy and returns to the map', () => {
+    const content = makeContent();
+    let run = enterGarage();
+    expect(run.deckCards[0].level).toBe(0);
+
+    run = upgradeCardAtGarage(run, 0, content);
+
+    expect(run.phase).toBe('map');
+    expect(run.deckCards[0].level).toBe(1);
+    // Sibling copies of the same card are untouched — upgrades are per copy.
+    expect(run.deckCards.slice(1).every((c) => c.level === 0)).toBe(true);
+  });
+
+  it('stacks to the cap and then refuses', () => {
+    const content = makeContent();
+    let run = enterGarage();
+    run = upgradeCardAtGarage(run, 0, content);
+    run = { ...run, phase: 'garage' };
+    run = upgradeCardAtGarage(run, 0, content);
+    expect(run.deckCards[0].level).toBe(2);
+
+    run = { ...run, phase: 'garage' };
+    const before = run;
+    run = upgradeCardAtGarage(run, 0, content);
+    expect(run).toBe(before); // already maxed — no-op
+  });
+
+  it('can be left without upgrading anything', () => {
+    const run = leaveNode(enterGarage());
+    expect(run.phase).toBe('map');
+    expect(run.deckCards.every((c) => c.level === 0)).toBe(true);
+  });
+
+  it('never writes anything outside the run deck', () => {
+    const content = makeContent();
+    const before = enterGarage();
+    const after = upgradeCardAtGarage(before, 0, content);
+    // Only the deck and the phase/log move; nothing else about the run changes.
+    expect({ ...after, deckCards: [], phase: 'x', log: [] }).toEqual({
+      ...before,
+      deckCards: [],
+      phase: 'x',
+      log: [],
+    });
+  });
+});
+
+describe('upgradableDeckIndices', () => {
+  it('offers every copy below the cap for a garage', () => {
+    const run = initRun(testMap, startingDeck);
+    expect(upgradableDeckIndices(run, false)).toHaveLength(startingDeck.length);
+  });
+
+  it('offers only loadout-derived copies when the upgrade would be permanent', () => {
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, deckCards: [...run.deckCards, { cardId: 'strike', level: 0 }] };
+
+    const permanent = upgradableDeckIndices(run, true);
+    const anyNode = upgradableDeckIndices(run, false);
+
+    expect(anyNode).toContain(run.deckCards.length - 1);
+    // The mid-run pickup has no loadout slot, so it cannot be made permanent.
+    expect(permanent).not.toContain(run.deckCards.length - 1);
+    expect(permanent).toHaveLength(startingDeck.length);
+  });
+
+  it('drops copies that are already at the cap', () => {
+    let run = initRun(testMap, startingDeck);
+    run = {
+      ...run,
+      deckCards: run.deckCards.map((c, i) => (i === 0 ? { ...c, level: 2 as const } : c)),
+    };
+    expect(upgradableDeckIndices(run, false)).not.toContain(0);
   });
 });

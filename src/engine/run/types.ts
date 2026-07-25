@@ -15,6 +15,7 @@ export type RunPhase =
   | 'rest'
   | 'shop'
   | 'treasure'
+  | 'garage'
   | 'cardReward'
   | 'reward'
   | 'runWon'

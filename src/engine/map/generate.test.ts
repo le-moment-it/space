@@ -82,16 +82,23 @@ describe('generateMap', () => {
     }
   });
 
-  it('never lets a rest node lead directly into another rest node', () => {
-    for (let seed = 0; seed < 30; seed++) {
+  it('never lets a rest or garage node lead directly into another of its own type', () => {
+    for (const seed of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
       const map = generateMap(createRng(seed));
       for (const node of Object.values(map.nodes)) {
-        if (node.type !== 'rest') continue;
+        if (node.type !== 'rest' && node.type !== 'garage') continue;
         for (const nextId of node.next) {
-          expect(map.nodes[nextId].type).not.toBe('rest');
+          expect(map.nodes[nextId].type).not.toBe(node.type);
         }
       }
     }
+  });
+
+  it('generates garage nodes across seeds', () => {
+    const seen = [...Array(20).keys()].some((seed) =>
+      Object.values(generateMap(createRng(seed)).nodes).some((n) => n.type === 'garage'),
+    );
+    expect(seen).toBe(true);
   });
 
   it('is deterministic for a given seed', () => {

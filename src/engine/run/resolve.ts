@@ -1,4 +1,5 @@
 import type { CardDefinition, DeckCard } from '../cards/types';
+import { MAX_UPGRADE_LEVEL, nextLevel } from '../cards/types';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
 import { DEFAULT_COMBAT_CONFIG } from '../combat/types';
 import { generateMap } from '../map/generate';
@@ -195,9 +196,64 @@ export function enterNode(
         ],
       };
     }
-    default:
-      return base;
+    case 'garage': {
+      return {
+        ...base,
+        phase: 'garage',
+        log: [...base.log, 'Docked at a refit garage.'],
+      };
+    }
+    default: {
+      // Exhaustive: a new node type must declare what entering it does, rather
+      // than silently consuming the node and leaving the player on the map.
+      const exhaustive: never = node.type;
+      throw new Error(`Unhandled node type: ${String(exhaustive)}`);
+    }
   }
+}
+
+/**
+ * Deck indices the player may upgrade right now.
+ * `permanentOnly` restricts it to copies fielded from a loadout slot — the only
+ * ones an act-end reward can upgrade forever. Derived, never stored, so it can
+ * never go stale against the deck.
+ */
+export function upgradableDeckIndices(runState: RunState, permanentOnly: boolean): number[] {
+  return runState.deckCards.flatMap((card, i) =>
+    card.level < MAX_UPGRADE_LEVEL && (!permanentOnly || card.loadoutIndex !== undefined)
+      ? [i]
+      : [],
+  );
+}
+
+/** Raises one deck copy a tier. Shared by the garage and the act-end reward. */
+function withUpgradedCopy(runState: RunState, deckIndex: number): DeckCard[] {
+  return runState.deckCards.map((card, i) =>
+    i === deckIndex ? { ...card, level: nextLevel(card.level) } : card,
+  );
+}
+
+/**
+ * Garage: upgrade one card for the rest of this run. Deliberately ignores
+ * loadoutIndex and never touches meta — "this run only" is enforced by the
+ * engine having no way to write permanent state, not merely by intent.
+ */
+export function upgradeCardAtGarage(
+  runState: RunState,
+  deckIndex: number,
+  content: RunContent,
+): RunState {
+  if (runState.phase !== 'garage') return runState;
+  if (!upgradableDeckIndices(runState, false).includes(deckIndex)) return runState;
+
+  const card = runState.deckCards[deckIndex];
+  const name = content.cardDefinitions[card.cardId]?.name ?? card.cardId;
+  return {
+    ...runState,
+    deckCards: withUpgradedCopy(runState, deckIndex),
+    phase: 'map',
+    log: [...runState.log, `Refit ${name} (+${nextLevel(card.level)}) for this run.`],
+  };
 }
 
 function resolveCombatOutcome(runState: RunState): RunState {
@@ -428,10 +484,10 @@ export function buyShopItem(runState: RunState, index: number, content: RunConte
   };
 }
 
-/** Leaves a rest/shop/treasure node, returning to the map. */
+/** Leaves a rest/shop/treasure/garage node, returning to the map. */
 export function leaveNode(runState: RunState): RunState {
-  if (runState.phase !== 'shop' && runState.phase !== 'treasure' && runState.phase !== 'rest')
-    return runState;
+  const leavable = ['shop', 'treasure', 'rest', 'garage'];
+  if (!leavable.includes(runState.phase)) return runState;
   return { ...runState, phase: 'map', shopOffer: null, pendingReward: null };
 }
 

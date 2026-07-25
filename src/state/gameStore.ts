@@ -30,6 +30,7 @@ import {
   playRunCombatCard,
   resolveCrewOffer,
   resolveEventChoice,
+  upgradeCardAtGarage,
 } from '../engine/run/resolve';
 import { DEFAULT_RUN_CONFIG, type RunContent, type RunState } from '../engine/run/types';
 import type { DeckCard } from '../engine/cards/types';
@@ -163,6 +164,8 @@ interface GameStore {
   resolveCrewOffer: (accept: boolean) => void;
   dismissDialogue: () => void;
   buyItem: (index: number) => void;
+  /** Garage: upgrade one deck copy for the rest of this run. */
+  upgradeCardAtGarage: (deckIndex: number) => void;
   leaveNode: () => void;
   returnToHub: () => void;
   dismissEnding: () => void;
@@ -251,6 +254,8 @@ export const useGameStore = create<GameStore>((set, get) => {
     resolveCrewOffer: (accept) => withRun((run, content) => resolveCrewOffer(run, accept, content)),
     dismissDialogue: () => withRun((run) => dismissDialogue(run)),
     buyItem: (index) => withRun((run, content) => buyShopItem(run, index, content)),
+    upgradeCardAtGarage: (deckIndex) =>
+      withRun((run, content) => upgradeCardAtGarage(run, deckIndex, content)),
     leaveNode: () => withRun((run) => leaveNode(run)),
 
     returnToHub: () => {

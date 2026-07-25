@@ -11,6 +11,7 @@ const LEGEND: { type: NodeType; label: UiKey; hint: UiKey }[] = [
   { type: 'rest', label: 'legend.repair', hint: 'legend.repair.hint' },
   { type: 'shop', label: 'legend.trade', hint: 'legend.trade.hint' },
   { type: 'treasure', label: 'legend.cache', hint: 'legend.cache.hint' },
+  { type: 'garage', label: 'legend.garage', hint: 'legend.garage.hint' },
   { type: 'boss', label: 'legend.boss', hint: 'legend.boss.hint' },
 ];
 

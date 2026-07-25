@@ -1,4 +1,5 @@
-export type NodeType = 'combat' | 'elite' | 'event' | 'rest' | 'shop' | 'treasure' | 'boss';
+export type NodeType =
+  'combat' | 'elite' | 'event' | 'rest' | 'shop' | 'treasure' | 'garage' | 'boss';
 
 export interface MapNode {
   id: string;
