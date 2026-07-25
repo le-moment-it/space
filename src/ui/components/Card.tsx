@@ -42,7 +42,9 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
           {effect.times && effect.times > 1 ? (
             <>
               {' '}
-              <b className="kw kw--damage">×{effect.times}</b>
+              <Keyword id="multihit" className="kw kw--damage kw--term">
+                ×{effect.times}
+              </Keyword>
             </>
           ) : null}
           .
@@ -81,7 +83,10 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
     case 'weaken':
       return (
         <>
-          {t('effect.weaken')} —{' '}
+          <Keyword id="weaken" className="kw kw--weaken kw--term">
+            {t('effect.weaken')}
+          </Keyword>{' '}
+          —{' '}
           <b className="kw kw--weaken">
             −{effect.amount} {t('effect.damage')}
           </b>{' '}
@@ -103,16 +108,19 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
       return (
         <>
           {t('effect.apply')}{' '}
-          <b className="kw kw--corrosion">
+          <Keyword id="corrosion" className="kw kw--corrosion kw--term">
             {effect.amount} {t('effect.corrosion')}
-          </b>
+          </Keyword>
           .
         </>
       );
     case 'breach':
       return (
         <>
-          <b className="kw kw--corrosion">{t('effect.breach')}</b> {t('effect.for')}{' '}
+          <Keyword id="breach" className="kw kw--corrosion kw--term">
+            {t('effect.breach')}
+          </Keyword>{' '}
+          {t('effect.for')}{' '}
           <b className="kw">
             {effect.amount} {t('effect.turns')}
           </b>
@@ -122,23 +130,26 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
     case 'calibration':
       return (
         <>
-          <b className="kw kw--damage">
+          <Keyword id="calibration" className="kw kw--damage kw--term">
             +{effect.amount} {t('effect.damage')}
-          </b>{' '}
+          </Keyword>{' '}
           {t('effect.perAttack')}.
         </>
       );
     case 'deflector':
       return (
         <>
-          <b className="kw kw--shield">+{effect.amount}</b> {t('effect.perShield')}.
+          <Keyword id="deflector" className="kw kw--shield kw--term">
+            +{effect.amount}
+          </Keyword>{' '}
+          {t('effect.perShield')}.
         </>
       );
     case 'charge':
       return (
         <>
           {t('effect.double')}{' '}
-          <b className="kw kw--charge">
+          <Keyword id="charge" className="kw kw--charge kw--term">
             {t(
               effect.target === 'damage'
                 ? 'effect.nextAttack'
@@ -146,7 +157,7 @@ export function EffectText({ effect, t }: { effect: CardEffect; t: Translator['t
                   ? 'effect.nextShield'
                   : 'effect.nextRepair',
             )}
-          </b>
+          </Keyword>
           .
         </>
       );

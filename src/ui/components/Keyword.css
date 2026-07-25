@@ -40,3 +40,12 @@
   line-height: 1.4;
   color: var(--ink-dim);
 }
+
+/* Inline in a card's effect text: keeps the semantic colour of the surrounding
+   phrase (damage red, shield cyan) and only borrows the dotted "look me up" rule,
+   so a keyword still reads as what it does. */
+.kw--term {
+  border-bottom: 1px dotted currentColor;
+  padding-bottom: 1px;
+  cursor: help;
+}

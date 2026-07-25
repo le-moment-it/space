@@ -1,5 +1,6 @@
 import type { StatusId } from '../../engine/combat/status';
 import type { UiKey } from '../../i18n';
+import type { KeywordId } from './Keyword';
 
 /**
  * i18n keys per status, in one compile-checked place.
@@ -52,4 +53,19 @@ export const STATUS_IS_BUFF: Record<StatusId, boolean> = {
   chargeDamage: true,
   chargeShield: true,
   chargeHeal: true,
+};
+
+/**
+ * The keyword explainer behind each status chip, so a status you meet mid-fight is
+ * as interrogable as one printed on a card. The three charges share one rule.
+ */
+export const STATUS_KEYWORD: Record<StatusId, KeywordId> = {
+  weaken: 'weaken',
+  corrosion: 'corrosion',
+  breach: 'breach',
+  calibration: 'calibration',
+  deflector: 'deflector',
+  chargeDamage: 'charge',
+  chargeShield: 'charge',
+  chargeHeal: 'charge',
 };

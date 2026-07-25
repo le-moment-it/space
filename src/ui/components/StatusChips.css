@@ -39,3 +39,10 @@
   opacity: 0.65;
   font-size: 0.62rem;
 }
+
+/* Chips are right-clickable explainers too — the dotted rule is the same "look me
+   up" affordance the card faces use. */
+.statuschip {
+  border-bottom-style: dotted;
+  cursor: help;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation, type UiKey } from '../../i18n';
 import './Keyword.css';
@@ -9,6 +9,13 @@ import './Keyword.css';
  */
 export const KEYWORDS = {
   exhaust: { label: 'keyword.exhaust', desc: 'keyword.exhaust.desc' },
+  corrosion: { label: 'keyword.corrosion', desc: 'keyword.corrosion.desc' },
+  breach: { label: 'keyword.breach', desc: 'keyword.breach.desc' },
+  multihit: { label: 'keyword.multihit', desc: 'keyword.multihit.desc' },
+  weaken: { label: 'keyword.weaken', desc: 'keyword.weaken.desc' },
+  calibration: { label: 'keyword.calibration', desc: 'keyword.calibration.desc' },
+  deflector: { label: 'keyword.deflector', desc: 'keyword.deflector.desc' },
+  charge: { label: 'keyword.charge', desc: 'keyword.charge.desc' },
 } as const satisfies Record<string, { label: UiKey; desc: UiKey }>;
 
 export type KeywordId = keyof typeof KEYWORDS;
@@ -24,7 +31,17 @@ const LONG_PRESS_MS = 450;
  * The popover is portalled to <body> because .card sets overflow:hidden and gets a
  * transform on hover, either of which would clip or trap a positioned child.
  */
-export function Keyword({ id }: { id: KeywordId }) {
+export function Keyword({
+  id,
+  className,
+  children,
+}: {
+  id: KeywordId;
+  /** Overrides the default footer-chip styling — used inline and on status chips. */
+  className?: string;
+  /** Custom content; defaults to the keyword's own label. */
+  children?: ReactNode;
+}) {
   const { t } = useTranslation();
   const [at, setAt] = useState<{ x: number; y: number } | null>(null);
   const longPress = useRef<number | null>(null);
@@ -62,7 +79,7 @@ export function Keyword({ id }: { id: KeywordId }) {
   return (
     <>
       <span
-        className="kwchip"
+        className={className ?? 'kwchip'}
         title={desc}
         onContextMenu={(e) => {
           e.preventDefault();
@@ -88,7 +105,7 @@ export function Keyword({ id }: { id: KeywordId }) {
         }}
         onTouchMove={cancelLongPress}
       >
-        {label}
+        {children ?? label}
       </span>
 
       {at && createPortal(<KeywordCard label={label} desc={desc} at={at} />, document.body)}

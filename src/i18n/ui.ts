@@ -117,6 +117,28 @@ const en = {
   'keyword.exhaust.desc':
     'When you play this card, it leaves the fight instead of going to your discard pile, so you cannot draw it again this combat. It returns to your deck for the next fight.',
 
+  'keyword.corrosion': 'Corrosion',
+  'keyword.corrosion.desc':
+    'Damage over time. At the end of your turn the enemy loses hull equal to its Corrosion, then the Corrosion drops by 1. Applying more adds to it, so it pays off most when applied early.',
+  'keyword.breach': 'Breach',
+  'keyword.breach.desc':
+    'While Breached, the enemy takes 50% more damage from every attack. It lasts for the listed number of turns, so it is worth opening a big turn with.',
+  'keyword.multihit': 'Multiple hits',
+  'keyword.multihit.desc':
+    'This attack lands as separate hits. Enemy shields absorb from each hit individually, so it is weaker against shields — but every per-attack bonus, like Calibration, counts on every hit.',
+  'keyword.weaken': 'Weaken',
+  'keyword.weaken.desc':
+    'The enemy deals that much less damage with its attacks, for the listed number of turns. Applying more adds to it.',
+  'keyword.calibration': 'Calibration',
+  'keyword.calibration.desc':
+    'Every attack you make deals this much extra damage for the rest of the combat. It applies to each hit of a multi-hit attack.',
+  'keyword.deflector': 'Deflector Tuning',
+  'keyword.deflector.desc':
+    'Every time you gain shields for the rest of the combat, you gain this much extra.',
+  'keyword.charge': 'Charge',
+  'keyword.charge.desc':
+    'Your next effect of the matching kind is doubled, then the charge is spent. A charge is used once per card, not once per hit of a multi-hit attack.',
+
   // Battle screen
   'battle.hostileContact': 'Hostile contact',
   'battle.yourShip': 'Your ship',
@@ -397,6 +419,28 @@ const fr: Record<UiKey, string> = {
   'keyword.exhaust': 'Épuisement',
   'keyword.exhaust.desc':
     'Quand vous jouez cette carte, elle quitte le combat au lieu d’aller dans votre défausse : vous ne pouvez plus la piocher pendant ce combat. Elle revient dans votre deck au combat suivant.',
+
+  'keyword.corrosion': 'Corrosion',
+  'keyword.corrosion.desc':
+    'Dégâts sur la durée. À la fin de votre tour, l’ennemi perd autant de coque que sa Corrosion, puis la Corrosion baisse de 1. En appliquer davantage s’additionne : elle rapporte donc le plus quand elle est appliquée tôt.',
+  'keyword.breach': 'Brèche',
+  'keyword.breach.desc':
+    'Tant qu’il est en Brèche, l’ennemi subit 50 % de dégâts en plus de chaque attaque. Cela dure le nombre de tours indiqué : idéal pour ouvrir un gros tour.',
+  'keyword.multihit': 'Coups multiples',
+  'keyword.multihit.desc':
+    'Cette attaque touche en plusieurs coups distincts. Les boucliers ennemis absorbent sur chaque coup séparément — elle est donc plus faible contre les boucliers, mais chaque bonus par attaque, comme le Calibrage, compte sur chaque coup.',
+  'keyword.weaken': 'Affaiblissement',
+  'keyword.weaken.desc':
+    'L’ennemi inflige d’autant moins de dégâts avec ses attaques, pendant le nombre de tours indiqué. En appliquer davantage s’additionne.',
+  'keyword.calibration': 'Calibrage',
+  'keyword.calibration.desc':
+    'Chacune de vos attaques inflige autant de dégâts supplémentaires pour le reste du combat. S’applique à chaque coup d’une attaque à coups multiples.',
+  'keyword.deflector': 'Réglage des déflecteurs',
+  'keyword.deflector.desc':
+    'Chaque fois que vous gagnez des boucliers pour le reste du combat, vous en gagnez autant en plus.',
+  'keyword.charge': 'Charge',
+  'keyword.charge.desc':
+    'Votre prochain effet du type correspondant est doublé, puis la charge est consommée. Une charge s’utilise une fois par carte, pas une fois par coup d’une attaque à coups multiples.',
 
   // Battle screen
   'battle.hostileContact': 'Contact hostile',
