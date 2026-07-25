@@ -59,3 +59,49 @@ export function weightedPick<T>(entries: readonly { value: T; weight: number }[]
   }
   return entries[entries.length - 1].value;
 }
+
+/**
+ * Picks up to `count` DISTINCT values, weighted by a grouping key.
+ *
+ * `weightedPick` alone cannot do this: called repeatedly it returns duplicates, and
+ * every card offer needs distinct cards. This rolls a group (e.g. a rarity tier) per
+ * slot, then takes an unused item from it, and only ever rolls among groups that
+ * still have something left — so a pool missing a tier degrades gracefully instead
+ * of returning short or throwing.
+ */
+export function weightedSample<T>(
+  items: readonly T[],
+  count: number,
+  groupOf: (item: T) => string,
+  weights: Record<string, number>,
+  rng: Rng,
+): T[] {
+  const remaining = new Map<string, T[]>();
+  for (const item of items) {
+    const key = groupOf(item);
+    const bucket = remaining.get(key);
+    if (bucket) bucket.push(item);
+    else remaining.set(key, [item]);
+  }
+
+  const picked: T[] = [];
+  while (picked.length < count && remaining.size > 0) {
+    const entries = [...remaining.keys()]
+      .map((key) => ({ value: key, weight: weights[key] ?? 0 }))
+      .filter((entry) => entry.weight > 0);
+    // Every remaining group has zero weight — fall back to any of them rather than
+    // silently returning fewer cards than asked for.
+    const key = entries.length > 0 ? weightedPick(entries, rng) : rng.pick([...remaining.keys()]);
+
+    const bucket = remaining.get(key);
+    if (!bucket || bucket.length === 0) {
+      remaining.delete(key);
+      continue;
+    }
+    const index = rng.nextInt(bucket.length);
+    picked.push(bucket[index]);
+    bucket.splice(index, 1);
+    if (bucket.length === 0) remaining.delete(key);
+  }
+  return picked;
+}

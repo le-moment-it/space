@@ -755,3 +755,78 @@ describe('effective combat config persists across turns', () => {
     expect(run.activeCombat?.player.power).toBe(turn1Power); // used to drop to 3
   });
 });
+
+describe('rarity-weighted offers', () => {
+  /** A pool with one card per tier, so tier selection is directly observable. */
+  const tieredContent = () => {
+    const defs: Record<string, CardDefinition> = {
+      ...cardDefinitions,
+      cCommon: { ...cardDefinitions.strike, id: 'cCommon' },
+      cRare: { ...cardDefinitions.strike, id: 'cRare', rarity: 'rare' },
+      cEpic: { ...cardDefinitions.strike, id: 'cEpic', rarity: 'epic' },
+      cLegend: { ...cardDefinitions.strike, id: 'cLegend', rarity: 'legendary' },
+    };
+    return makeContent({
+      cardDefinitions: defs,
+      shopCardPool: ['cCommon', 'cRare', 'cEpic', 'cLegend'],
+      treasureCardPool: ['cCommon', 'cRare', 'cEpic', 'cLegend'],
+      eliteRewardCardIds: ['cCommon', 'cRare', 'cEpic', 'cLegend'],
+    });
+  };
+
+  it('offers 3 distinct cards after a combat win', () => {
+    const content = tieredContent();
+    for (const seed of [10, 11, 12, 13, 14]) {
+      const rng = createRng(seed);
+      let run = initRun(testMap, startingDeck);
+      run = enterNode(run, 'entryCombat', content, rng);
+      run = playRunCombatCard(run, run.activeCombat!.hand[0].instanceId, content, rng);
+      run = acknowledgeCombat(run, content, rng);
+      const options = run.cardRewardOptions ?? [];
+      expect(options).toHaveLength(3);
+      expect(new Set(options).size).toBe(3);
+    }
+  });
+
+  it('favours commons at a normal fight and rarer cards at an elite', () => {
+    const content = tieredContent();
+    const tierCounts = (elite: boolean) => {
+      let common = 0;
+      let high = 0;
+      for (let seed = 0; seed < 60; seed++) {
+        const rng = createRng(seed);
+        let run = initRun(testMap, startingDeck);
+        if (elite) run = { ...run, currentNodeId: 'midGarage', visitedNodeIds: ['midGarage'] };
+        run = enterNode(run, elite ? 'midElite' : 'entryCombat', content, rng);
+        run = playRunCombatCard(run, run.activeCombat!.hand[0].instanceId, content, rng);
+        run = acknowledgeCombat(run, content, rng);
+        for (const id of run.cardRewardOptions ?? []) {
+          if (id === 'cCommon') common++;
+          if (id === 'cEpic' || id === 'cLegend') high++;
+        }
+      }
+      return { common, high };
+    };
+
+    const normal = tierCounts(false);
+    const elite = tierCounts(true);
+    // Elites are the reliable route to high rarity.
+    expect(elite.high).toBeGreaterThan(normal.high);
+  });
+
+  it('charges a rarity premium in the shop', () => {
+    const content = tieredContent();
+    const rng = createRng(20);
+    let run = initRun(testMap, startingDeck);
+    run = { ...run, currentNodeId: 'midRest', visitedNodeIds: ['midRest'] };
+    run = enterNode(run, 'midShop', content, rng);
+
+    for (const item of run.shopOffer ?? []) {
+      const def = content.cardDefinitions[item.cardId];
+      const base = 20 + def.cost * 15;
+      // A common pays the base; anything rarer pays strictly more.
+      if (item.cardId === 'cCommon') expect(item.price).toBe(base);
+      else expect(item.price).toBeGreaterThan(base);
+    }
+  });
+});

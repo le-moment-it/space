@@ -1,12 +1,13 @@
-import type { CardDefinition, DeckCard } from '../cards/types';
-import { MAX_UPGRADE_LEVEL, nextLevel } from '../cards/types';
+import type { DeckCard } from '../cards/types';
+import { MAX_UPGRADE_LEVEL, nextLevel, rarityOf } from '../cards/types';
+import { RARITY_ODDS, RARITY_PRICE_PREMIUM, type OfferSource } from '../cards/rarityOdds';
 import { endPlayerTurn, initCombat, playCard } from '../combat/resolve';
 import { DEFAULT_COMBAT_CONFIG, type CombatConfig } from '../combat/types';
 import { generateMap } from '../map/generate';
 import { DEFAULT_MAP_CONFIG } from '../map/types';
 import { applyShipSystems } from '../shipSystems/apply';
 import type { ShipSystemDefinition } from '../shipSystems/types';
-import { shuffle, type Rng } from '../rng';
+import { shuffle, weightedSample, type Rng } from '../rng';
 import type { MapGraph } from '../map/types';
 import type { RunConfig, RunContent, RunState, ShopOfferItem } from './types';
 import { DEFAULT_RUN_CONFIG, TOTAL_ACTS } from './types';
@@ -46,10 +47,24 @@ export function initRun(
   };
 }
 
-/** The 3 cards offered after a win: the elite pool for elites, the general run pool otherwise. */
-function generateCardReward(isElite: boolean, content: RunContent, rng: Rng): string[] {
-  const pool = isElite ? content.eliteRewardCardIds : content.shopCardPool;
-  return shuffle(pool, rng).slice(0, 3);
+/**
+ * Draws `count` distinct cards from a pool, weighted by rarity for that source.
+ * Rarity is what makes a card rare — the pools themselves are no longer curated.
+ */
+function offerCards(
+  pool: readonly string[],
+  count: number,
+  source: OfferSource,
+  content: RunContent,
+  rng: Rng,
+): string[] {
+  return weightedSample(
+    pool,
+    count,
+    (id) => rarityOf(content.cardDefinitions[id] ?? {}),
+    RARITY_ODDS[source],
+    rng,
+  );
 }
 
 /**
@@ -99,12 +114,18 @@ export function getAvailableNodeIds(runState: RunState): string[] {
 
 function generateShopOffer(
   pool: readonly string[],
-  cardDefinitions: Record<string, CardDefinition>,
+  content: RunContent,
   rng: Rng,
 ): ShopOfferItem[] {
-  return shuffle(pool, rng)
-    .slice(0, 3)
-    .map((cardId) => ({ cardId, price: 20 + cardDefinitions[cardId].cost * 15, purchased: false }));
+  return offerCards(pool, 3, 'shop', content, rng).map((cardId) => {
+    const def = content.cardDefinitions[cardId];
+    return {
+      cardId,
+      // Energy cost sets the base; rarity is what you actually pay for.
+      price: 20 + def.cost * 15 + RARITY_PRICE_PREMIUM[rarityOf(def)],
+      purchased: false,
+    };
+  });
 }
 
 export function enterNode(
@@ -184,7 +205,7 @@ export function enterNode(
       };
     }
     case 'shop': {
-      const shopOffer = generateShopOffer(content.shopCardPool, content.cardDefinitions, rng);
+      const shopOffer = generateShopOffer(content.shopCardPool, content, rng);
       return {
         ...base,
         phase: 'shop',
@@ -193,7 +214,9 @@ export function enterNode(
       };
     }
     case 'treasure': {
-      const cardId = rng.pick(content.treasureCardPool);
+      const cardId =
+        offerCards(content.treasureCardPool, 1, 'cache', content, rng)[0] ??
+        rng.pick(content.treasureCardPool);
       const salvageGain = Math.round(15 * rewardMultiplierForAct(runState.act));
       return {
         ...base,
@@ -346,7 +369,14 @@ export function acknowledgeCombat(runState: RunState, content: RunContent, rng: 
       return { ...runState, phase: 'reward', activeCombat: null, rewardOptions };
     }
     // Regular / elite win: offer a card to add to the deck (Slay-the-Spire style).
-    const cardRewardOptions = generateCardReward(node?.type === 'elite', content, rng);
+    const isElite = node?.type === 'elite';
+    const cardRewardOptions = offerCards(
+      isElite ? content.eliteRewardCardIds : content.shopCardPool,
+      3,
+      isElite ? 'elite' : 'combat',
+      content,
+      rng,
+    );
     if (cardRewardOptions.length === 0) {
       return { ...runState, phase: 'map', activeCombat: null };
     }
