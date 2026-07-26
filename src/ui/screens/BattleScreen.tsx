@@ -278,8 +278,10 @@ function EnergyOrb({ current, max, t }: { current: number; max: number; t: Trans
       title={t('battle.reactorPower', { current, max })}
       aria-label={t('battle.powerAria', { current, max })}
     >
-      <span className="orb__value mono">{current}</span>
-      <span className="orb__max mono">/{max}</span>
+      <span className="orb__readout">
+        <span className="orb__value mono">{current}</span>
+        <span className="orb__max mono">/{max}</span>
+      </span>
     </span>
   );
 }

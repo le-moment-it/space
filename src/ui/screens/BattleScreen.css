@@ -101,11 +101,14 @@
 }
 
 /* The energy orb — the resource you spend, sized like it matters. */
+/*
+ * Grid + place-items so the readout is centred on the circle. Laying the value and
+ * the max out as baseline-aligned flex children left the group sitting high and to
+ * the left, because the small "/3" only adds width on one side.
+ */
 .orb {
-  display: inline-flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.05rem;
+  display: inline-grid;
+  place-items: center;
   width: 62px;
   height: 62px;
   flex: none;
@@ -119,6 +122,11 @@
   transition:
     box-shadow 0.2s ease,
     filter 0.2s ease;
+}
+.orb__readout {
+  display: flex;
+  align-items: baseline;
+  gap: 0.05rem;
 }
 .orb__value {
   font-size: 1.5rem;

@@ -17,6 +17,9 @@
  */
 .handfan__slot {
   --lift: 28px;
+  --slot-z: 1;
+
+  z-index: var(--slot-z);
 
   position: relative;
   flex: 0 0 auto;
@@ -43,11 +46,17 @@
     box-shadow 0.16s ease;
 }
 
-/* Straighten, rise and grow — the card you are about to play, pulled from the hand. */
+/*
+ * Rise and grow, keeping the card's angle.
+ *
+ * Straightening on hover looked wrong — the card swung as it rose rather than being
+ * drawn out of the hand — and it is the same move that made the upgrade-preview fan
+ * oscillate. A card pulled from a real hand keeps its tilt.
+ */
 .handfan__slot:hover .handfan__card,
 .handfan__slot:hover .handfan__card:active,
 .handfan__slot:focus-within .handfan__card {
-  transform: translateY(calc(-1 * var(--lift))) rotate(0deg) scale(1.08);
+  transform: translateY(calc(var(--fan-drop) - var(--lift))) rotate(var(--fan-rotate)) scale(1.08);
 }
 .handfan__slot:hover,
 .handfan__slot:focus-within {

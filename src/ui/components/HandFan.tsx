@@ -84,7 +84,9 @@ export function HandFan({ slots }: { slots: HandSlot[] }) {
             style={{
               // Slots overlap; later cards sit on top, the way a held hand looks.
               marginLeft: i === 0 ? 0 : `${step - CARD_W}px`,
-              zIndex: i + 1,
+              // A custom property, not `zIndex`: an inline z-index beats any stylesheet
+              // rule, so the hover rule could never lift a card above its neighbour.
+              ['--slot-z' as string]: i + 1,
               ['--fan-rotate' as string]: `${offset * SPREAD_DEG}deg`,
               ['--fan-drop' as string]: `${offset * offset * ARC_PX}px`,
             }}
