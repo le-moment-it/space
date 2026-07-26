@@ -1,0 +1,84 @@
+.handfan {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  width: 100%;
+  /* The slots are taller than the cards; nothing here should clip the lift. */
+  overflow: visible;
+}
+
+/*
+ * The stable hit area.
+ *
+ * Deliberately taller than the card and never transformed: the card lifts *within*
+ * this box, so a hovered card can straighten and rise without the pointer falling
+ * outside the element that owns the hover. Transforming the hovered element itself
+ * is what made the upgrade-preview fan oscillate.
+ */
+.handfan__slot {
+  --lift: 28px;
+
+  position: relative;
+  flex: 0 0 auto;
+  padding-top: var(--lift);
+  display: flex;
+  align-items: flex-end;
+}
+
+/*
+ * The global `button:active { transform: translateY(1px) }` in index.css applies to
+ * .card and is not overridden anywhere — pressing a fanned card would drop its
+ * rotation for the duration of the press. These rules win it back.
+ *
+ * `touch-action: none` stops the browser claiming the gesture as a scroll before
+ * pointermove ever reaches us, which is what makes drag work on a touchscreen.
+ */
+.handfan__card,
+.handfan__card:active {
+  touch-action: none;
+  transform: translateY(var(--fan-drop)) rotate(var(--fan-rotate));
+  transform-origin: 50% 120%;
+  transition:
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.16s ease;
+}
+
+/* Straighten, rise and grow — the card you are about to play, pulled from the hand. */
+.handfan__slot:hover .handfan__card,
+.handfan__slot:hover .handfan__card:active,
+.handfan__slot:focus-within .handfan__card {
+  transform: translateY(calc(-1 * var(--lift))) rotate(0deg) scale(1.08);
+}
+.handfan__slot:hover,
+.handfan__slot:focus-within {
+  /* Above every neighbour, not just the ones dealt before it. */
+  z-index: 50;
+}
+
+/* Held: the card follows the pointer and leaves the fan's geometry behind. */
+/* Dragging beats hover and :active both — the card is following the pointer. */
+.handfan__slot .handfan__card--dragging,
+.handfan__slot:hover .handfan__card--dragging,
+.handfan__card--dragging:active {
+  transform: translate(var(--drag-x), var(--drag-y)) rotate(0deg) scale(1.04);
+  transition: none;
+  cursor: grabbing;
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.55);
+}
+.handfan__slot:has(.handfan__card--dragging) {
+  z-index: 60;
+}
+
+/* Over the arena and ready to resolve. */
+.handfan__card--armed {
+  box-shadow:
+    0 0 0 2px var(--signal),
+    0 24px 44px rgba(0, 0, 0, 0.55),
+    0 0 34px var(--signal-glow);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .handfan__card {
+    transition: none;
+  }
+}

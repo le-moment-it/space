@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { cardDefinitions } from '../../data/cards';
 import type { CombatState, Intent } from '../../engine/combat/types';
 import { resolveCard } from '../../engine/cards/types';
@@ -8,6 +8,8 @@ import { useTranslation, type Translator } from '../../i18n';
 import { Card } from '../components/Card';
 import { CardListModal } from '../components/CardListModal';
 import { PileIcon } from '../components/PileIcon';
+import { HandFan, type HandSlot } from '../components/HandFan';
+import { useCardDrag } from '../components/useCardDrag';
 import './BattleScreen.css';
 
 const PILES = {
@@ -27,12 +29,56 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
   const tr = useTranslation();
   const { t, enemyName } = tr;
   const [openPile, setOpenPile] = useState<'draw' | 'discard' | 'exhaust' | null>(null);
+  const arenaRef = useRef<HTMLDivElement>(null);
   const isPlayerTurn = combat.phase === 'playerTurn';
   const { player, enemy } = combat;
 
+  const { drag, onPointerDown, onPointerMove, onPointerUp, onPointerCancel, consumedClick } =
+    useCardDrag({ dropRef: arenaRef, onDrop: onPlayCard });
+
+  const slots: HandSlot[] = combat.hand.map((instance) => {
+    const def = cardDefinitions[instance.cardId];
+    // Cost must come from the *upgraded* card: a cost-reducing upgrade would
+    // otherwise grey out a card the engine would happily let you play.
+    const playable = isPlayerTurn && player.power >= resolveCard(def, instance.level).cost;
+    const dragging = drag.active && drag.instanceId === instance.instanceId;
+
+    return {
+      key: instance.instanceId,
+      render: ({ className }) => (
+        <Card
+          card={def}
+          level={instance.level}
+          playable={playable}
+          className={[
+            className,
+            dragging ? 'handfan__card--dragging' : '',
+            dragging && drag.overTarget ? 'handfan__card--armed' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          style={
+            dragging
+              ? ({ '--drag-x': `${drag.dx}px`, '--drag-y': `${drag.dy}px` } as React.CSSProperties)
+              : undefined
+          }
+          onPointerDown={playable ? onPointerDown(instance.instanceId) : undefined}
+          onPointerMove={playable ? onPointerMove : undefined}
+          onPointerUp={playable ? onPointerUp : undefined}
+          onPointerCancel={playable ? onPointerCancel : undefined}
+          onClick={() => {
+            // The click that follows a completed drag would otherwise play it twice.
+            if (consumedClick()) return;
+            onPlayCard(instance.instanceId);
+          }}
+        />
+      ),
+    };
+  });
+
   return (
     <section className="battle">
-      <div className="battle__combatants">
+      <div ref={arenaRef} className={`battle__arena${drag.active ? ' battle__arena--armed' : ''}`}>
         <div className="combatant combatant--enemy">
           <p className="eyebrow combatant__tag">{t('battle.hostileContact')}</p>
           <h3 className="combatant__name">{enemyName(enemy.id)}</h3>
@@ -46,79 +92,64 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
           {enemy.shield > 0 && <ShieldChip value={enemy.shield} t={t} />}
         </div>
 
+        <p className="battle__drophint mono">{t('battle.dropHint')}</p>
+
         <div className="combatant combatant--player">
           <p className="eyebrow combatant__tag">{t('battle.yourShip')}</p>
-          <div className="combatant__resources">
-            <PowerPips current={player.power} max={player.maxPower} t={t} />
-            {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
-          </div>
           <StatusChips statuses={player.statuses} />
           <HpBar value={player.hull} max={player.maxHull} tone="hull" t={t} />
+          {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
         </div>
       </div>
 
-      <div className="battle__hand" role="list" aria-label={t('battle.yourHand')}>
-        {combat.hand.map((instance) => {
-          const def = cardDefinitions[instance.cardId];
-          // Cost must come from the *upgraded* card: a cost-reducing upgrade would
-          // otherwise grey out a card the engine would happily let you play.
-          const playable = isPlayerTurn && player.power >= resolveCard(def, instance.level).cost;
-          return (
-            <div role="listitem" key={instance.instanceId}>
-              <Card
-                card={def}
-                level={instance.level}
-                playable={playable}
-                onClick={() => onPlayCard(instance.instanceId)}
-              />
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="battle__bar">
-        <div className="piles">
-          <button
-            className="pile"
+      {/* The table edge: what you spend on the left, what you do on the right, and
+          the hand you hold between them. */}
+      <div className="battle__table">
+        <div className="battle__side">
+          <EnergyOrb current={player.power} max={player.maxPower} t={t} />
+          <PileButton
+            variant="draw"
+            count={combat.drawPile.length}
+            label={t('pile.draw')}
             onClick={() => setOpenPile('draw')}
-            title={t('pile.draw')}
-            aria-label={`${t('pile.draw')}: ${combat.drawPile.length}`}
-          >
-            <PileIcon variant="draw" />
-            <span className="pile__label">{t('pile.draw')}</span>
-            <span className="pile__count mono">{combat.drawPile.length}</span>
-          </button>
-          <button
-            className="pile"
-            onClick={() => setOpenPile('discard')}
-            title={t('pile.discard')}
-            aria-label={`${t('pile.discard')}: ${combat.discardPile.length}`}
-          >
-            <PileIcon variant="discard" />
-            <span className="pile__label">{t('pile.discard')}</span>
-            <span className="pile__count mono">{combat.discardPile.length}</span>
-          </button>
-          {/* Only surfaces once something is exhausted — decks without exhaust
-              cards never see a pile that would always read zero. */}
-          {combat.exhaustPile.length > 0 && (
-            <button
-              className="pile pile--exhaust"
-              onClick={() => setOpenPile('exhaust')}
-              title={t('pile.exhaust')}
-              aria-label={`${t('pile.exhaust')}: ${combat.exhaustPile.length}`}
-            >
-              <PileIcon variant="exhaust" />
-              <span className="pile__label">{t('pile.exhaust')}</span>
-              <span className="pile__count mono">{combat.exhaustPile.length}</span>
-            </button>
-          )}
-          <span className="pilecount mono">
-            {t('battle.turn')} <b>{combat.turn}</b>
-          </span>
+          />
         </div>
-        <button className="btn-primary" disabled={!isPlayerTurn} onClick={onEndTurn}>
-          {t('battle.endTurn')}
-        </button>
+
+        <div className="battle__hand" role="list" aria-label={t('battle.yourHand')}>
+          <HandFan
+            slots={slots.map((slot) => ({
+              ...slot,
+              render: (props) => <div role="listitem">{slot.render(props)}</div>,
+            }))}
+          />
+        </div>
+
+        <div className="battle__side battle__side--right">
+          <button className="btn-primary battle__end" disabled={!isPlayerTurn} onClick={onEndTurn}>
+            {t('battle.endTurn')}
+            <span className="battle__turn mono">
+              {t('battle.turn')} {combat.turn}
+            </span>
+          </button>
+          <div className="battle__piles">
+            <PileButton
+              variant="discard"
+              count={combat.discardPile.length}
+              label={t('pile.discard')}
+              onClick={() => setOpenPile('discard')}
+            />
+            {/* Only surfaces once something is exhausted — decks without exhaust
+                cards never see a pile that would always read zero. */}
+            {combat.exhaustPile.length > 0 && (
+              <PileButton
+                variant="exhaust"
+                count={combat.exhaustPile.length}
+                label={t('pile.exhaust')}
+                onClick={() => setOpenPile('exhaust')}
+              />
+            )}
+          </div>
+        </div>
       </div>
 
       {openPile && (
@@ -150,6 +181,30 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
         </div>
       )}
     </section>
+  );
+}
+
+function PileButton({
+  variant,
+  count,
+  label,
+  onClick,
+}: {
+  variant: 'draw' | 'discard' | 'exhaust';
+  count: number;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={`pile pile--${variant}`}
+      onClick={onClick}
+      title={label}
+      aria-label={`${label}: ${count}`}
+    >
+      <PileIcon variant={variant} />
+      <span className="pile__count mono">{count}</span>
+    </button>
   );
 }
 
@@ -215,16 +270,16 @@ function ShieldChip({ value, t }: { value: number; t: Translator['t'] }) {
   );
 }
 
-function PowerPips({ current, max, t }: { current: number; max: number; t: Translator['t'] }) {
+/** The resource you spend, sized like it matters — not a row of status dots. */
+function EnergyOrb({ current, max, t }: { current: number; max: number; t: Translator['t'] }) {
   return (
     <span
-      className="pips"
+      className={`orb${current === 0 ? ' orb--spent' : ''}`}
       title={t('battle.reactorPower', { current, max })}
       aria-label={t('battle.powerAria', { current, max })}
     >
-      {Array.from({ length: max }).map((_, i) => (
-        <span key={i} className={i < current ? 'pip pip--on' : 'pip'} />
-      ))}
+      <span className="orb__value mono">{current}</span>
+      <span className="orb__max mono">/{max}</span>
     </span>
   );
 }

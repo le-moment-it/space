@@ -207,7 +207,9 @@
 }
 
 /* States */
-.card--interactive:hover:not([aria-disabled='true']) {
+/* The hand fan positions its own cards, so it opts out of this lift: two transforms
+   on one element is how a fanned card starts sliding out from under the cursor. */
+.card--interactive:hover:not([aria-disabled='true']):not(.card--positioned) {
   transform: translateY(-6px);
   border-color: var(--accent);
   box-shadow:

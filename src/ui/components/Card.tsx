@@ -189,6 +189,17 @@ interface CardProps {
   playable?: boolean;
   dimmed?: boolean;
   onClick?: () => void;
+  /**
+   * Extra classes and pointer handlers for a card in hand. The hand fan positions and
+   * transforms the card itself, so it also opts out of the built-in hover lift below —
+   * two competing transforms on one element is how the fan starts fighting the cursor.
+   */
+  className?: string;
+  style?: React.CSSProperties;
+  onPointerDown?: (e: React.PointerEvent) => void;
+  onPointerMove?: (e: React.PointerEvent) => void;
+  onPointerUp?: (e: React.PointerEvent) => void;
+  onPointerCancel?: (e: React.PointerEvent) => void;
 }
 
 export function Card({
@@ -199,6 +210,12 @@ export function Card({
   playable = false,
   dimmed = false,
   onClick,
+  className: extraClassName,
+  style,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+  onPointerCancel,
 }: CardProps) {
   const { t, cardName } = useTranslation();
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -227,6 +244,9 @@ export function Card({
     playable ? 'card--playable' : '',
     dimmed ? 'card--dimmed' : '',
     interactive ? 'card--interactive' : '',
+    // The fan owns this card's transform; suppress the card's own hover lift.
+    extraClassName ? 'card--positioned' : '',
+    extraClassName ?? '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -242,6 +262,7 @@ export function Card({
       <button
         type="button"
         className={className}
+        style={style}
         data-type={card.type}
         data-rarity={rarity}
         // aria-disabled rather than the disabled attribute: a natively disabled
@@ -260,6 +281,10 @@ export function Card({
                 onClick?.();
               }
         }
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
         onContextMenu={
           previewable
             ? (e) => {

@@ -17,6 +17,11 @@
   gap: 1.25rem;
   min-width: 0;
 }
+/* The battle stage flexes to fill the column, so its table edge lands at the bottom
+   rather than floating under short content. */
+.run__fight > .battle {
+  flex: 1;
+}
 @media (max-width: 820px) {
   .run--combat {
     grid-template-columns: 1fr;

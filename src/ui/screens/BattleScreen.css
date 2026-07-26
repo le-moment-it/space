@@ -2,19 +2,129 @@
 .battle {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
   min-width: 0;
+  /* Tall enough that the table sits at the bottom edge rather than floating up
+     under the arena. Matches the log rail beside it, so the row stays level. */
+  min-height: min(70vh, 620px);
 }
 
-.battle__combatants {
+/*
+ * The arena: the two combatants, and the region a card must be dropped on to be
+ * played. It flexes so the table below is always pinned to the bottom.
+ */
+.battle__arena {
+  flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+  align-content: start;
+  border: 1px dashed transparent;
+  border-radius: var(--radius-lg);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+/* Armed while a card is held: the drop target has to be obvious mid-drag. */
+.battle__arena--armed {
+  border-color: color-mix(in srgb, var(--signal) 55%, transparent);
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, var(--signal-soft), transparent 70%);
+}
+.battle__drophint {
+  grid-column: 1 / -1;
+  align-self: center;
+  text-align: center;
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--signal);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.battle__arena--armed .battle__drophint {
+  opacity: 1;
 }
 @media (max-width: 640px) {
-  .battle__combatants {
+  .battle__arena {
     grid-template-columns: 1fr;
   }
+}
+
+/*
+ * The table edge: what you spend on the left, what you do on the right, the hand
+ * between. A three-column grid with auto flanks keeps the fan centred on the screen
+ * no matter how wide the sides get.
+ */
+.battle__table {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+}
+.battle__side {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.battle__side--right {
+  flex-direction: row-reverse;
+}
+.battle__piles {
+  display: flex;
+  gap: 0.4rem;
+}
+.battle__hand {
+  min-width: 0;
+}
+.battle__end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+.battle__turn {
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  opacity: 0.7;
+}
+
+/* The energy orb — the resource you spend, sized like it matters. */
+.orb {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.05rem;
+  width: 62px;
+  height: 62px;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 32%, var(--signal-hi), var(--signal) 62%, #0d5f5c);
+  border: 2px solid var(--signal-hi);
+  box-shadow:
+    0 0 18px var(--signal-glow),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.35);
+  color: var(--void);
+  transition:
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+.orb__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.orb__max {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+/* Spent: still legible, obviously empty. */
+.orb--spent {
+  filter: saturate(0.25) brightness(0.7);
+  box-shadow: none;
 }
 
 .combatant {
@@ -45,19 +155,6 @@
 .combatant__name {
   font-size: 1.25rem;
   margin-bottom: 0.6rem;
-}
-.combatant__status {
-  font-family: var(--mono);
-  font-size: 0.75rem;
-  color: var(--threat);
-  margin-bottom: 0.5rem;
-}
-.combatant__resources {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.7rem;
-  min-height: 26px;
 }
 
 /* Intent readout — the telegraph */
@@ -146,58 +243,7 @@
   border-radius: 999px;
 }
 
-/* Reactor power pips */
-.pips {
-  display: inline-flex;
-  gap: 0.3rem;
-}
-.pip {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1.5px solid var(--line-2);
-  background: var(--void);
-}
-.pip--on {
-  border-color: var(--signal);
-  background: radial-gradient(circle at 50% 35%, var(--signal-hi), var(--signal));
-  box-shadow: 0 0 8px var(--signal-glow);
-}
-
-/* Hand */
-.battle__hand {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0;
-  min-height: 250px;
-}
-
-.battle__bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--line);
-}
-.pilecount {
-  font-size: 0.8rem;
-  color: var(--ink-dim);
-}
-.pilecount b {
-  color: var(--ink);
-}
-
 /* Draw / discard pile buttons — open a modal listing that pile's cards. */
-.piles {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
 .pile {
   display: inline-flex;
   align-items: center;
@@ -223,15 +269,9 @@
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--hazard) 20%, transparent);
 }
 .pileicon {
-  width: 17px;
-  height: 17px;
+  width: 20px;
+  height: 20px;
   flex: none;
-}
-.pile__label {
-  font-family: var(--mono);
-  font-size: 0.66rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 .pile__count {
   font-size: 0.85rem;
@@ -241,9 +281,6 @@
 
 /* On the narrowest layouts the labels drop out — icon + count still read clearly. */
 @media (max-width: 480px) {
-  .pile__label {
-    display: none;
-  }
 }
 
 /* Win / loss overlay */
