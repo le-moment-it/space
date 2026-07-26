@@ -46,13 +46,25 @@
   --tone: var(--ink-faint);
 }
 
-/* A card outcome takes the accent of the card type it grants. */
+/*
+ * A card outcome takes the accent of the card type it grants. It carries more text
+ * than the others — the card's name plus what it actually does — since "+ Hull Patch"
+ * alone reads as an instant effect rather than a card joining the deck for later.
+ */
 .outcome--card {
   --tone: var(--card-maneuver);
+  white-space: normal;
+  gap: 0.35rem;
 }
 .outcome--card[data-type='weapon'] {
   --tone: var(--card-weapon);
 }
 .outcome--card[data-type='shipSystem'] {
   --tone: var(--card-shipsystem);
+}
+.outcome__cardEffect {
+  padding-left: 0.35rem;
+  border-left: 1px solid color-mix(in srgb, var(--tone) 35%, transparent);
+  color: var(--ink-dim);
+  font-weight: 500;
 }

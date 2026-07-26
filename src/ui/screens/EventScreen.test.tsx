@@ -30,10 +30,18 @@ describe('EventScreen', () => {
     expect(within(dock).getByText('+25 salvage')).toBeInTheDocument();
   });
 
-  it('names the card a choice grants', () => {
+  it('names the card a choice grants, makes clear it joins the deck, and says what it does', () => {
     render(<EventScreen run={runOn('adrift-cargo-pod')} />);
 
-    expect(screen.getByText(`+ ${cardDefinitions['hull-patch'].name}`)).toBeInTheDocument();
+    // A card reward is not an instant effect — it is drawn and played later, like
+    // every other card reward in the game. The chip has to say so, or "+ Hull Patch"
+    // reads as an immediate heal that never happens.
+    const chip = screen
+      .getByText(new RegExp(cardDefinitions['hull-patch'].name))
+      .closest('.outcome');
+    expect(chip).toHaveTextContent(cardDefinitions['hull-patch'].name);
+    expect(chip).toHaveTextContent(/deck/i);
+    expect(chip).toHaveTextContent(/repair.*5.*hull/i);
   });
 
   it('says so when a choice does nothing', () => {

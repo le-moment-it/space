@@ -276,7 +276,7 @@ const en = {
   'event.outcome.hullLoss': '−{amount} hull',
   'event.outcome.hullGain': '+{amount} hull',
   'event.outcome.salvage': '+{amount} salvage',
-  'event.outcome.card': '+ {name}',
+  'event.outcome.card': '+ {name} (to deck)',
   'event.outcome.nothing': 'No effect',
 
   // Crew screens
@@ -732,7 +732,7 @@ const fr: Record<UiKey, string> = {
   'event.outcome.hullLoss': '−{amount} coque',
   'event.outcome.hullGain': '+{amount} coque',
   'event.outcome.salvage': '+{amount} ferraille',
-  'event.outcome.card': '+ {name}',
+  'event.outcome.card': '+ {name} (dans le deck)',
   'event.outcome.nothing': 'Aucun effet',
 
   // Crew screens

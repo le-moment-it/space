@@ -1,9 +1,11 @@
 import { cardDefinitions } from '../../data/cards';
 import { eventDefinitions } from '../../data/events';
+import { effectsOf } from '../../engine/cards/types';
 import type { EventEffect } from '../../engine/events/types';
 import type { RunState } from '../../engine/run/types';
 import { useTranslation, type Translator } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
+import { EffectText } from '../components/Card';
 import './EventScreen.css';
 
 export function EventScreen({ run }: { run: RunState }) {
@@ -61,12 +63,27 @@ function Outcome({ effect, tr }: { effect: EventEffect; tr: Translator }) {
           {t('event.outcome.salvage', { amount: effect.amount })}
         </span>
       );
-    case 'addCard':
+    case 'addCard': {
+      // "+ Hull Patch" alone reads as an instant effect. It is not one — like every
+      // other card reward in the game, it joins the deck to be drawn and played later,
+      // so the chip says "to deck" and states what the card actually does.
+      const card = cardDefinitions[effect.cardId];
       return (
-        <span className="outcome outcome--card" data-type={cardDefinitions[effect.cardId]?.type}>
+        <span className="outcome outcome--card" data-type={card?.type}>
           {t('event.outcome.card', { name: cardName(effect.cardId) })}
+          {card && (
+            <span className="outcome__cardEffect">
+              {effectsOf(card).map((cardEffect, i) => (
+                <span key={i}>
+                  {i > 0 && ' '}
+                  <EffectText effect={cardEffect} t={t} />
+                </span>
+              ))}
+            </span>
+          )}
         </span>
       );
+    }
     case 'nothing':
       return <span className="outcome outcome--nothing">{t('event.outcome.nothing')}</span>;
     default: {
