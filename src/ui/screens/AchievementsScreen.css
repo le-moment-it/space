@@ -49,6 +49,21 @@
   text-shadow: 0 0 8px var(--signal-glow);
 }
 
+/* A card's name is a peek at the card itself, not just a label. */
+.milestone__card {
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  border: none;
+  background: none;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.milestone__card:hover {
+  color: var(--signal);
+}
+
 /* Codex */
 .codex-grid {
   display: grid;

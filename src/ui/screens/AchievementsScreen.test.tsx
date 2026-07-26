@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AchievementsScreen } from './AchievementsScreen';
 
@@ -15,5 +15,17 @@ describe('AchievementsScreen', () => {
     expect(screen.getByText('Progress')).toBeInTheDocument();
     expect(screen.getByText('Crew codex')).toBeInTheDocument();
     expect(screen.getByText('Endings')).toBeInTheDocument();
+  });
+
+  it('opens a card preview when a level-unlock card name is clicked', () => {
+    render(<AchievementsScreen />);
+
+    // The ladder used to name unlockable cards in plain text — a player could not
+    // tell what "Backup Generator" actually does without reaching that level first.
+    fireEvent.click(screen.getByRole('button', { name: 'Backup Generator' }));
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveTextContent('Backup Generator');
+    expect(dialog).toHaveTextContent(/1 power/i);
   });
 });

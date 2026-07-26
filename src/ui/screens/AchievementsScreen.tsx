@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { cardDefinitions } from '../../data/cards';
 import { crewDefinitions } from '../../data/crew';
 import { endingDefinitions } from '../../data/endings';
 import {
@@ -8,6 +10,7 @@ import {
 } from '../../engine/progression/level';
 import { useTranslation } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
+import { UpgradePreview } from '../components/UpgradePreview';
 import './AchievementsScreen.css';
 
 export function AchievementsScreen() {
@@ -15,6 +18,7 @@ export function AchievementsScreen() {
   const viewEnding = useGameStore((s) => s.viewEnding);
   const tr = useTranslation();
   const { t } = tr;
+  const [previewCardId, setPreviewCardId] = useState<string | null>(null);
 
   const { level, into, span, atMax } = levelProgress(meta.xp);
   const upcoming = nextUnlock(level);
@@ -74,7 +78,14 @@ export function AchievementsScreen() {
                   <span className="milestone__mark">{done ? '◆' : '◇'}</span>
                   <span>
                     {t('level.short', { level: unlock.level })} ·{' '}
-                    {unlock.cardIds.map((id) => tr.cardName(id)).join(', ')}
+                    {unlock.cardIds.map((id, i) => (
+                      <span key={id}>
+                        {i > 0 && ', '}
+                        <button className="milestone__card" onClick={() => setPreviewCardId(id)}>
+                          {tr.cardName(id)}
+                        </button>
+                      </span>
+                    ))}
                   </span>
                 </li>
               );
@@ -166,6 +177,14 @@ export function AchievementsScreen() {
           })}
         </div>
       </div>
+
+      {previewCardId && (
+        <UpgradePreview
+          card={cardDefinitions[previewCardId]}
+          level={0}
+          onClose={() => setPreviewCardId(null)}
+        />
+      )}
     </section>
   );
 }
