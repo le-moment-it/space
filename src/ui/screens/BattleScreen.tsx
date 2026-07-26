@@ -79,6 +79,15 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
   return (
     <section className="battle">
       <div ref={arenaRef} className={`battle__arena${drag.active ? ' battle__arena--armed' : ''}`}>
+        <div className="combatant combatant--player">
+          <p className="eyebrow combatant__tag">{t('battle.yourShip')}</p>
+          <StatusChips statuses={player.statuses} />
+          <HpBar value={player.hull} max={player.maxHull} tone="hull" t={t} />
+          {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
+        </div>
+
+        <p className="battle__drophint mono">{t('battle.dropHint')}</p>
+
         <div className="combatant combatant--enemy">
           <p className="eyebrow combatant__tag">{t('battle.hostileContact')}</p>
           <h3 className="combatant__name">{enemyName(enemy.id)}</h3>
@@ -90,15 +99,6 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
           <StatusChips statuses={enemy.statuses} />
           <HpBar value={enemy.hull} max={enemy.maxHull} tone="threat" t={t} />
           {enemy.shield > 0 && <ShieldChip value={enemy.shield} t={t} />}
-        </div>
-
-        <p className="battle__drophint mono">{t('battle.dropHint')}</p>
-
-        <div className="combatant combatant--player">
-          <p className="eyebrow combatant__tag">{t('battle.yourShip')}</p>
-          <StatusChips statuses={player.statuses} />
-          <HpBar value={player.hull} max={player.maxHull} tone="hull" t={t} />
-          {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
         </div>
       </div>
 

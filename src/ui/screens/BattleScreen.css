@@ -17,10 +17,8 @@
   position: relative;
   flex: 1;
   display: grid;
-  /* Capped rather than 1fr 1fr: on a wide table the combatant panels would otherwise
-     stretch to half the screen each and the fight would read as two long banners. */
-  grid-template-columns: repeat(2, minmax(0, 460px));
-  justify-content: center;
+  /* Both halves take the full table: your ship on the left, the threat on the right. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   align-content: start;
   /* Each panel takes its own height: the ship side holds less than the enemy side,
