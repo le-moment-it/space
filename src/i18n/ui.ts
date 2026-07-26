@@ -272,6 +272,12 @@ const en = {
 
   // Event screen
   'event.eyebrow': 'Anomaly',
+  // What a choice costs and pays, printed on its button.
+  'event.outcome.hullLoss': '−{amount} hull',
+  'event.outcome.hullGain': '+{amount} hull',
+  'event.outcome.salvage': '+{amount} salvage',
+  'event.outcome.card': '+ {name}',
+  'event.outcome.nothing': 'No effect',
 
   // Crew screens
   'crew.distressSignal': 'Distress signal',
@@ -723,6 +729,11 @@ const fr: Record<UiKey, string> = {
 
   // Event screen
   'event.eyebrow': 'Anomalie',
+  'event.outcome.hullLoss': '−{amount} coque',
+  'event.outcome.hullGain': '+{amount} coque',
+  'event.outcome.salvage': '+{amount} ferraille',
+  'event.outcome.card': '+ {name}',
+  'event.outcome.nothing': 'Aucun effet',
 
   // Crew screens
   'crew.distressSignal': 'Signal de détresse',
