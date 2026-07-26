@@ -14,11 +14,18 @@
  * played. It flexes so the table below is always pinned to the bottom.
  */
 .battle__arena {
+  position: relative;
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  /* Capped rather than 1fr 1fr: on a wide table the combatant panels would otherwise
+     stretch to half the screen each and the fight would read as two long banners. */
+  grid-template-columns: repeat(2, minmax(0, 460px));
+  justify-content: center;
+  gap: 1.5rem;
   align-content: start;
+  /* Each panel takes its own height: the ship side holds less than the enemy side,
+     and stretching it to match just prints a tall empty box. */
+  align-items: start;
   border: 1px dashed transparent;
   border-radius: var(--radius-lg);
   transition:
@@ -30,9 +37,11 @@
   border-color: color-mix(in srgb, var(--signal) 55%, transparent);
   background: radial-gradient(ellipse 70% 60% at 50% 50%, var(--signal-soft), transparent 70%);
 }
+/* Taken out of the grid flow: as a full-width grid item it split the two combatants
+   onto separate rows, which stacked them vertically and wasted half the table. */
 .battle__drophint {
-  grid-column: 1 / -1;
-  align-self: center;
+  position: absolute;
+  inset: auto 0 1rem;
   text-align: center;
   font-size: 0.66rem;
   letter-spacing: 0.16em;

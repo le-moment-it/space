@@ -118,3 +118,11 @@
   margin: 0 auto;
   padding: 1.75rem 1.5rem 3rem;
 }
+/*
+ * Combat only. Everything else is reading material and stays in the 1100px column,
+ * but a fight is a table: the hand needs room to lay out without cards burying each
+ * other's text. Still capped, so an ultra-wide monitor doesn't stretch it to nonsense.
+ */
+.app-main--wide {
+  max-width: 1800px;
+}

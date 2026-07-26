@@ -7,10 +7,17 @@ const SPREAD_DEG = 5;
 const ARC_PX = 5;
 /** Card width — must match `--card-w` in Card.css. */
 const CARD_W = 158;
-/** Widest gap between successive cards: the roomy look a small hand gets. */
-const MAX_STEP = 112;
-/** Tightest gap. Below this a card is a sliver you cannot read or aim at. */
-const MIN_STEP = 16;
+/**
+ * Widest gap between successive cards. Wider than a card, so a hand that fits does
+ * not overlap at all — overlap costs you the effect text, and a card you cannot read
+ * is a card you cannot choose.
+ */
+const MAX_STEP = CARD_W + 10;
+/**
+ * Tightest gap. Enough to keep the cost pip and the start of the name visible, so a
+ * crowded hand is still countable and aimable; hover pulls the card out to read it.
+ */
+const MIN_STEP = 42;
 
 export interface HandSlot {
   key: string;
@@ -22,9 +29,12 @@ export interface HandSlot {
  * The distance between one card's left edge and the next, chosen so the whole hand
  * fits `width`.
  *
- * Fixed overlap does not work: the fan spills outward from the centre, and at seven
- * cards it was sitting on top of the energy orb and the End Turn button — the hand
- * looked like one row only because it was free to overrun its column.
+ * Overlap is a last resort rather than the default look: cards spread to their full
+ * width whenever the table is wide enough, and only slide over each other as the hand
+ * grows past what the space allows.
+ *
+ * Fixed overlap does not work either way — the fan spills outward from the centre, and
+ * at seven cards it sat on top of the energy orb and the End Turn button.
  */
 function stepFor(count: number, width: number): number {
   if (count < 2) return MAX_STEP;

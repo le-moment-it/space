@@ -102,7 +102,13 @@ export function App() {
         </div>
       </header>
 
-      <main className="app-main">
+      {/* A fight gets the whole window: the 1100px reading column squeezed the hand
+          into an unreadable overlap and left the sides empty. Keyed on what is actually
+          on screen, not just the run phase — otherwise opening Deck or Rules mid-fight
+          stretches a page of prose across the whole monitor. */}
+      <main
+        className={`app-main${tab === 'game' && runPhase === 'combat' ? ' app-main--wide' : ''}`}
+      >
         {tab === 'game' &&
           (inRun ? <RunScreen /> : <StartScreen onEditDeck={() => setTab('deck')} />)}
         {tab === 'deck' && <DeckScreen />}
