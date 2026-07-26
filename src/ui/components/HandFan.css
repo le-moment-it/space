@@ -64,13 +64,12 @@
   z-index: 50;
 }
 
-/* Held: the card follows the pointer and leaves the fan's geometry behind. */
-/* Dragging beats hover and :active both — the card is following the pointer. */
-.handfan__slot .handfan__card--dragging,
-.handfan__slot:hover .handfan__card--dragging,
-.handfan__card--dragging:active {
-  transform: translate(var(--drag-x), var(--drag-y)) rotate(0deg) scale(1.04);
-  transition: none;
+/*
+ * Held. The transform itself is set inline by BattleScreen — it has to beat the
+ * hover-plus-:active rule above, and no selector here can do that without an
+ * escalating specificity war. Only the appearance lives in CSS.
+ */
+.handfan__card--dragging {
   cursor: grabbing;
   box-shadow: 0 24px 44px rgba(0, 0, 0, 0.55);
 }

@@ -57,9 +57,19 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
           ]
             .filter(Boolean)
             .join(' ')}
+          // The held card's transform is inline on purpose. As a stylesheet rule it
+          // lost to `.handfan__slot:hover .handfan__card:active` — the guard against
+          // the global button:active — which outranks it while the mouse is down, so
+          // the card never left the fan. Inline beats every rule and ends the contest.
           style={
             dragging
-              ? ({ '--drag-x': `${drag.dx}px`, '--drag-y': `${drag.dy}px` } as React.CSSProperties)
+              ? {
+                  // Built on top of the hover pose (lift and scale included) rather
+                  // than replacing it, so picking a card up does not jog it a dozen
+                  // pixels before it starts tracking.
+                  transform: `translate(${drag.dx}px, calc(var(--fan-drop) - var(--lift) + ${drag.dy}px)) rotate(var(--fan-rotate)) scale(1.08)`,
+                  transition: 'none',
+                }
               : undefined
           }
           onPointerDown={playable ? onPointerDown(instance.instanceId) : undefined}

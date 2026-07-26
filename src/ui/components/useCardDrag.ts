@@ -49,8 +49,11 @@ export function useCardDrag({
     (instanceId: string) => (e: React.PointerEvent) => {
       // Left button only: right-click belongs to the upgrade preview.
       if (e.button !== 0) return;
-      // A press that lands on a keyword opens its explainer instead of dragging.
-      if ((e.target as HTMLElement).closest('.kw, .kwchip')) return;
+      // A press on an interactive keyword belongs to its rules explainer, not to a
+      // drag. Only `.kwchip` and `.kw--term` are interactive — a bare `.kw` is plain
+      // coloured emphasis in the effect text, and matching it meant pressing almost
+      // anywhere on a card's text silently refused to drag.
+      if ((e.target as HTMLElement).closest('.kwchip, .kw--term')) return;
 
       origin.current = { x: e.clientX, y: e.clientY };
       activeRef.current = false;

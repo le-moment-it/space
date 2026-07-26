@@ -162,6 +162,50 @@ describe('BattleScreen — playing a card', () => {
     expect(onPlayCard).toHaveBeenCalledTimes(1);
   });
 
+  it('drags from the effect text, not just the card border', () => {
+    // The guard against dragging off a keyword once matched every `.kw`, and plain
+    // coloured emphasis in the effect text is a `.kw` — so pressing almost anywhere
+    // on a card silently refused to drag.
+    const onPlayCard = vi.fn();
+    render(
+      <BattleScreen
+        combat={combatWith('flak-burst')}
+        onPlayCard={onPlayCard}
+        onEndTurn={noop}
+        onContinue={noop}
+      />,
+    );
+    stubArenaRect({});
+    const emphasis = within(handCards()[0]).getByText(/damage/i);
+
+    pointer(emphasis, 'pointerdown', 250, 400);
+    pointer(emphasis, 'pointermove', 250, 150);
+    pointer(emphasis, 'pointerup', 250, 150);
+
+    expect(onPlayCard).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not drag when the press lands on an interactive keyword', () => {
+    const onPlayCard = vi.fn();
+    render(
+      <BattleScreen
+        combat={combatWith('failsafe-screen')}
+        onPlayCard={onPlayCard}
+        onEndTurn={noop}
+        onContinue={noop}
+      />,
+    );
+    stubArenaRect({});
+    // Failsafe Screen prints the Exhaust chip, which owns its own press.
+    const chip = within(handCards()[0]).getByText(/^exhaust$/i);
+
+    pointer(chip, 'pointerdown', 250, 400);
+    pointer(chip, 'pointermove', 250, 150);
+    pointer(chip, 'pointerup', 250, 150);
+
+    expect(onPlayCard).not.toHaveBeenCalled();
+  });
+
   it('right-click never starts a drag or plays the card', () => {
     const onPlayCard = vi.fn();
     render(
