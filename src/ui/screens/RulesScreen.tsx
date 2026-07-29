@@ -2,12 +2,7 @@ import { cardDefinitions, eliteRewardCardIds, runCardPool } from '../../data/car
 import { CREW_CAP, CREW_OFFER_CHANCE } from '../../data/crew';
 import { effectiveRarityOdds, type RarityChance } from '../../engine/cards/dropOdds';
 import type { OfferSource } from '../../engine/cards/rarityOdds';
-import {
-  CARD_RARITIES,
-  DEFAULT_UPGRADE_STEP,
-  rarityOf,
-  type CardRarity,
-} from '../../engine/cards/types';
+import { CARD_RARITIES, rarityOf, type CardRarity } from '../../engine/cards/types';
 import { DEFAULT_COMBAT_CONFIG } from '../../engine/combat/types';
 import { levelFor } from '../../engine/progression/level';
 import { NODE_TYPE_WEIGHTS } from '../../engine/map/generate';
@@ -251,12 +246,7 @@ export function RulesScreen() {
           <p className="eyebrow">{t('rules.upgrades')}</p>
           <ul className="rules__list">
             <li>{t('rules.upgrades.tiers')}</li>
-            <li>
-              {t('rules.upgrades.step', {
-                big: DEFAULT_UPGRADE_STEP.damage,
-                small: DEFAULT_UPGRADE_STEP.power,
-              })}
-            </li>
+            <li>{t('rules.upgrades.step')}</li>
             <li>{t('rules.upgrades.where')}</li>
           </ul>
         </div>

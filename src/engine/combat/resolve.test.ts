@@ -2,124 +2,111 @@ import { describe, expect, it } from 'vitest';
 import { createRng } from '../rng';
 import { endPlayerTurn, initCombat, playCard } from './resolve';
 import type { CardDefinition } from '../cards/types';
+import { testCard } from '../../test/cards';
 import type { EnemyDefinition } from './types';
 import { DEFAULT_COMBAT_CONFIG } from './types';
 
 const cardDefinitions: Record<string, CardDefinition> = {
-  strike: {
+  strike: testCard({
     id: 'strike',
     name: 'Strike',
     type: 'weapon',
     cost: 1,
-    description: '',
     effect: { kind: 'damage', amount: 6 },
-  },
-  bigStrike: {
+  }),
+  bigStrike: testCard({
     id: 'bigStrike',
     name: 'Big Strike',
     type: 'weapon',
     cost: 2,
-    description: '',
     effect: { kind: 'damage', amount: 20 },
-  },
-  shield: {
+  }),
+  shield: testCard({
     id: 'shield',
     name: 'Shield',
     type: 'maneuver',
     cost: 1,
-    description: '',
     effect: { kind: 'shield', amount: 10 },
-  },
-  heal: {
+  }),
+  heal: testCard({
     id: 'heal',
     name: 'Heal',
     type: 'maneuver',
     cost: 1,
-    description: '',
     effect: { kind: 'heal', amount: 5 },
-  },
-  overcharge: {
+  }),
+  overcharge: testCard({
     id: 'overcharge',
     name: 'Overcharge',
     type: 'shipSystem',
     cost: 0,
-    description: '',
     effect: { kind: 'power', amount: 2 },
-  },
-  weaken: {
+  }),
+  weaken: testCard({
     id: 'weaken',
     name: 'Weaken',
     type: 'maneuver',
     cost: 1,
-    description: '',
     effect: { kind: 'weaken', amount: 3, duration: 2 },
-  },
-  scan: {
+  }),
+  scan: testCard({
     id: 'scan',
     name: 'Scan',
     type: 'maneuver',
     cost: 0,
-    description: '',
     effect: { kind: 'draw', amount: 2 },
-  },
-  nanite: {
+  }),
+  nanite: testCard({
     id: 'nanite',
     name: 'Nanite Swarm',
     type: 'weapon',
     cost: 1,
-    description: '',
     effect: { kind: 'corrosion', amount: 5 },
-  },
-  cutter: {
+  }),
+  cutter: testCard({
     id: 'cutter',
     name: 'Hull Cutter',
     type: 'weapon',
     cost: 1,
-    description: '',
     effect: { kind: 'breach', amount: 2 },
-  },
-  calibrate: {
+  }),
+  calibrate: testCard({
     id: 'calibrate',
     name: 'Gunnery Calibration',
     type: 'shipSystem',
     cost: 1,
-    description: '',
     effect: { kind: 'calibration', amount: 2 },
-  },
-  lock: {
+  }),
+  lock: testCard({
     id: 'lock',
     name: 'Targeting Lock',
     type: 'shipSystem',
     cost: 0,
-    description: '',
     effect: { kind: 'charge', target: 'damage', amount: 1 },
-  },
-  siphon: {
+  }),
+  siphon: testCard({
     id: 'siphon',
     name: 'Siphon Beam',
     type: 'weapon',
     cost: 1,
-    description: '',
     effect: { kind: 'damage', amount: 6 },
     extraEffects: [{ kind: 'heal', amount: 4 }],
-  },
-  volley: {
+  }),
+  volley: testCard({
     id: 'volley',
     name: 'Needle Volley',
     type: 'weapon',
     cost: 1,
-    description: '',
     effect: { kind: 'damage', amount: 3, times: 3 },
-  },
-  oneShot: {
+  }),
+  oneShot: testCard({
     id: 'oneShot',
     name: 'One Shot',
     type: 'weapon',
     cost: 0,
-    description: '',
     effect: { kind: 'damage', amount: 4 },
     exhaust: true,
-  },
+  }),
 };
 
 const passiveEnemy: EnemyDefinition = {

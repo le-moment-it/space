@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createRng, weightedSample } from '../rng';
 import { effectiveRarityOdds } from './dropOdds';
 import { rarityWeightsFor, type OfferSource } from './rarityOdds';
+import { testCard } from '../../test/cards';
 import { rarityOf, type CardDefinition, type CardRarity } from './types';
 
 /** A pool with `counts[rarity]` cards of each rarity. */
@@ -11,15 +12,14 @@ function makePool(counts: Partial<Record<CardRarity, number>>) {
   for (const [rarity, n] of Object.entries(counts) as [CardRarity, number][]) {
     for (let i = 0; i < n; i++) {
       const id = `${rarity}-${i}`;
-      cardDefinitions[id] = {
+      cardDefinitions[id] = testCard({
         id,
         name: id,
         type: 'weapon',
         cost: 1,
-        description: '',
         effect: { kind: 'damage', amount: 1 },
         ...(rarity === 'common' ? {} : { rarity }),
-      };
+      });
       pool.push(id);
     }
   }

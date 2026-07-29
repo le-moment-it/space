@@ -389,7 +389,7 @@ const en = {
   'rules.upgrades.tiers':
     'Every card has two upgrades, + and ++. Right-click a card to see its path.',
   'rules.upgrades.step':
-    'An upgrade adds +{big} to damage, shields and repair, or +{small} to the smaller effects like power and draw. Only the card’s headline effect is stepped.',
+    'Each card sets its own upgrade, so a cheap card and a heavy weapon do not gain the same amount. A card’s preview shows every tier.',
   'rules.upgrades.where':
     'A Garage upgrades one card for the current run. Beating an act boss can instead upgrade a starting-deck card permanently.',
 
@@ -849,7 +849,7 @@ const fr: Record<UiKey, string> = {
   'rules.upgrades.tiers':
     'Chaque carte a deux améliorations, + et ++. Clic droit sur une carte pour voir sa progression.',
   'rules.upgrades.step':
-    'Une amélioration ajoute +{big} aux dégâts, boucliers et réparations, ou +{small} aux effets plus petits comme l’énergie et la pioche. Seul l’effet principal de la carte est amélioré.',
+    'Chaque carte définit sa propre amélioration : une carte bon marché et une arme lourde ne gagnent pas autant l’une que l’autre. L’aperçu d’une carte montre chaque palier.',
   'rules.upgrades.where':
     'Un Garage améliore une carte pour la partie en cours. Vaincre le boss d’un acte permet à la place d’améliorer définitivement une carte du deck de départ.',
 

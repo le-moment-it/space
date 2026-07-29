@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CardDefinition } from '../cards/types';
+import { testCard } from '../../test/cards';
 import { createRng } from '../rng';
 import { DEFAULT_COMBAT_CONFIG, type EnemyDefinition } from '../combat/types';
 import type { CrewDefinition, CrewPassive } from '../crew/types';
@@ -53,38 +54,34 @@ const testMap: MapGraph = {
 };
 
 const cardDefinitions: Record<string, CardDefinition> = {
-  strike: {
+  strike: testCard({
     id: 'strike',
     name: 'Strike',
     type: 'weapon',
     cost: 1,
-    description: '',
     effect: { kind: 'damage', amount: 6 },
-  },
-  shieldCard: {
+  }),
+  shieldCard: testCard({
     id: 'shieldCard',
     name: 'Shield',
     type: 'maneuver',
     cost: 1,
-    description: '',
     effect: { kind: 'shield', amount: 7 },
-  },
-  eliteReward: {
+  }),
+  eliteReward: testCard({
     id: 'eliteReward',
     name: 'Elite Reward',
     type: 'weapon',
     cost: 2,
-    description: '',
     effect: { kind: 'damage', amount: 15 },
-  },
-  healCard: {
+  }),
+  healCard: testCard({
     id: 'healCard',
     name: 'Heal Card',
     type: 'maneuver',
     cost: 1,
-    description: '',
     effect: { kind: 'heal', amount: 6 },
-  },
+  }),
 };
 
 const weakEnemy: EnemyDefinition = {

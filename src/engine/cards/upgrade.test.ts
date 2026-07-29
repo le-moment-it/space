@@ -13,8 +13,11 @@ const base: CardDefinition = {
   name: 'Test Cannon',
   type: 'weapon',
   cost: 1,
-  description: '',
   effect: { kind: 'damage', amount: 6 },
+  upgrades: [
+    { effect: { kind: 'damage', amount: 9 } },
+    { effect: { kind: 'damage', amount: 14 }, cost: 0 },
+  ],
 };
 
 describe('resolveCard', () => {
@@ -22,26 +25,55 @@ describe('resolveCard', () => {
     expect(resolveCard(base, 0)).toBe(base);
   });
 
-  it('steps damage by +2 per tier — the Kinetic Cannon 6/8/10 progression', () => {
-    expect(resolveCard(base, 1).effect).toEqual({ kind: 'damage', amount: 8 });
-    expect(resolveCard(base, 2).effect).toEqual({ kind: 'damage', amount: 10 });
+  it('resolves to exactly the tier the card declares', () => {
+    expect(resolveCard(base, 1).effect).toEqual({ kind: 'damage', amount: 9 });
+    expect(resolveCard(base, 2).effect).toEqual({ kind: 'damage', amount: 14 });
   });
 
-  it('steps the small-number effects by only +1 per tier', () => {
-    const draw: CardDefinition = { ...base, effect: { kind: 'draw', amount: 1 } };
-    expect(resolveCard(draw, 1).effect).toEqual({ kind: 'draw', amount: 2 });
-    expect(resolveCard(draw, 2).effect).toEqual({ kind: 'draw', amount: 3 });
-
-    const power: CardDefinition = { ...base, effect: { kind: 'power', amount: 2 } };
-    expect(resolveCard(power, 2).effect).toEqual({ kind: 'power', amount: 4 });
+  it('leaves cost, exhaust and extra effects at the base when a tier does not name them', () => {
+    const support: CardDefinition = {
+      ...base,
+      exhaust: true,
+      extraEffects: [{ kind: 'heal', amount: 4 }],
+    };
+    // Tier 1 names only `effect`, so everything else is inherited...
+    expect(resolveCard(support, 1)).toMatchObject({
+      cost: 1,
+      exhaust: true,
+      extraEffects: [{ kind: 'heal', amount: 4 }],
+    });
+    // ...while tier 2 names a cost, and only that changes.
+    expect(resolveCard(support, 2)).toMatchObject({
+      cost: 0,
+      exhaust: true,
+      extraEffects: [{ kind: 'heal', amount: 4 }],
+    });
   });
 
-  it('keeps the untouched fields of a weaken effect (duration) intact', () => {
+  it('lets a tier grow an extra effect when it declares one', () => {
+    const grower: CardDefinition = {
+      ...base,
+      extraEffects: [{ kind: 'heal', amount: 4 }],
+      upgrades: [
+        { effect: { kind: 'damage', amount: 8 }, extraEffects: [{ kind: 'heal', amount: 6 }] },
+        { effect: { kind: 'damage', amount: 10 }, extraEffects: [{ kind: 'heal', amount: 8 }] },
+      ],
+    };
+    expect(resolveCard(grower, 2).extraEffects).toEqual([{ kind: 'heal', amount: 8 }]);
+  });
+
+  it('carries the non-amount fields a tier declares, like weaken duration', () => {
     const weaken: CardDefinition = {
       ...base,
       effect: { kind: 'weaken', amount: 3, duration: 2 },
+      upgrades: [
+        { effect: { kind: 'weaken', amount: 4, duration: 2 } },
+        { effect: { kind: 'weaken', amount: 4, duration: 4 } },
+      ],
     };
     expect(resolveCard(weaken, 1).effect).toEqual({ kind: 'weaken', amount: 4, duration: 2 });
+    // A tier is free to buy duration instead of amount — the formula could not.
+    expect(resolveCard(weaken, 2).effect).toEqual({ kind: 'weaken', amount: 4, duration: 4 });
   });
 
   it('never mutates the base definition', () => {
@@ -50,39 +82,25 @@ describe('resolveCard', () => {
     expect(base).toEqual(snapshot);
   });
 
-  it('prefers an explicit per-card override over the default rule', () => {
-    const custom: CardDefinition = {
+  it('never lets a tier drive cost below zero', () => {
+    const silly: CardDefinition = {
       ...base,
       upgrades: [
-        { effect: { kind: 'damage', amount: 9 } },
-        { effect: { kind: 'damage', amount: 14 }, cost: 0 },
+        { effect: base.effect, cost: -5 },
+        { effect: base.effect, cost: -5 },
       ],
     };
-    expect(resolveCard(custom, 1).effect).toEqual({ kind: 'damage', amount: 9 });
-    expect(resolveCard(custom, 1).cost).toBe(1); // untouched by tier 1
-    expect(resolveCard(custom, 2).effect).toEqual({ kind: 'damage', amount: 14 });
-    expect(resolveCard(custom, 2).cost).toBe(0);
-  });
-
-  it('an override only replaces the fields it names — the rest still get the default step', () => {
-    const cheaper: CardDefinition = { ...base, upgrades: [{ cost: 0 }, { cost: 0 }] };
-    // cost is overridden, damage still steps +2 per tier
-    expect(cheaper.upgrades && resolveCard(cheaper, 1)).toMatchObject({
-      cost: 0,
-      effect: { kind: 'damage', amount: 8 },
-    });
-  });
-
-  it('never lets an override drive cost below zero', () => {
-    const silly: CardDefinition = { ...base, upgrades: [{ cost: -5 }, { cost: -5 }] };
     expect(resolveCard(silly, 1).cost).toBe(0);
   });
 
-  it('lets an override drop exhaust', () => {
+  it('lets a tier drop exhaust', () => {
     const oneShot: CardDefinition = {
       ...base,
       exhaust: true,
-      upgrades: [{ exhaust: false }, { exhaust: false }],
+      upgrades: [
+        { effect: base.effect, exhaust: false },
+        { effect: base.effect, exhaust: false },
+      ],
     };
     expect(resolveCard(oneShot, 0).exhaust).toBe(true);
     expect(resolveCard(oneShot, 1).exhaust).toBe(false);
@@ -92,11 +110,52 @@ describe('resolveCard', () => {
     for (const def of Object.values(cardDefinitions)) {
       for (const level of [1, 2] as UpgradeLevel[]) {
         const up = resolveCard(def, level);
-        expect(up.effect.kind).toBe(def.effect.kind);
-        expect(up.effect.amount).toBeGreaterThan(def.effect.amount);
-        expect(up.cost).toBeGreaterThanOrEqual(0);
+        expect(up.effect.kind, def.id).toBe(def.effect.kind);
+        expect(up.effect.amount, def.id).toBeGreaterThan(def.effect.amount);
+        expect(up.cost, def.id).toBeGreaterThanOrEqual(0);
       }
     }
+  });
+
+  it('makes each tier strictly better than the one before it', () => {
+    for (const def of Object.values(cardDefinitions)) {
+      const [t1, t2] = [resolveCard(def, 1), resolveCard(def, 2)];
+      expect(t2.effect.amount, def.id).toBeGreaterThan(t1.effect.amount);
+    }
+  });
+
+  /**
+   * The numbers now live in the data, so a fat-fingered tier is a balance bug rather
+   * than a compile error. These four cover the shapes the old formula got wrong:
+   * a plain weapon, a multi-hit (the step used to land once per hit), a card whose
+   * extras must not move, and one that exhausts.
+   */
+  it.each([
+    ['flak-burst', [4, 6, 8], 1],
+    ['siege-cannon', [20, 22, 24], 3],
+    ['needle-volley', [3, 5, 7], 1],
+    ['failsafe-screen', [10, 12, 14], 0],
+  ] as const)('%s reads %s across its three tiers', (id, amounts, cost) => {
+    const def = cardDefinitions[id];
+    amounts.forEach((amount, level) => {
+      const card = resolveCard(def, level as UpgradeLevel);
+      expect(card.effect.amount).toBe(amount);
+      expect(card.cost).toBe(cost);
+    });
+  });
+
+  it('keeps a multi-hit card hitting the same number of times as it upgrades', () => {
+    const volley = cardDefinitions['needle-volley'];
+    for (const level of [0, 1, 2] as UpgradeLevel[]) {
+      const effect = resolveCard(volley, level).effect;
+      expect(effect.kind === 'damage' && effect.times).toBe(3);
+    }
+  });
+
+  it('leaves Master Gunner’s draw alone while its calibration grows', () => {
+    const gunner = cardDefinitions['master-gunner'];
+    expect(resolveCard(gunner, 2).effect).toEqual({ kind: 'calibration', amount: 6 });
+    expect(resolveCard(gunner, 2).extraEffects).toEqual([{ kind: 'draw', amount: 1 }]);
   });
 });
 
