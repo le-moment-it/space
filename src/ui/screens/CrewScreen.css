@@ -3,18 +3,6 @@
   align-items: center;
   gap: 1rem;
 }
-.crew__portrait {
-  flex: 0 0 auto;
-  width: 60px;
-  height: 60px;
-  display: grid;
-  place-items: center;
-  font-size: 2rem;
-  background: var(--void);
-  border: 1px solid color-mix(in srgb, var(--card-crew) 40%, var(--line-2));
-  border-radius: 50%;
-  box-shadow: 0 0 16px rgba(236, 200, 121, 0.15);
-}
 .crew__role {
   font-family: var(--mono);
   font-size: 0.72rem;
@@ -79,10 +67,6 @@
 .crew__member--action:hover:not(:disabled) {
   border-color: color-mix(in srgb, var(--card-crew) 55%, transparent);
   background: rgba(236, 200, 121, 0.08);
-}
-.crew__member-portrait {
-  flex: 0 0 auto;
-  font-size: 1.5rem;
 }
 .crew__member-text {
   display: flex;

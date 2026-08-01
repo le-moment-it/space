@@ -3,6 +3,7 @@ import { CREW_CAP, crewDefinitions } from '../../data/crew';
 import type { RunState } from '../../engine/run/types';
 import { useTranslation } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
+import { CrewPortrait } from '../components/CrewPortrait';
 import './CrewScreen.css';
 
 /**
@@ -25,7 +26,7 @@ export function CrewOfferScreen({ run }: { run: RunState }) {
   return (
     <section className="screen screen--focus panel crew">
       <div className="crew__head">
-        <span className="crew__portrait">{crew.portrait}</span>
+        <CrewPortrait crewId={crew.id} size="lg" />
         <div>
           <p className="eyebrow" style={{ color: 'var(--card-crew)' }}>
             {tr.t('crew.distressSignal')}
@@ -57,7 +58,7 @@ export function CrewOfferScreen({ run }: { run: RunState }) {
                   className="crew__member crew__member--action"
                   onClick={() => resolveCrewOffer(true, id)}
                 >
-                  <span className="crew__member-portrait">{aboard.portrait}</span>
+                  <CrewPortrait crewId={aboard.id} size="sm" />
                   <span className="crew__member-text">
                     <span className="crew__member-name">{tr.crewName(id)}</span>
                     <span className="crew__member-passive">{tr.crewPassive(id)}</span>

@@ -1,0 +1,51 @@
+/*
+ * Crew portraits — the same medallion at three sizes.
+ *
+ * The art carries its own backdrop, so the frame clips it to a circle rather than
+ * compositing it: `overflow: hidden` + `border-radius: 50%` is what turns a square
+ * portrait into one. `--void` shows through only for the emoji and unknown states.
+ */
+.crewportrait {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: var(--void);
+  border: 1px solid color-mix(in srgb, var(--card-crew) 40%, var(--line-2));
+  border-radius: 50%;
+}
+
+.crewportrait--lg {
+  width: 60px;
+  height: 60px;
+  font-size: 2rem;
+  box-shadow: 0 0 16px rgba(236, 200, 121, 0.15);
+}
+.crewportrait--md {
+  width: 40px;
+  height: 40px;
+  font-size: 1.4rem;
+}
+.crewportrait--sm {
+  width: 38px;
+  height: 38px;
+  font-size: 1.3rem;
+}
+
+/*
+ * Deliberately NOT image-rendering: pixelated. The source is a 192px illustration shown
+ * at 38–60px, so nearest-neighbour would throw away two of every three pixels and alias
+ * badly. Chunky sprites drawn at their display size would want the opposite.
+ */
+.crewportrait__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crewportrait--unknown {
+  font-family: var(--mono);
+  color: var(--ink-faint);
+  border-color: var(--line-2);
+}

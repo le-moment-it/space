@@ -13,6 +13,22 @@
   animation: heroship-thrust 2.4s ease-in-out infinite;
 }
 
+/*
+ * Painted variant. The drift moves the <img> itself, since a bitmap has no inner body
+ * group to transform — same keyframes, so both ships idle identically.
+ *
+ * No image-rendering: pixelated. The art is 512px shown at 260–460px, so nearest
+ * neighbour would alias on the downscale; the browser's smooth filter is kinder here.
+ */
+.heroship__img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.heroship--animated .heroship__img {
+  animation: heroship-drift 7s ease-in-out infinite;
+}
+
 @keyframes heroship-drift {
   0%,
   100% {

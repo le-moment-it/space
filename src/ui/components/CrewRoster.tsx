@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { CREW_CAP, crewDefinitions } from '../../data/crew';
 import { useTranslation } from '../../i18n';
+import { CrewPortrait } from './CrewPortrait';
 import './CrewRoster.css';
 
 /**
@@ -52,7 +53,7 @@ export function CrewRoster({ crewIds, onClose }: { crewIds: string[]; onClose: (
               if (!crew) return null;
               return (
                 <li key={id} className="crew__member">
-                  <span className="crew__member-portrait">{crew.portrait}</span>
+                  <CrewPortrait crewId={crew.id} size="sm" />
                   <span className="crew__member-text">
                     <span className="crew__member-name">{tr.crewName(id)}</span>
                     <span className="crew__member-role">{tr.crewRole(id)}</span>

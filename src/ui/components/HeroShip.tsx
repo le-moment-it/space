@@ -1,14 +1,32 @@
+import { shipArt } from '../art/ship';
 import './HeroShip.css';
 
-/** The player's salvage long-hauler — a lonely side-profile vessel. */
+const LABEL = 'A salvage vessel adrift among the stars';
+
+/**
+ * The player's salvage long-hauler — a lonely side-profile vessel.
+ *
+ * Renders the painted ship when that art exists, and falls back to the vector one below
+ * otherwise. The drift animation is shared by both; the vector's separate thrust flicker
+ * has no equivalent once the engine glow is baked into a bitmap.
+ */
 export function HeroShip({ animated = false }: { animated?: boolean }) {
+  const className = `heroship${animated ? ' heroship--animated' : ''}`;
+
+  if (shipArt) {
+    return (
+      <div className={className}>
+        <img className="heroship__img" src={shipArt} alt={LABEL} />
+      </div>
+    );
+  }
+
+  return <HeroShipVector className={className} />;
+}
+
+function HeroShipVector({ className }: { className: string }) {
   return (
-    <svg
-      className={`heroship${animated ? ' heroship--animated' : ''}`}
-      viewBox="0 0 440 240"
-      role="img"
-      aria-label="A salvage vessel adrift among the stars"
-    >
+    <svg className={className} viewBox="0 0 440 240" role="img" aria-label={LABEL}>
       <defs>
         <linearGradient id="heroship-thrust" x1="1" y1="0" x2="0" y2="0">
           <stop offset="0%" stopColor="var(--signal)" stopOpacity="0.9" />

@@ -92,21 +92,6 @@
   gap: 0.6rem;
   align-items: center;
 }
-.codex-card__portrait {
-  flex: 0 0 auto;
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  font-size: 1.4rem;
-  background: var(--void);
-  border: 1px solid var(--line-2);
-  border-radius: 50%;
-}
-.codex-card--unknown .codex-card__portrait {
-  font-family: var(--mono);
-  color: var(--ink-faint);
-}
 .codex-card__name {
   font-size: 0.95rem;
 }

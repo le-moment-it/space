@@ -2,6 +2,7 @@ import { crewDefinitions } from '../../data/crew';
 import type { RunState } from '../../engine/run/types';
 import { useTranslation } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
+import { CrewPortrait } from '../components/CrewPortrait';
 import './CrewScreen.css';
 
 export function DialogueScreen({ run }: { run: RunState }) {
@@ -20,7 +21,7 @@ export function DialogueScreen({ run }: { run: RunState }) {
   return (
     <section className="screen screen--focus panel crew">
       <div className="crew__head">
-        <span className="crew__portrait">{crew.portrait}</span>
+        <CrewPortrait crewId={crew.id} size="lg" />
         <div>
           <p className="eyebrow" style={{ color: 'var(--card-crew)' }}>
             {tr.t('crew.comms')}

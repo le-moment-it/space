@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Full-size art masters — normalize-art.mjs keeps originals here, out of the bundle
+art-masters

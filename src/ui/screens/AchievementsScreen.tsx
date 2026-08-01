@@ -10,6 +10,7 @@ import {
 } from '../../engine/progression/level';
 import { useTranslation } from '../../i18n';
 import { useGameStore } from '../../state/gameStore';
+import { CrewPortrait } from '../components/CrewPortrait';
 import { UpgradePreview } from '../components/UpgradePreview';
 import './AchievementsScreen.css';
 
@@ -101,7 +102,7 @@ export function AchievementsScreen() {
               if (timesRecruited === 0) {
                 return (
                   <article key={crew.id} className="codex-card codex-card--unknown">
-                    <div className="codex-card__portrait">?</div>
+                    <CrewPortrait crewId={null} size="md" />
                     <div>
                       <h3 className="codex-card__name">{t('ach.unknownDrifter')}</h3>
                       <p className="codex-card__bio">{t('ach.unknownBio')}</p>
@@ -114,7 +115,7 @@ export function AchievementsScreen() {
               return (
                 <article key={crew.id} className="codex-card">
                   <div className="codex-card__head">
-                    <span className="codex-card__portrait">{crew.portrait}</span>
+                    <CrewPortrait crewId={crew.id} size="md" />
                     <div>
                       <h3 className="codex-card__name">{tr.crewName(crew.id)}</h3>
                       <p className="codex-card__role">
