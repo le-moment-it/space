@@ -7,6 +7,7 @@ import { StatusChips } from '../components/StatusChips';
 import { useTranslation, type Translator } from '../../i18n';
 import { Card } from '../components/Card';
 import { CardListModal } from '../components/CardListModal';
+import { HeroShip } from '../components/HeroShip';
 import { PileIcon } from '../components/PileIcon';
 import { HandFan, type HandSlot } from '../components/HandFan';
 import { useCardDrag } from '../components/useCardDrag';
@@ -94,6 +95,11 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
           <StatusChips statuses={player.statuses} />
           <HpBar value={player.hull} max={player.maxHull} tone="hull" t={t} />
           {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
+          {/* The thing the numbers above are describing. It faces right, into the
+              enemy panel, so the two sides read as facing each other. */}
+          <div className="combatant__ship">
+            <HeroShip animated />
+          </div>
         </div>
 
         <p className="battle__drophint mono">{t('battle.dropHint')}</p>

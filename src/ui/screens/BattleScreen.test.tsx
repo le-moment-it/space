@@ -295,4 +295,26 @@ describe('BattleScreen — layout', () => {
     expect(handCards()).toHaveLength(9);
     expect(document.querySelectorAll('.handfan__slot')).toHaveLength(9);
   });
+
+  it('shows your ship on your own side, below its vitals', () => {
+    render(
+      <BattleScreen
+        combat={combatWith('flak-burst')}
+        onPlayCard={noop}
+        onEndTurn={noop}
+        onContinue={noop}
+      />,
+    );
+
+    const player = document.querySelector('.combatant--player')!;
+    const ship = player.querySelector('.combatant__ship');
+    expect(ship).toBeInTheDocument();
+    // Below the hull bar, not above it — the numbers introduce the ship, not vice versa.
+    expect(
+      player.querySelector('.hpbar')!.compareDocumentPosition(ship!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // And only on your side: the enemy panel has no art yet.
+    expect(document.querySelector('.combatant--enemy .combatant__ship')).not.toBeInTheDocument();
+  });
 });
