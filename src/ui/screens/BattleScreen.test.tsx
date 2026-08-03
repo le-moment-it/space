@@ -307,14 +307,40 @@ describe('BattleScreen — layout', () => {
     );
 
     const player = document.querySelector('.combatant--player')!;
-    const ship = player.querySelector('.combatant__ship');
+    const ship = player.querySelector('.combatant__art');
     expect(ship).toBeInTheDocument();
     // Below the hull bar, not above it — the numbers introduce the ship, not vice versa.
     expect(
       player.querySelector('.hpbar')!.compareDocumentPosition(ship!) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    // And only on your side: the enemy panel has no art yet.
-    expect(document.querySelector('.combatant--enemy .combatant__ship')).not.toBeInTheDocument();
+    // This fixture enemy has no sprite, so its panel stands on its text alone.
+    expect(document.querySelector('.combatant--enemy .combatant__art')).not.toBeInTheDocument();
+  });
+
+  it('faces you off against the enemy sprite when that design has art', () => {
+    const gunship: EnemyDefinition = {
+      id: 'gunship-act2',
+      name: 'Gunship',
+      maxHull: 55,
+      intentPattern: [{ kind: 'attack', amount: 13 }],
+    };
+    const state = initCombat({
+      cardDefinitions,
+      startingDeck: [{ cardId: 'flak-burst', level: 0 as const }],
+      enemy: gunship,
+      rng: createRng(1),
+      config: DEFAULT_COMBAT_CONFIG,
+    });
+    render(<BattleScreen combat={state} onPlayCard={noop} onEndTurn={noop} onContinue={noop} />);
+
+    // Both combatants drawn, each below its own vitals, so the arena reads as a face-off.
+    const enemyArt = document.querySelector('.combatant--enemy .combatant__art');
+    expect(enemyArt).toBeInTheDocument();
+    expect(document.querySelector('.combatant--player .combatant__art')).toBeInTheDocument();
+    expect(
+      document.querySelector('.combatant--enemy .hpbar')!.compareDocumentPosition(enemyArt!) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

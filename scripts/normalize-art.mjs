@@ -25,8 +25,13 @@ import { decode, encode, resize } from './png.mjs';
 const TARGETS = {
   crew: { w: 192, h: 192, key: false },
   ship: { w: 512, h: 288, key: true },
-  enemies: { w: 256, h: 256, key: true },
   cards: { w: 192, h: 108, key: false },
+  // `fit`: crop to the subject, then letterbox into the box. The generator framed each
+  // enemy differently — some tight, some with two thirds of the canvas empty — and
+  // returned three different aspect ratios, so their own framing carries no usable
+  // information. Cropping to content is what makes sixteen sprites sit consistently in
+  // one slot.
+  enemies: { w: 256, h: 256, key: true, fit: true },
 };
 
 /** Masters are irreplaceable; this rewrites in place, so never process an unsaved one. */
@@ -79,6 +84,51 @@ function unkey(img) {
     out[o + 3] = ch === 4 ? Math.min(a, data[i + 3]) : a;
   }
   return { w, h, ch: 4, data: out };
+}
+
+/** Tightest box containing everything that is not effectively transparent. */
+function contentBox(img, threshold = 8) {
+  const { w, h, data } = img;
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] <= threshold) continue;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+  }
+  if (x1 < 0) throw new Error('image is entirely transparent after keying');
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+}
+
+function crop(img, box) {
+  const out = Buffer.alloc(box.w * box.h * 4);
+  for (let y = 0; y < box.h; y++) {
+    const from = ((box.y + y) * img.w + box.x) * 4;
+    img.data.copy(out, y * box.w * 4, from, from + box.w * 4);
+  }
+  return { w: box.w, h: box.h, ch: 4, data: out };
+}
+
+/** Scales to fit inside the box without distortion, centred on transparent padding. */
+function letterbox(img, tw, th) {
+  const scale = Math.min(tw / img.w, th / img.h);
+  const iw = Math.max(1, Math.round(img.w * scale));
+  const ih = Math.max(1, Math.round(img.h * scale));
+  const scaled = unpremultiply(resize(premultiply(img), iw, ih));
+
+  const out = Buffer.alloc(tw * th * 4);
+  const ox = Math.floor((tw - iw) / 2);
+  const oy = Math.floor((th - ih) / 2);
+  for (let y = 0; y < ih; y++) {
+    scaled.data.copy(out, ((oy + y) * tw + ox) * 4, y * iw * 4, (y + 1) * iw * 4);
+  }
+  return { w: tw, h: th, ch: 4, data: out };
 }
 
 /** Averaging RGBA must happen in premultiplied space, or transparent pixels tint the edges. */
@@ -136,10 +186,11 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     }
 
     // A generator that ignores the requested aspect ratio would otherwise be squashed
-    // into the target without a word. Better to stop and let a human decide.
+    // into the target without a word. Better to stop and let a human decide — unless
+    // the category letterboxes, which handles any input shape by construction.
     const srcAspect = img.w / img.h;
     const dstAspect = target.w / target.h;
-    if (Math.abs(srcAspect - dstAspect) / dstAspect > 0.02) {
+    if (!target.fit && Math.abs(srcAspect - dstAspect) / dstAspect > 0.02) {
       console.log(
         `  SKIP  ${file} — aspect ${srcAspect.toFixed(2)} does not match target ${dstAspect.toFixed(2)}; ` +
           `resizing would distort it. Regenerate at ${target.w}x${target.h}, or change TARGETS.`,
@@ -148,8 +199,14 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     }
 
     const from = `${img.w}x${img.h}`;
-    if (target.key) img = unpremultiply(resize(premultiply(unkey(img)), target.w, target.h));
-    else img = resize(img, target.w, target.h);
+    if (target.fit) {
+      const keyed = unkey(img);
+      img = letterbox(crop(keyed, contentBox(keyed)), target.w, target.h);
+    } else if (target.key) {
+      img = unpremultiply(resize(premultiply(unkey(img)), target.w, target.h));
+    } else {
+      img = resize(img, target.w, target.h);
+    }
 
     const out = encode(img);
     if (!dry) fs.writeFileSync(file, out);

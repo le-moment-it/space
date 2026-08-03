@@ -21,9 +21,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
   align-content: start;
-  /* Each panel takes its own height: the ship side holds less than the enemy side,
-     and stretching it to match just prints a tall empty box. */
-  align-items: start;
+  /* Equal-height panels, so the two combatants stand on one baseline. Before either
+     side had art the ship panel held less than the enemy's and stretching it just
+     printed a tall empty box; now the art fills that space and a face-off only reads
+     as one if the ship and the thing shooting at it are level. */
+  align-items: stretch;
   border: 1px dashed transparent;
   border-radius: var(--radius-lg);
   transition:
@@ -143,10 +145,16 @@
 }
 
 .combatant {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 1rem 1.1rem;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent), var(--hull);
+}
+/* An inline-flex chip would otherwise stretch to the full panel width as a flex child. */
+.combatant .shieldchip {
+  align-self: flex-start;
 }
 .combatant--enemy {
   border-color: color-mix(in srgb, var(--threat) 30%, var(--line));
@@ -159,11 +167,35 @@
     radial-gradient(ellipse 80% 60% at 50% 100%, var(--signal-soft), transparent 70%), var(--hull);
 }
 
-/* Your ship, sitting below its own vitals. Capped rather than full-bleed so it stays a
-   portrait of the ship instead of stretching to whatever width the panel happens to be. */
-.combatant__ship {
-  max-width: 280px;
+/*
+ * Each combatant below its own vitals, facing the other across the arena.
+ *
+ * Both slots reserve the same height so the two panels stay level whatever their art is
+ * — an enemy design with no sprite yet, or a boss taller than a skiff, must not make one
+ * side jump. Capped rather than full-bleed so the art stays a portrait instead of
+ * stretching to whatever width the panel happens to be.
+ */
+.combatant__art {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 170px;
+  /* `auto` top margin drops the art to the foot of whichever panel is taller, so the
+     ship and the enemy share a floor however much text sits above each of them. */
   margin: 1rem auto 0.25rem;
+  margin-top: auto;
+}
+.combatant__art--player {
+  max-width: 280px;
+}
+/* Enemy sprites are square, so they are capped by height instead: at the ship's 280px
+   width a 1:1 sprite would tower over it. */
+.combatant__sprite {
+  display: block;
+  max-width: 100%;
+  max-height: 190px;
+  width: auto;
+  height: auto;
 }
 .combatant__tag {
   margin-bottom: 0.25rem;

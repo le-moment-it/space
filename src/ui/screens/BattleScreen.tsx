@@ -7,6 +7,7 @@ import { StatusChips } from '../components/StatusChips';
 import { useTranslation, type Translator } from '../../i18n';
 import { Card } from '../components/Card';
 import { CardListModal } from '../components/CardListModal';
+import { EnemyArt } from '../components/EnemyArt';
 import { HeroShip } from '../components/HeroShip';
 import { PileIcon } from '../components/PileIcon';
 import { HandFan, type HandSlot } from '../components/HandFan';
@@ -97,7 +98,7 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
           {player.shield > 0 && <ShieldChip value={player.shield} t={t} />}
           {/* The thing the numbers above are describing. It faces right, into the
               enemy panel, so the two sides read as facing each other. */}
-          <div className="combatant__ship">
+          <div className="combatant__art combatant__art--player">
             <HeroShip animated />
           </div>
         </div>
@@ -115,6 +116,7 @@ export function BattleScreen({ combat, onPlayCard, onEndTurn, onContinue }: Batt
           <StatusChips statuses={enemy.statuses} />
           <HpBar value={enemy.hull} max={enemy.maxHull} tone="threat" t={t} />
           {enemy.shield > 0 && <ShieldChip value={enemy.shield} t={t} />}
+          <EnemyArt enemyId={enemy.id} />
         </div>
       </div>
 
