@@ -24,13 +24,12 @@ import { decode, encode, resize } from './png.mjs';
  */
 const TARGETS = {
   crew: { w: 192, h: 192, key: false },
-  ship: { w: 512, h: 288, key: true },
+  ship: { w: 512, h: 288, key: true, fit: true },
   cards: { w: 192, h: 108, key: false },
-  // `fit`: crop to the subject, then letterbox into the box. The generator framed each
-  // enemy differently — some tight, some with two thirds of the canvas empty — and
-  // returned three different aspect ratios, so their own framing carries no usable
-  // information. Cropping to content is what makes sixteen sprites sit consistently in
-  // one slot.
+  // `fit`: crop away the transparent margin, then scale to fit the box. The generator
+  // framed every subject differently and returned three different aspect ratios, so the
+  // framing carries no usable information — and the leftover padding is what stops CSS
+  // from standing two combatants on the same floor. See fitWithin.
   enemies: { w: 256, h: 256, key: true, fit: true },
 };
 
@@ -68,10 +67,21 @@ function unkey(img) {
   const bgSpill = spillOf(bg);
   if (bgSpill < 100) throw new Error(`background ${JSON.stringify(bg)} is not a magenta key`);
 
+  /*
+   * How close to the background counts as background.
+   *
+   * The key is never a perfectly flat colour — these masters carry compression noise
+   * across it, so a straight ratio leaves every background pixel a few percent opaque.
+   * That is invisible per pixel and ruinous in aggregate: a faint haze over the whole
+   * frame, and a content box the size of the entire canvas rather than the subject.
+   */
+  const TOLERANCE = 0.12;
+
   const out = Buffer.alloc(w * h * 4);
   for (let i = 0, o = 0; o < out.length; i += ch, o += 4) {
     const p = { r: data[i], g: data[i + 1], b: data[i + 2] };
-    const a = Math.max(0, Math.min(255, Math.round(255 * (1 - spillOf(p) / bgSpill))));
+    const t = spillOf(p) / bgSpill;
+    const a = Math.max(0, Math.min(255, Math.round(255 * (1 - t / (1 - TOLERANCE)))));
     if (a === 0) {
       out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0;
       continue;
@@ -86,23 +96,40 @@ function unkey(img) {
   return { w, h, ch: 4, data: out };
 }
 
-/** Tightest box containing everything that is not effectively transparent. */
-function contentBox(img, threshold = 8) {
+/**
+ * Tightest box containing the subject.
+ *
+ * A row counts as content only if several pixels in it survive the key, not one. The
+ * masters carry sparse specks of noise well outside the subject; a single stray pixel
+ * would stretch the box to the full canvas, and since those specks then average away on
+ * downscale the result is an image padded with transparency that nothing can be aligned
+ * against. `minRun` is a handful of pixels at master resolution, far below the width of
+ * any real detail like an antenna or a thruster plume.
+ */
+function contentBox(img, { alpha = 24, minRun = 3 } = {}) {
   const { w, h, data } = img;
-  let x0 = w;
-  let y0 = h;
-  let x1 = -1;
-  let y1 = -1;
+  const rows = new Uint32Array(h);
+  const cols = new Uint32Array(w);
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (data[(y * w + x) * 4 + 3] <= threshold) continue;
-      if (x < x0) x0 = x;
-      if (x > x1) x1 = x;
-      if (y < y0) y0 = y;
-      if (y > y1) y1 = y;
+      if (data[(y * w + x) * 4 + 3] <= alpha) continue;
+      rows[y]++;
+      cols[x]++;
     }
   }
-  if (x1 < 0) throw new Error('image is entirely transparent after keying');
+  const span = (counts) => {
+    let lo = -1;
+    let hi = -1;
+    for (let i = 0; i < counts.length; i++) {
+      if (counts[i] < minRun) continue;
+      if (lo < 0) lo = i;
+      hi = i;
+    }
+    return [lo, hi];
+  };
+  const [y0, y1] = span(rows);
+  const [x0, x1] = span(cols);
+  if (x1 < 0 || y1 < 0) throw new Error('no subject found after keying');
   return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
@@ -115,20 +142,22 @@ function crop(img, box) {
   return { w: box.w, h: box.h, ch: 4, data: out };
 }
 
-/** Scales to fit inside the box without distortion, centred on transparent padding. */
-function letterbox(img, tw, th) {
-  const scale = Math.min(tw / img.w, th / img.h);
+/**
+ * Scales to fit inside the box without distortion and **without padding** — the file
+ * ends up exactly as big as the artwork.
+ *
+ * Padding is deliberately not added back. Every generated image frames its subject
+ * differently, so letterboxing to a fixed box leaves a different amount of empty space
+ * under each one (13% below the ship, 35% below the interceptor). CSS can only align the
+ * boxes, so the artwork inside them ends up at visibly different heights. Cropping to
+ * content makes the image and the artwork the same thing, and then bottom-aligning the
+ * boxes really does stand both combatants on one floor.
+ */
+function fitWithin(img, tw, th) {
+  const scale = Math.min(tw / img.w, th / img.h, 1);
   const iw = Math.max(1, Math.round(img.w * scale));
   const ih = Math.max(1, Math.round(img.h * scale));
-  const scaled = unpremultiply(resize(premultiply(img), iw, ih));
-
-  const out = Buffer.alloc(tw * th * 4);
-  const ox = Math.floor((tw - iw) / 2);
-  const oy = Math.floor((th - ih) / 2);
-  for (let y = 0; y < ih; y++) {
-    scaled.data.copy(out, ((oy + y) * tw + ox) * 4, y * iw * 4, (y + 1) * iw * 4);
-  }
-  return { w: tw, h: th, ch: 4, data: out };
+  return unpremultiply(resize(premultiply(img), iw, ih));
 }
 
 /** Averaging RGBA must happen in premultiplied space, or transparent pixels tint the edges. */
@@ -171,8 +200,13 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     const src = fs.readFileSync(file);
     let img = decode(src);
 
-    if (img.w === target.w && img.h === target.h) {
-      console.log(`  skip  ${file} (already ${target.w}x${target.h})`);
+    // `fit` output is content-sized, so it never equals the box exactly; "already
+    // within the box" is what idempotency means for those.
+    const normalised = target.fit
+      ? img.w <= target.w && img.h <= target.h
+      : img.w === target.w && img.h === target.h;
+    if (normalised) {
+      console.log(`  skip  ${file} (already ${img.w}x${img.h})`);
       continue;
     }
 
@@ -201,7 +235,7 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     const from = `${img.w}x${img.h}`;
     if (target.fit) {
       const keyed = unkey(img);
-      img = letterbox(crop(keyed, contentBox(keyed)), target.w, target.h);
+      img = fitWithin(crop(keyed, contentBox(keyed)), target.w, target.h);
     } else if (target.key) {
       img = unpremultiply(resize(premultiply(unkey(img)), target.w, target.h));
     } else {
@@ -214,7 +248,7 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     after += out.length;
     done++;
     console.log(
-      `  ${dry ? 'would' : 'wrote'} ${file.padEnd(38)} ${from} ${kb(src.length)} -> ${target.w}x${target.h} ${kb(out.length)}${target.key ? ' (keyed)' : ''}`,
+      `  ${dry ? 'would' : 'wrote'} ${file.padEnd(38)} ${from} ${kb(src.length)} -> ${img.w}x${img.h} ${kb(out.length)}${target.key ? ' (keyed)' : ''}`,
     );
   }
 }
