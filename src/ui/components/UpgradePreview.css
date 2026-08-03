@@ -47,13 +47,23 @@
 }
 
 .upgrade__tiers {
+  /* How far the outer tiers hang below the middle one. Declared here so the padding
+     below can be derived from it rather than guessed alongside it. */
+  --fan-max-drop: 14px;
+
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-items: flex-end;
   /* Negative gap via per-tier margins — the fan overlaps rather than sitting apart. */
   gap: 0;
-  padding: 2.6rem 2rem 1.4rem;
+  /*
+   * The bottom padding has to clear the whole fan, not just the drop: a 7deg rotation
+   * adds about 9px more to a tier's bounding box. At 1.4rem it fell ~0.2px short, which
+   * was enough for the panel's scrollHeight to round up one pixel and for its
+   * overflow-y: auto to paint a full-height scrollbar down the side of the dialog.
+   */
+  padding: 2.6rem 2rem calc(var(--fan-max-drop) + 1.15rem);
 }
 
 /*
@@ -96,7 +106,7 @@
 /* The outer tiers tilt and sit lower, so the three read as an arc. */
 .upgrade__tier:nth-child(1) {
   --fan-angle: -7deg;
-  --fan-drop: 14px;
+  --fan-drop: var(--fan-max-drop);
   --fan-spread: -12px;
   z-index: 1;
   animation-delay: 0s;
@@ -107,7 +117,7 @@
 }
 .upgrade__tier:nth-child(3) {
   --fan-angle: 7deg;
-  --fan-drop: 14px;
+  --fan-drop: var(--fan-max-drop);
   --fan-spread: 12px;
   z-index: 3;
   animation-delay: 0.1s;
