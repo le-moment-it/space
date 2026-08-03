@@ -193,9 +193,27 @@
 .combatant__sprite {
   display: block;
   max-width: 100%;
-  max-height: 190px;
+  max-height: 225px;
   width: auto;
   height: auto;
+  /*
+   * The same idle bob as the ship, deliberately not the same keyframe: a slower period
+   * and a negative delay start it mid-cycle, so the two never rise and fall in lockstep
+   * the way one shared animation would. The global prefers-reduced-motion rule in
+   * index.css stops it.
+   */
+  animation: combatant-drift 6.2s ease-in-out infinite;
+  animation-delay: -2.4s;
+}
+
+@keyframes combatant-drift {
+  0%,
+  100% {
+    transform: translateY(-5px);
+  }
+  50% {
+    transform: translateY(5px);
+  }
 }
 .combatant__tag {
   margin-bottom: 0.25rem;
