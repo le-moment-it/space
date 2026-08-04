@@ -25,11 +25,10 @@ import { decode, encode, resize } from './png.mjs';
 const TARGETS = {
   crew: { w: 192, h: 192, key: false },
   ship: { w: 512, h: 288, key: true, fit: true },
-  // `scale`: shrink to fit the box, keep the aspect, touch nothing else. Card art is
-  // drawn on its own near-black background rather than a key, so there is nothing to
-  // lift and nothing to crop to — and the generator returned four different aspect
-  // ratios, so a fixed box would distort most of them. CSS contains the result.
-  cards: { w: 192, h: 192, scale: true },
+  // `pad`: fit the box, then extend the edges to fill it exactly. Card art has no key to
+  // lift and no margin to crop, but came back in four aspect ratios — and the card's art
+  // window is one shape, so anything narrower left the lit viewport showing beside it.
+  cards: { w: 192, h: 108, pad: true },
   // `fit`: crop away the transparent margin, then scale to fit the box. The generator
   // framed every subject differently and returned three different aspect ratios, so the
   // framing carries no usable information — and the leftover padding is what stops CSS
@@ -168,6 +167,40 @@ function fitWithin(img, tw, th) {
   return unpremultiply(resize(premultiply(img), iw, ih));
 }
 
+/**
+ * Scales to fit the box, then extends the outermost row or column outward to fill the
+ * rest of it, so the result is exactly the box with nothing cropped.
+ *
+ * Card art arrived in four aspect ratios. Containing it in CSS instead left the card's
+ * own backlit viewport showing beside the narrower pieces, so some cards read as full
+ * illustrations and others as a picture on a lit panel. Padding here makes every card the
+ * same shape before it ever reaches the browser.
+ *
+ * The fill replicates each row's own edge pixel rather than one sampled colour, which
+ * stays seamless even where the art has a vignette. That is only safe because no card's
+ * subject reaches the edge being extended — every one of them has a margin of
+ * background, checked before this was written.
+ */
+function padToBox(img, tw, th) {
+  const fitted = fitWithin(img, tw, th);
+  const { w, h, ch, data } = fitted;
+  if (w === tw && h === th) return fitted;
+
+  const out = Buffer.alloc(tw * th * ch);
+  const ox = Math.floor((tw - w) / 2);
+  const oy = Math.floor((th - h) / 2);
+  for (let y = 0; y < th; y++) {
+    const sy = Math.min(h - 1, Math.max(0, y - oy));
+    for (let x = 0; x < tw; x++) {
+      const sx = Math.min(w - 1, Math.max(0, x - ox));
+      const from = (sy * w + sx) * ch;
+      const to = (y * tw + x) * ch;
+      for (let c = 0; c < ch; c++) out[to + c] = data[from + c];
+    }
+  }
+  return { w: tw, h: th, ch, data: out };
+}
+
 /** Averaging RGBA must happen in premultiplied space, or transparent pixels tint the edges. */
 const premultiply = (img) => {
   const d = Buffer.from(img.data);
@@ -211,9 +244,11 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     // `fit` output is content-sized, so it never equals the box exactly; "already
     // within the box" is what idempotency means for those.
     const boxed = target.fit || target.scale;
-    const normalised = boxed
-      ? img.w <= target.w && img.h <= target.h
-      : img.w === target.w && img.h === target.h;
+    const exact = target.pad;
+    const normalised =
+      boxed && !exact
+        ? img.w <= target.w && img.h <= target.h
+        : img.w === target.w && img.h === target.h;
     if (normalised) {
       console.log(`  skip  ${file} (already ${img.w}x${img.h})`);
       continue;
@@ -233,7 +268,7 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     // the category letterboxes, which handles any input shape by construction.
     const srcAspect = img.w / img.h;
     const dstAspect = target.w / target.h;
-    if (!boxed && Math.abs(srcAspect - dstAspect) / dstAspect > 0.02) {
+    if (!boxed && !exact && Math.abs(srcAspect - dstAspect) / dstAspect > 0.02) {
       console.log(
         `  SKIP  ${file} — aspect ${srcAspect.toFixed(2)} does not match target ${dstAspect.toFixed(2)}; ` +
           `resizing would distort it. Regenerate at ${target.w}x${target.h}, or change TARGETS.`,
@@ -242,7 +277,9 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     }
 
     const from = `${img.w}x${img.h}`;
-    if (target.scale) {
+    if (target.pad) {
+      img = padToBox(img, target.w, target.h);
+    } else if (target.scale) {
       img = fitWithin(img, target.w, target.h);
     } else if (target.fit) {
       const keyed = unkey(img);
