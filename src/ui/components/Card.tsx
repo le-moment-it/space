@@ -318,7 +318,7 @@ export function Card({
           {'+'.repeat(level)}
         </div>
         <div className="card__viewport">
-          <CardArt effect={card.effect} />
+          <CardArt cardId={card.id} effect={card.effect} />
         </div>
         <div className="card__text">
           {effectsOf(card).map((effect, i) => (

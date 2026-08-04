@@ -147,6 +147,32 @@
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 60%, transparent));
 }
 
+/*
+ * Painted card art. `contain` rather than `cover`: the art came back in four different
+ * aspect ratios and cropping a square one to this 16:9 window would cut a fifth off the
+ * top and bottom of the illustration. Since every piece is painted on its own near-black
+ * background, the space either side of a tall one reads as part of the screen rather than
+ * as a letterbox.
+ */
+/*
+ * Absolute rather than a grid item: the viewport's height comes from `aspect-ratio`, and
+ * a percentage height cannot resolve against that, so `height: 100%` silently became
+ * `auto`. The image then took its intrinsic aspect — 92px tall inside a 79px window —
+ * and `overflow: hidden` quietly cropped it instead of `object-fit` containing it.
+ * `inset: 0` gives a definite box, which is what object-fit needs to mean anything.
+ *
+ * Still under the scanline overlay `.card__viewport::after` paints, which follows it.
+ */
+.card__art {
+  position: absolute;
+  inset: 0;
+  /* Explicit, not implied by inset: an absolutely positioned <img> with auto dimensions
+     still resolves to its intrinsic size and simply ignores the opposite offset. */
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .card__text {
   margin: 0.5rem 0.6rem 0.3rem;
   padding-top: 0.5rem;

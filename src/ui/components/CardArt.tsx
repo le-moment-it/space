@@ -1,10 +1,22 @@
 import type { CardEffect } from '../../engine/cards/types';
+import { cardArt } from '../art/cards';
 
 /**
- * Cold line-art glyph shown in a card's viewport, keyed to what the card does.
- * Strokes use currentColor so the card frame can tint it with the type accent.
+ * What sits in a card's viewport: its painted art if that card has been drawn, otherwise
+ * a line-art glyph keyed to what the card does.
+ *
+ * The glyph stays as the fallback rather than being deleted with the last asset — it is
+ * keyed to `effect.kind`, so it covers any card added later before anyone paints it, and
+ * its exhaustive switch still makes a new effect kind a hard error rather than a blank
+ * viewport.
  */
-export function CardArt({ effect }: { effect: CardEffect }) {
+export function CardArt({ cardId, effect }: { cardId: string; effect: CardEffect }) {
+  const art = cardArt[cardId];
+  if (art) {
+    // Decorative: the card prints its own name and effect right below this.
+    return <img className="card__art" src={art} alt="" data-card={cardId} />;
+  }
+
   return (
     <svg
       className="card__glyph"

@@ -25,7 +25,11 @@ import { decode, encode, resize } from './png.mjs';
 const TARGETS = {
   crew: { w: 192, h: 192, key: false },
   ship: { w: 512, h: 288, key: true, fit: true },
-  cards: { w: 192, h: 108, key: false },
+  // `scale`: shrink to fit the box, keep the aspect, touch nothing else. Card art is
+  // drawn on its own near-black background rather than a key, so there is nothing to
+  // lift and nothing to crop to — and the generator returned four different aspect
+  // ratios, so a fixed box would distort most of them. CSS contains the result.
+  cards: { w: 192, h: 192, scale: true },
   // `fit`: crop away the transparent margin, then scale to fit the box. The generator
   // framed every subject differently and returned three different aspect ratios, so the
   // framing carries no usable information — and the leftover padding is what stops CSS
@@ -157,6 +161,10 @@ function fitWithin(img, tw, th) {
   const scale = Math.min(tw / img.w, th / img.h, 1);
   const iw = Math.max(1, Math.round(img.w * scale));
   const ih = Math.max(1, Math.round(img.h * scale));
+  // Premultiplying is only meaningful — and only safe to index — with an alpha channel.
+  // Card art arrives as opaque RGB and would be read four bytes at a time out of a
+  // three-byte-per-pixel buffer, which corrupts every colour in the image.
+  if (img.ch !== 4) return resize(img, iw, ih);
   return unpremultiply(resize(premultiply(img), iw, ih));
 }
 
@@ -202,7 +210,8 @@ for (const [dir, target] of Object.entries(TARGETS)) {
 
     // `fit` output is content-sized, so it never equals the box exactly; "already
     // within the box" is what idempotency means for those.
-    const normalised = target.fit
+    const boxed = target.fit || target.scale;
+    const normalised = boxed
       ? img.w <= target.w && img.h <= target.h
       : img.w === target.w && img.h === target.h;
     if (normalised) {
@@ -224,7 +233,7 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     // the category letterboxes, which handles any input shape by construction.
     const srcAspect = img.w / img.h;
     const dstAspect = target.w / target.h;
-    if (!target.fit && Math.abs(srcAspect - dstAspect) / dstAspect > 0.02) {
+    if (!boxed && Math.abs(srcAspect - dstAspect) / dstAspect > 0.02) {
       console.log(
         `  SKIP  ${file} — aspect ${srcAspect.toFixed(2)} does not match target ${dstAspect.toFixed(2)}; ` +
           `resizing would distort it. Regenerate at ${target.w}x${target.h}, or change TARGETS.`,
@@ -233,7 +242,9 @@ for (const [dir, target] of Object.entries(TARGETS)) {
     }
 
     const from = `${img.w}x${img.h}`;
-    if (target.fit) {
+    if (target.scale) {
+      img = fitWithin(img, target.w, target.h);
+    } else if (target.fit) {
       const keyed = unkey(img);
       img = fitWithin(crop(keyed, contentBox(keyed)), target.w, target.h);
     } else if (target.key) {
